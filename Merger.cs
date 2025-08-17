@@ -25,33 +25,18 @@ namespace KiCad2Gcode
             {
                 return (val > v1 && val <= v2);
             }
-            else
+            else if(v1 > v2)
             {
                 return (val >= v2 && val < v1);
             }
-        }
-
-
-        bool IsAngleBetween(double a, double v1, double v2)
-        {
-            while (a > Math.PI) { a -= 2 * Math.PI; }
-            while (a < -Math.PI) { a += 2 * Math.PI; }
-
-            while (v1 > Math.PI) { v1 -= 2 * Math.PI; }
-            while (v1 < -Math.PI) { v1 += 2 * Math.PI; }
-
-            while (v2 > Math.PI) { v2 -= 2 * Math.PI; }
-            while (v2 < -Math.PI) { v2 += 2 * Math.PI; }
-
-            if (v1 > v2)
-            {
-                return (a <= v1 && a >= v2);
-            }
             else
             {
-                return (a >= v1 && a <= v2);
+                return (val == v1);
             }
         }
+
+
+
 
         public Point2D[] GetCrossingLineLine(LinkedListNode<Node> node1, LinkedListNode<Node> node2)
         {
@@ -210,13 +195,19 @@ namespace KiCad2Gcode
                 b = (vC.y - a * vL.x) / vL.y;
             }
 
+            double c = Math.Sqrt(Math.Pow(arc.radius, 2) - a * a);
+
             Point2D ptM = sP1 + b * vL;
+            ptM.type = Point2D.PointType_et.CROSS_T;
+
             Point2D ptM2 = null;
 
-            if (b != 0)
+            if (c != 0)
             {
-                ptM2 = ptM + b * vL;
-                ptM = ptM - b * vL;
+                ptM2 = ptM + c * vL;
+                ptM = ptM - c * vL;
+                ptM2.type = Point2D.PointType_et.CROSS_X;
+                ptM.type = Point2D.PointType_et.CROSS_X;
             }
 
             /* check if points ane on line */
@@ -247,7 +238,7 @@ namespace KiCad2Gcode
             {
                 Vector vTmp = ptM - arc.centre;
                 double angle = Math.Atan2(vTmp.y, vTmp.x);
-                if(IsAngleBetween (angle , arc.startAngle, arc.endAngle) == false)
+                if(Graph2D.IsAngleBetween(angle , arc.startAngle, arc.endAngle) == false)
                 {
                     ptM = null;
                 }                
@@ -257,7 +248,7 @@ namespace KiCad2Gcode
             {
                 Vector vTmp = ptM2 - arc.centre;
                 double angle = Math.Atan2(vTmp.y, vTmp.x);
-                if (IsAngleBetween(angle, arc.startAngle, arc.endAngle) == false)
+                if (Graph2D.IsAngleBetween(angle, arc.startAngle, arc.endAngle) == false)
                 {
                     ptM2 = null;
                 }
@@ -329,8 +320,11 @@ namespace KiCad2Gcode
 
                     if (points != null)
                     {
-                        mainForm.PrintText("Find Point at " + points[0].x.ToString() + "," + points[0].y.ToString() + " type is " + points[0].type.ToString() + "\n");
-
+                        mainForm.PrintText("Find Point 1 at " + points[0].x.ToString() + "," + points[0].y.ToString() + " type is " + points[0].type.ToString() + "\n");
+                        if(points.Length == 2)
+                        {
+                            mainForm.PrintText("Find Point 2 at " + points[1].x.ToString() + "," + points[1].y.ToString() + " type is " + points[1].type.ToString() + "\n");
+                        }
 
 
                         /* cut f1 */
@@ -343,11 +337,46 @@ namespace KiCad2Gcode
                         f2.SplitChunk(n2, points);
 
 
-                        n1.Value.oppNode = n2.Next ?? n2.List.First ;
-                        n2.Value.oppNode = n1.Next ?? n1.List.First;
+                        if(points.Length == 1)
+                        {
+                            /* easy case */
+                            n1.Value.oppNode = n2.Next ?? n2.List.First;
+                            n2.Value.oppNode = n1.Next ?? n1.List.First;
 
-                        mainForm.PrintText("Set oppNode for f1: " + n1.Value.oppNode.Value.pt.x.ToString() + "," + n1.Value.oppNode.Value.pt.y.ToString() + "\n");
-                        mainForm.PrintText("Set oppNode for f2: " + n2.Value.oppNode.Value.pt.x.ToString() + "," + n2.Value.oppNode.Value.pt.y.ToString() + "\n");
+                            mainForm.PrintText("Set oppNode for f1: " + n1.Value.oppNode.Value.pt.x.ToString() + "," + n1.Value.oppNode.Value.pt.y.ToString() + "\n");
+                            mainForm.PrintText("Set oppNode for f2: " + n2.Value.oppNode.Value.pt.x.ToString() + "," + n2.Value.oppNode.Value.pt.y.ToString() + "\n");
+
+                        }
+                        else
+                        {
+                            if(n1.Value.pt == n2.Value.pt)
+                            {
+                                n1.Value.oppNode = n2.Next ;
+                                n2.Value.oppNode = n1.Next ;
+
+                                n1.Next.Value.oppNode = n2.Next.Next ?? n2.List.First;
+                                n2.Next.Value.oppNode = n1.Next.Next ?? n1.List.First;
+                            }
+                            else
+                            {
+                                n1.Value.oppNode = n2.Next.Next ?? n2.List.First; 
+                                n2.Value.oppNode = n1.Next.Next ?? n1.List.First; 
+
+                                n1.Next.Value.oppNode = n2.Next;
+                                n2.Next.Value.oppNode = n1.Next;
+
+                            }
+
+                            mainForm.PrintText("Set oppNode for f1: " + n1.Value.oppNode.Value.pt.x.ToString() + "," + n1.Value.oppNode.Value.pt.y.ToString() + "\n");
+                            mainForm.PrintText("Set oppNode for f2: " + n2.Value.oppNode.Value.pt.x.ToString() + "," + n2.Value.oppNode.Value.pt.y.ToString() + "\n");
+
+                            mainForm.PrintText("Set oppNode 2 for f1: " + n1.Next.Value.oppNode.Value.pt.x.ToString() + "," + n1.Next.Value.oppNode.Value.pt.y.ToString() + "\n");
+                            mainForm.PrintText("Set oppNode 2 for f2: " + n2.Next.Value.oppNode.Value.pt.x.ToString() + "," + n2.Next.Value.oppNode.Value.pt.y.ToString() + "\n");
+
+
+                        }
+
+
                     }
                     n2 = n2.Next;
                 }
@@ -403,8 +432,40 @@ namespace KiCad2Gcode
 
                     double inputAngle = Vector.GetAlpha(actPoint, prevPoint);
 
-                    double out1Angle = Vector.GetAlpha(actPoint, nextPoint1);
-                    double out2Angle = Vector.GetAlpha(actPoint, nextPoint2);
+                    double out1Angle = 0;
+                    double out2Angle = 0;
+
+                    double r1 = 0;
+                    double r2 = 0;
+
+
+                    if (nodeA.Value.arc == null)
+                    {
+                        out1Angle = Vector.GetAlpha(actPoint, nextPoint1);
+                        r1 = Double.MaxValue;
+                    }
+                    else
+                    {
+                        Vector v = nodeA.Value.arc.centre - actPoint;
+                        Vector vt = new Vector(-v.y, v.x);
+                        out1Angle = Vector.GetAlpha(vt);
+                        r1 = nodeA.Value.arc.radius;
+                    }
+
+                    if (nodeB.Value.arc == null)
+                    {
+                        out2Angle = Vector.GetAlpha(actPoint, nextPoint2);
+                        
+                        r2 = Double.MaxValue;
+                    }
+                    else
+                    {
+                        Vector v = nodeB.Value.arc.centre - actPoint;
+                        Vector vt = new Vector(- v.y, v.x);
+                        out2Angle = Vector.GetAlpha(vt);
+                        r1 = nodeB.Value.arc.radius;
+                    }
+
 
 
                     mainForm.PrintText("Test in " + actPoint.x.ToString() + "," + actPoint.y.ToString() + "\n");
@@ -415,8 +476,20 @@ namespace KiCad2Gcode
 
                     prevPoint = actNode.Value.pt;
 
-
-                    if (inputAngle > out1Angle)
+                    if(out1Angle == out2Angle)
+                    {
+                        if(r1>r2)
+                        {
+                            /*out1 is 2 */
+                            actNode = nodeA;
+                        }
+                        else
+                        {
+                            /*out2 is 2 */
+                            actNode = nodeB;
+                        }
+                    }
+                    else if (inputAngle > out1Angle)
                     {
                         if(inputAngle > out2Angle)
                         {

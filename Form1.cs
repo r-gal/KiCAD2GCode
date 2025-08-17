@@ -91,7 +91,7 @@ namespace KiCad2Gcode
             drills.Add(drill);
         }
 
-        private void AddTestForm(Point2D[] pts1, Point2D[] pts2, Vector position)
+        private void AddTestForm(Point2D[] pts1, Arc[] arc1, Point2D[] pts2, Arc[] arc2, Vector position)
         {
             Figure figure1 = new Figure();
             Figure figure2 = new Figure();
@@ -101,18 +101,20 @@ namespace KiCad2Gcode
             Node node;
             LinkedListNode<Node> lln;
 
-            foreach(Point2D p in pts1)
+            for(int i=0; i< pts1.Length;i++) 
             {
                 node = new Node();
-                node.pt = new Point2D(p);
+                node.pt = new Point2D(pts1[i]);
+                node.arc = arc1[i];
                 lln = new LinkedListNode<Node>(node);
                 figure1.points.AddLast(lln);
             }
 
-            foreach (Point2D p in pts2)
+            for (int i = 0; i < pts2.Length; i++)
             {
                 node = new Node();
-                node.pt = new Point2D(p);
+                node.pt = new Point2D(pts2[i]);
+                node.arc = arc2[i];
                 lln = new LinkedListNode<Node>(node);
                 figure2.points.AddLast(lln);
             }
@@ -134,49 +136,114 @@ namespace KiCad2Gcode
             Point2D[] pts1 = new Point2D[4];
             Point2D[] pts2 = new Point2D[4];
 
+            Arc[] arc1 = new Arc[4];
+            Arc[] arc2 = new Arc[4];
+
+            for(int i=0;i<4;i++)
+            {
+                arc1[i] = null;
+                arc2[i] = null;
+            }
+
+
             pts1[0] = new Point2D(10, 10);
             pts1[1] = new Point2D(15, 10);
             pts1[2] = new Point2D(15, 4);
             pts1[3] = new Point2D(10, 4);
-
+            
             pts2[0] = new Point2D(12, 15);
             pts2[1] = new Point2D(14, 15);
             pts2[2] = new Point2D(14, 8);
             pts2[3] = new Point2D(12, 8);
-            AddTestForm(pts1, pts2, new Vector(0, 0));
+            AddTestForm(pts1, arc1,  pts2, arc2, new Vector(0, 0));
 
             pts2[0] = new Point2D(12, 15);
             pts2[1] = new Point2D(18, 15);
             pts2[2] = new Point2D(18, 8);
             pts2[3] = new Point2D(12, 8);
-            AddTestForm(pts1, pts2, new Vector(0, 20));
+            AddTestForm(pts1, arc1, pts2, arc2, new Vector(0, 20));
 
             pts2[0] = new Point2D(10, 15);
             pts2[1] = new Point2D(15, 15);
             pts2[2] = new Point2D(15, 8);
             pts2[3] = new Point2D(10, 8);
-            AddTestForm(pts1, pts2, new Vector(0, 40));
+            AddTestForm(pts1, arc1, pts2, arc2, new Vector(0, 40));
 
             pts2[0] = new Point2D(11, 15);
             pts2[1] = new Point2D(14, 15);
             pts2[2] = new Point2D(14, 10);
             pts2[3] = new Point2D(11, 10);
-            AddTestForm(pts1, pts2, new Vector(0, 60));
+            AddTestForm(pts1, arc1, pts2, arc2, new Vector(15, 0));
 
             pts2[0] = new Point2D(11, 10);
             pts2[1] = new Point2D(15, 10);
             pts2[2] = new Point2D(16, 3);
             pts2[3] = new Point2D(11, 3);
-            AddTestForm(pts1, pts2, new Vector(20, 0));
+            AddTestForm(pts1, arc1, pts2, arc2, new Vector(15, 20));
 
             pts2[0] = new Point2D(11, 10);
             pts2[1] = new Point2D(15, 10);
             pts2[2] = new Point2D(14, 3);
             pts2[3] = new Point2D(11, 3);
-            AddTestForm(pts1, pts2, new Vector(20, 20));
+            AddTestForm(pts1, arc1, pts2, arc2, new Vector(15, 40));
+            
 
+            pts2[0] = new Point2D(12, 15);
+            pts2[1] = new Point2D(16, 15);
+            pts2[2] = new Point2D(16, 11);
+            pts2[3] = new Point2D(12, 11);
+            arc2[3] = new Arc();
+            arc2[3].radius = 2;
+            arc2[3].centre = new Point2D(14, 11);
+            arc2[3].startAngle = 0;
+            arc2[3].endAngle = -Math.PI;
+            AddTestForm(pts1, arc1, pts2, arc2, new Vector(30, 0));
+            
+            pts2[0] = new Point2D(10.5, 15);
+            pts2[1] = new Point2D(14.5, 15);
+            pts2[2] = new Point2D(14.5, 11);
+            pts2[3] = new Point2D(10.5, 11);
+            arc2[3] = new Arc();
+            arc2[3].radius = 2;
+            arc2[3].centre = new Point2D(12.5, 11);
+            arc2[3].startAngle = 0;
+            arc2[3].endAngle = -Math.PI;
+            AddTestForm(pts1, arc1, pts2, arc2, new Vector(30, 20));
+            arc2[3] = null;
+            
+            pts2[0] = new Point2D(12, 2);
+            pts2[1] = new Point2D(10, 8);
+            pts2[2] = new Point2D(14, 12);
+            pts2[3] = new Point2D(15, 7);
+            arc2[2] = new Arc();
+            arc2[2].radius = 2 * Math.Sqrt(2);
+            arc2[2].centre = new Point2D(12, 10);
+            arc2[2].startAngle = -0.75 * Math.PI;
+            arc2[2].endAngle = 0.25 * Math.PI;
+            AddTestForm(pts1, arc1, pts2, arc2, new Vector(30, 40));
 
-
+            pts2[0] = new Point2D(12, 6);
+            pts2[1] = new Point2D(12, 8);
+            pts2[2] = new Point2D(16, 8);
+            pts2[3] = new Point2D(16, 6);
+            arc2[2] = new Arc();
+            arc2[2].radius = 2 ;
+            arc2[2].centre = new Point2D(14, 8);
+            arc2[2].startAngle = - Math.PI;
+            arc2[2].endAngle = 0;
+            AddTestForm(pts1, arc1, pts2, arc2, new Vector(45, 0));
+            
+            /*
+            pts2[0] = new Point2D(12, 6);
+            pts2[1] = new Point2D(12, 8);
+            pts2[2] = new Point2D(16, 8);
+            pts2[3] = new Point2D(16, 6);
+            arc2[2] = new Arc();
+            arc2[2].radius = 2;
+            arc2[2].centre = new Point2D(14, 8);
+            arc2[2].startAngle = -Math.PI;
+            arc2[2].endAngle = 0;
+            AddTestForm(pts1, arc1, pts2, arc2, new Vector(0, 0));*/
 
             drawer.Redraw(figures, cuts, drills);
         }
