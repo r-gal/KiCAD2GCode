@@ -5,6 +5,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
+using static KiCad2Gcode.CrossUnit;
 
 namespace KiCad2Gcode
 {
@@ -19,286 +20,125 @@ namespace KiCad2Gcode
             this.mainForm = mainForm;
         }
 
-        bool IsValueBeetween(double val, double v1, double v2)
+
+
+
+
+        private bool CheckPointInFigure(Point2D pt, Figure f)
         {
-            if (v1 < v2)
+            int crosses = 0;
+
+            int state = 0; /* -1: DN, 0 : IDLE, 1 : UP */
+
+
+            LinkedListNode<Node> actNode = f.points.First;
+
+            CrossUnit crossUnit = new CrossUnit();
+
+            do
             {
-                return (val > v1 && val <= v2);
-            }
-            else if(v1 > v2)
-            {
-                return (val >= v2 && val < v1);
-            }
-            else
-            {
-                return (val == v1);
-            }
-        }
 
+                CROSS_TYPE_et result = crossUnit.CheckFlatCross(pt, actNode);
 
-
-
-        public Point2D[] GetCrossingLineLine(LinkedListNode<Node> node1, LinkedListNode<Node> node2)
-        {
-
-            LinkedListNode<Node> n1Prev = node1.Previous ?? node1.List.Last;
-            LinkedListNode<Node> n2Prev = node2.Previous ?? node2.List.Last;
-
-            Point2D sP1 = n1Prev.Value.pt;
-            Point2D eP1 = node1.Value.pt;
-            Point2D sP2 = n2Prev.Value.pt;
-            Point2D eP2 = node2.Value.pt;
-
-
-            double x0, y0, x1, y1;
-            double m0, m1, n0, n1;
-
-            x0 = sP1.x;
-            y0 = sP1.y;
-            m0 = eP1.x - sP1.x;
-            n0 = eP1.y - sP1.y;
-
-            x1 = sP2.x;
-            y1 = sP2.y;
-            m1 = eP2.x - sP2.x;
-            n1 = eP2.y - sP2.y;
-
-            double a = m0 * y1 - m0 * y0 - n0 * x1 + n0 * x0;
-            double b = n0 * m1 - m0 * n1;
-
-            if(b == 0)
-            {
-                if(a == 0)
+                switch(result)
                 {
-                    /*Parallel, may overlap*/
-
-                    Point2D pt = null;
-
-                    if(Math.Abs(m0) > Math.Abs(n0))
-                    {
-                        if (IsValueBeetween(eP2.x, sP1.x, eP1.x) == true)
+                    case CROSS_TYPE_et.NORMAL:
+                        state = 0;
+                        crosses++;
+                        break;
+                    case CROSS_TYPE_et.DOUBLE:
+                        state = 0;
+                        crosses+=2;
+                        break;
+                    case CROSS_TYPE_et.END_DN:
+                        if(state == 1)
                         {
-                            pt = eP2;
+                            state = 0;
+                            crosses++;
                         }
-                        else if (IsValueBeetween(eP1.x, sP2.x, eP2.x) == true)
+                        else if(state == -1)
                         {
-                            pt = eP1;
-                        }
-                    }
-                    else
-                    {
-                        if (IsValueBeetween(eP2.y, sP1.y, eP1.y) == true)
-                        {
-                            pt = eP2;
-                        }
-                        else if (IsValueBeetween(eP1.y, sP2.y, eP2.y) == true)
-                        {
-                            pt = eP1;
-                        }
-                    }
-
-                    if (pt != null)
-                    {
-                        pt.type = Point2D.PointType_et.CROSS_T;
-                        Point2D[] ptArr = new Point2D[1];
-                        ptArr[0] = pt;
-                        return ptArr;
-                    }
-
-                    return null;
-                }
-                else
-                {
-                    /* parallel not overlap */
-                    return null;
-                }
-            }
-            else
-            {
-                double k = a / b;
-                if(k > 0 && k <= 1)
-                {
-                    double t = 0;
-                    if(Math.Abs(m0) > Math.Abs(n0) )
-                    {
-                        t = (x1 + m1 * k - x0) / m0;
-                    }
-                    else
-                    {
-                        t = (y1 + n1 * k - y0) / n0;
-                    }
-                    
-                    if(t>0 &&  t<=1)
-                    {
-                        double x = x0 + m0 * t;
-                        double y = y0 + n0 * t;
-
-                        Point2D pt = new Point2D(x, y);
-
-                        if(t<1 && k < 1)
-                        {
-                            pt.type = Point2D.PointType_et.CROSS_X;
+                            state = 0;
                         }
                         else
                         {
-                            pt.type = Point2D.PointType_et.CROSS_T;
+                            state = -1;
                         }
-                        
+                        break;
 
-                        Point2D[] ptArr = new Point2D[1];
-                        ptArr[0] = pt;
-                        return ptArr;
-                    }                    
+                    case CROSS_TYPE_et.END_UP:
+                        if (state == -1)
+                        {
+                            state = 0;
+                            crosses++;
+                        }
+                        else if (state == 1)
+                        {
+                            state = 0;
+                        }
+                        else
+                        {
+                            state = 1;
+                        }
+                        break;
+
+                    case CROSS_TYPE_et.END2_DN:
+                        if (state == 1)
+                        {
+                            state = 0;
+                            crosses+=2;
+                        }
+                        else if (state == -1)
+                        {
+                            state = 0;
+                        }
+                        else
+                        {
+                            state = -1;
+                        }
+                        break;
+
+                    case CROSS_TYPE_et.END2_UP:
+                        if (state == -1)
+                        {
+                            state = 0;
+                            crosses += 2;
+                        }
+                        else if (state == 1)
+                        {
+                            state = 0;
+                        }
+                        else
+                        {
+                            state = 1;
+                        }
+                        break;
                 }
-            }
-
-            return null; 
 
 
-        }
 
-        public Point2D[] GetCrossingLineArc(LinkedListNode<Node> node1, LinkedListNode<Node> node2)
-        {
-            LinkedListNode<Node> n1Prev = node1.Previous ?? node1.List.Last;
-            //LinkedListNode<Node> n2Prev = node1.Previous ?? node2.List.Last;
+                actNode = actNode.Next;
+            } while (actNode != null);
 
-            Point2D sP1 = n1Prev.Value.pt;
-            Point2D eP1 = node1.Value.pt;
-            //Point2D sP2 = n2Prev.Value.pt;
-            //Point2D eP2 = node2.Value.pt;
 
-            Arc arc = node2.Value.arc;
-
-            /* calc potential crossing points */
-            Vector vL = eP1 - sP1;
-
-            vL.Normalize();
-
-            if(vL.Length == 0 )
+            if (state == 0)
             {
-                return null;
-            }
-
-            Vector vC = arc.centre - sP1;
-
-            double a = (vL.x * vC.y - vC.x * vL.y) / vL.Length * vL.Length;
-
-            if(Math.Abs(a) > arc.radius) { return null; }
-
-            double b;
-            if(Math.Abs(vL.x) >  Math.Abs(vL.y))
-            {
-                b = (vC.x + a * vL.y) / vL.x;
+                if (crosses % 2 == 0)
+                {
+                    return false;
+                }
+                else
+                {
+                    return true;
+                }
             }
             else
             {
-                b = (vC.y - a * vL.x) / vL.y;
+
+                /* probably point is on edge */
+                return false;
             }
-
-            double c = Math.Sqrt(Math.Pow(arc.radius, 2) - a * a);
-
-            Point2D ptM = sP1 + b * vL;
-            ptM.type = Point2D.PointType_et.CROSS_T;
-
-            Point2D ptM2 = null;
-
-            if (c != 0)
-            {
-                ptM2 = ptM + c * vL;
-                ptM = ptM - c * vL;
-                ptM2.type = Point2D.PointType_et.CROSS_X;
-                ptM.type = Point2D.PointType_et.CROSS_X;
-            }
-
-            /* check if points ane on line */
-
-            if(IsValueBeetween(ptM.x, sP1.x, eP1.x) == false)
-            {
-                ptM = null;
-            }
-            else if (IsValueBeetween(ptM.y, sP1.y, eP1.y) == false)
-            {
-                ptM = null;
-            }
-
-            if(ptM2 != null)
-            {
-                if (IsValueBeetween(ptM2.x, sP1.x, eP1.x) == false)
-                {
-                    ptM2 = null;
-                }
-                else if (IsValueBeetween(ptM2.y, sP1.y, eP1.y) == false)
-                {
-                    ptM2 = null;
-                }
-            }
-
-            /* check if points are on arc */
-            if (ptM != null)
-            {
-                Vector vTmp = ptM - arc.centre;
-                double angle = Math.Atan2(vTmp.y, vTmp.x);
-                if(Graph2D.IsAngleBetween(angle , arc.startAngle, arc.endAngle) == false)
-                {
-                    ptM = null;
-                }                
-            }
-
-            if (ptM2 != null)
-            {
-                Vector vTmp = ptM2 - arc.centre;
-                double angle = Math.Atan2(vTmp.y, vTmp.x);
-                if (Graph2D.IsAngleBetween(angle, arc.startAngle, arc.endAngle) == false)
-                {
-                    ptM2 = null;
-                }
-            }
-
-            int cnt = 0;
-            if(ptM != null) {  cnt ++; }
-            if (ptM2 != null) { cnt++; }
-            Point2D[] ptArr = null;
-            if (cnt > 0)
-            {
-                ptArr = new Point2D[cnt];
-            }
-            cnt = 0;
-            if (ptM != null) { ptArr[cnt] = ptM; cnt++; }
-            if (ptM2 != null) { ptArr[cnt] = ptM2; }
-
-            return ptArr;
         }
-
-        public Point2D[] GetCrossingArcArc(LinkedListNode<Node> node1, LinkedListNode<Node> node2)
-        {
-            return null;
-        }
-        
-
-        public Point2D[] GetCrosssingPoints(LinkedListNode<Node> node1, LinkedListNode<Node> node2)
-        {
-            if(node1.Value.arc == null && node2.Value.arc == null)
-            {
-                return GetCrossingLineLine(node1 , node2);
-            }
-            else if (node1.Value.arc == null && node2.Value.arc != null)
-            {
-                return GetCrossingLineArc(node1, node2);
-            }
-            else if (node1.Value.arc != null && node2.Value.arc == null)
-            {
-                return GetCrossingLineArc(node2, node1);
-            }
-            else if (node1.Value.arc != null && node2.Value.arc != null)
-            {
-                return GetCrossingArcArc(node1, node2);
-            }
-
-            return null;
-        }
-
-
-
 
 
 
@@ -314,9 +154,9 @@ namespace KiCad2Gcode
                 LinkedListNode<Node> n2 = f2.points.First;
 
                 while (n2 != null)
-                {                   
-
-                    Point2D[] points = GetCrosssingPoints(n1, n2);
+                {
+                    CrossUnit crossUnit = new CrossUnit();
+                    Point2D[] points = crossUnit.GetCrosssingPoints(n1, n2);
 
                     if (points != null)
                     {
@@ -392,6 +232,9 @@ namespace KiCad2Gcode
             LinkedListNode<Node> actNode = f1.points.First;
             int activeFigure = 0;
             LinkedListNode<Node> firstNode = actNode;
+
+            Point2D testPoint = new Point2D(12, 8);
+            bool pointInFigure = CheckPointInFigure(testPoint, f1);
 
             Point2D prevPoint = f1.points.Last.Value.pt;
 

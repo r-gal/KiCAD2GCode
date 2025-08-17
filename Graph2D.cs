@@ -575,5 +575,21 @@ namespace KiCad2Gcode
             return (a < v1 );
 
         }
+
+        public static bool IsValueBeetween(double val, double v1, double v2)
+        {
+            if (v1 < v2)
+            {
+                return (val > v1 && val <= v2);
+            }
+            else if (v1 > v2)
+            {
+                return (val >= v2 && val < v1);
+            }
+            else
+            {
+                return (val == v1);
+            }
+        }
     }
 }
