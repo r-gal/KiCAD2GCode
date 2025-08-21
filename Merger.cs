@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Globalization;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -22,16 +23,21 @@ namespace KiCad2Gcode
 
 
 
+        private enum POINT_LOC_et
+        {
+            IN,
+            OUT,
+            EDGE
+        };
 
-
-        private bool CheckPointInFigure(Point2D pt, Figure f)
+        private POINT_LOC_et CheckPointInPolygon(Point2D pt, Polygon pol)
         {
             int crosses = 0;
 
             int state = 0; /* -1: DN, 0 : IDLE, 1 : UP */
 
 
-            LinkedListNode<Node> actNode = f.points.First;
+            LinkedListNode<Node> actNode = pol.points.First;
 
             CrossUnit crossUnit = new CrossUnit();
 
@@ -113,6 +119,8 @@ namespace KiCad2Gcode
                             state = 1;
                         }
                         break;
+                    case CROSS_TYPE_et.EDGE:
+                        return POINT_LOC_et.EDGE;
                 }
 
 
@@ -125,33 +133,30 @@ namespace KiCad2Gcode
             {
                 if (crosses % 2 == 0)
                 {
-                    return false;
+                    return POINT_LOC_et.OUT;
                 }
                 else
                 {
-                    return true;
+                    return POINT_LOC_et.IN;
                 }
             }
             else
             {
 
                 /* probably point is on edge */
-                return false;
+                return POINT_LOC_et.EDGE;
             }
         }
 
-
-
-        public Figure Merge(Figure f1, Figure f2)
+        private int SelectCrossingPoints(Polygon pol1, Polygon pol2)
         {
+            int pointCnt = 0;
 
-            /* find crossing points */
-
-            LinkedListNode<Node> n1 = f1.points.First;
+            LinkedListNode<Node> n1 = pol1.points.First;
 
             while (n1 != null)
-            {                
-                LinkedListNode<Node> n2 = f2.points.First;
+            {
+                LinkedListNode<Node> n2 = pol2.points.First;
 
                 while (n2 != null)
                 {
@@ -161,23 +166,25 @@ namespace KiCad2Gcode
                     if (points != null)
                     {
                         mainForm.PrintText("Find Point 1 at " + points[0].x.ToString() + "," + points[0].y.ToString() + " type is " + points[0].type.ToString() + "\n");
-                        if(points.Length == 2)
+                        pointCnt++;
+                        if (points.Length == 2)
                         {
                             mainForm.PrintText("Find Point 2 at " + points[1].x.ToString() + "," + points[1].y.ToString() + " type is " + points[1].type.ToString() + "\n");
+                            pointCnt++;
                         }
 
 
                         /* cut f1 */
 
-                        f1.SplitChunk(n1, points);
-                        
+                        Figure.SplitChunk(n1, points);
+
 
                         /* cut f2 */
 
-                        f2.SplitChunk(n2, points);
+                        Figure.SplitChunk(n2, points);
 
 
-                        if(points.Length == 1)
+                        if (points.Length == 1)
                         {
                             /* easy case */
                             n1.Value.oppNode = n2.Next ?? n2.List.First;
@@ -189,18 +196,18 @@ namespace KiCad2Gcode
                         }
                         else
                         {
-                            if(n1.Value.pt == n2.Value.pt)
+                            if (n1.Value.pt == n2.Value.pt)
                             {
-                                n1.Value.oppNode = n2.Next ;
-                                n2.Value.oppNode = n1.Next ;
+                                n1.Value.oppNode = n2.Next;
+                                n2.Value.oppNode = n1.Next;
 
                                 n1.Next.Value.oppNode = n2.Next.Next ?? n2.List.First;
                                 n2.Next.Value.oppNode = n1.Next.Next ?? n1.List.First;
                             }
                             else
                             {
-                                n1.Value.oppNode = n2.Next.Next ?? n2.List.First; 
-                                n2.Value.oppNode = n1.Next.Next ?? n1.List.First; 
+                                n1.Value.oppNode = n2.Next.Next ?? n2.List.First;
+                                n2.Value.oppNode = n1.Next.Next ?? n1.List.First;
 
                                 n1.Next.Value.oppNode = n2.Next;
                                 n2.Next.Value.oppNode = n1.Next;
@@ -216,6 +223,20 @@ namespace KiCad2Gcode
 
                         }
 
+                        foreach (Node n in pol1.points)
+                        {
+                            if (n.pt.type != Point2D.PointType_et.NORMAL && n.oppNode == null)
+                            {
+                                mainForm.PrintText("Error\n");
+                            }
+                        }
+                        foreach (Node n in pol2.points)
+                        {
+                            if (n.pt.type != Point2D.PointType_et.NORMAL && n.oppNode == null)
+                            {
+                                mainForm.PrintText("Error\n");
+                            }
+                        }
 
                     }
                     n2 = n2.Next;
@@ -223,44 +244,207 @@ namespace KiCad2Gcode
                 n1 = n1.Next;
             }
 
+            return pointCnt;
+        }
+
+        private LinkedListNode<Node> GetNodeForUnion(Polygon pol1, Polygon pol2)
+        {
+            if (pol1.extNode[0].pt.x < pol2.extPoint[0].x) { return pol1.points.Find(pol1.extNode[0]); }
+            if (pol2.extNode[0].pt.x < pol1.extPoint[0].x) { return pol2.points.Find(pol2.extNode[0]); }
+            if (pol1.extNode[1].pt.y > pol2.extPoint[1].y) { return pol1.points.Find(pol1.extNode[1]); }
+            if (pol2.extNode[1].pt.y > pol1.extPoint[1].y) { return pol2.points.Find(pol2.extNode[1]); }
+            if (pol1.extNode[2].pt.x > pol2.extPoint[2].x) { return pol1.points.Find(pol1.extNode[2]); }
+            if (pol2.extNode[2].pt.x > pol1.extPoint[2].x) { return pol2.points.Find(pol2.extNode[2]); }
+            if (pol1.extNode[3].pt.y < pol2.extPoint[3].y) { return pol1.points.Find(pol1.extNode[3]); }
+            if (pol2.extNode[3].pt.y < pol1.extPoint[3].y) { return pol2.points.Find(pol2.extNode[3]); }
+
+            if (pol1.extNode[0].pt.x == pol2.extPoint[0].x) { return pol1.points.Find(pol1.extNode[0]); }
+            if (pol2.extNode[0].pt.x == pol1.extPoint[0].x) { return pol2.points.Find(pol2.extNode[0]); }
+            if (pol1.extNode[1].pt.y == pol2.extPoint[1].y) { return pol1.points.Find(pol1.extNode[1]); }
+            if (pol2.extNode[1].pt.y == pol1.extPoint[1].y) { return pol2.points.Find(pol2.extNode[1]); }
+            if (pol1.extNode[2].pt.x == pol2.extPoint[2].x) { return pol1.points.Find(pol1.extNode[2]); }
+            if (pol2.extNode[2].pt.x == pol1.extPoint[2].x) { return pol2.points.Find(pol2.extNode[2]); }
+            if (pol1.extNode[3].pt.y == pol2.extPoint[3].y) { return pol1.points.Find(pol1.extNode[3]); }
+            if (pol2.extNode[3].pt.y == pol1.extPoint[3].y) { return pol2.points.Find(pol2.extNode[3]); }
+
+            return null;
+        }
+
+        private LinkedListNode<Node> GetNodeForHole(Polygon pol1)
+        {
+            LinkedListNode<Node> n1 = pol1.points.First;
+
+            while (n1 != null)
+            {
+                if(n1.Value.pt.type != Point2D.PointType_et.NORMAL)
+                {
+                    return n1;
+                }
+                n1 = n1.Next;
+            }
+            return null;
+        }
+
+        private LinkedListNode<Node> GetNodeForHoleCutting(Polygon hole, Polygon pol)
+        {
+            LinkedListNode<Node> n1 = hole.points.First;
+
+            while (n1 != null)
+            {
+                if (n1.Value.pt.type != Point2D.PointType_et.NORMAL)
+                {
+                    return n1;
+                }
+                n1 = n1.Next;
+            }
+            return null;
+
+        }
 
 
+        private LinkedListNode<Node> GetNode(Polygon selectPol, Polygon areaPol, bool inside)
+        {
+            LinkedListNode<Node> node = null;
+
+            LinkedListNode<Node> actNode = selectPol.points.First;
+            while (actNode != null)
+            {
+                if (actNode.Value.pt.type == Point2D.PointType_et.NORMAL)
+                {
+                    POINT_LOC_et pointIsInFigure = CheckPointInPolygon(actNode.Value.pt, areaPol);
+
+                    if (pointIsInFigure == POINT_LOC_et.IN && inside == true)
+                    {
+                        return actNode;
+                    }
+                    else if (pointIsInFigure == POINT_LOC_et.OUT && inside == false)
+                    {
+                        return actNode;
+                    }
+                }
+                    
+                actNode = actNode.Next;
+            }
+            /* cannot find any solid point, try to find new point on segment splits */
+
+            actNode = selectPol.points.First;
+            LinkedListNode<Node> prevNode = selectPol.points.Last;
+
+            Point2D prevPt = prevNode.Value.pt;
+            Point2D actPt = actNode.Value.pt;
+            while (actNode != null)
+            {
+                Point2D testPoint = null;
+                double divAngle = 0;
+                if (actNode.Value.arc == null)
+                {
+                    testPoint = new Point2D(prevPt.x + (actPt.x - prevPt.x) / 2, prevPt.y + (actPt.y - prevPt.y) / 2);
+                }
+                else
+                {
+
+                    if( actNode.Value.arc.endAngle > actNode.Value.arc.startAngle)
+                    {
+                        divAngle = (actNode.Value.arc.endAngle + actNode.Value.arc.startAngle) / 2 - Math.PI;
+                    }
+                    else
+                    {
+                        divAngle = (actNode.Value.arc.endAngle + actNode.Value.arc.startAngle) / 2;
+                    }
+                    testPoint = new Point2D(actNode.Value.arc.radius, 0);
+                    testPoint.Rotate(divAngle);
+                    testPoint.x += actNode.Value.arc.centre.x;
+                    testPoint.y += actNode.Value.arc.centre.y;
+                }
+
+                bool pointOk = false;
+                POINT_LOC_et pointIsInFigure = CheckPointInPolygon(actNode.Value.pt, areaPol);
+                if (pointIsInFigure == POINT_LOC_et.IN && inside == true)
+                {
+                    pointOk = true;
+                }
+                else if (pointIsInFigure == POINT_LOC_et.OUT && inside == false)
+                {
+                    pointOk = true;
+                }
+
+                if(pointOk)
+                {
+                    Node newNode = new Node();
+                    newNode.pt = actPt;
+                    actNode.Value.pt = testPoint;
+
+                    newNode.oppNode = actNode.Value.oppNode;
+                    actNode.Value.oppNode = null;
+                    
+                    if (actNode.Value.arc != null)
+                    {
+                        newNode.arc = new Arc();
+                        newNode.arc.radius = actNode.Value.arc.radius;
+                        newNode.arc.endAngle = actNode.Value.arc.endAngle;
+                        actNode.Value.arc.endAngle = divAngle;
+                        newNode.arc.startAngle = divAngle;
+                    }
+                    LinkedListNode<Node> newElement = new LinkedListNode<Node>(newNode);
+                    actNode.List.AddAfter(actNode, newElement);
+                    return actNode;
+                }
+                actNode = actNode.Next;
+            }
+
+            return node;
+        }
 
 
-            Figure newFigure = new Figure();
+        private LinkedListNode<Node> GetNodeOutside(Polygon selectPol, Polygon areaPol)
+        {
+            return GetNode(selectPol, areaPol, false);
+        }
 
-            LinkedListNode<Node> actNode = f1.points.First;
-            int activeFigure = 0;
-            LinkedListNode<Node> firstNode = actNode;
+        private LinkedListNode<Node> GetNodeInside(Polygon selectPol, Polygon areaPol)
+        {
+            return GetNode(selectPol, areaPol, true);            
+        }
 
-            Point2D testPoint = new Point2D(12, 8);
-            bool pointInFigure = CheckPointInFigure(testPoint, f1);
+        private Polygon CreatePolygon(Polygon pol1, Polygon pol2, LinkedListNode<Node> startNode, bool goLeft)
+        {
+            LinkedListNode<Node> actNode = startNode;
+            LinkedListNode<Node> firstNode = startNode;
+            LinkedListNode<Node> prevNode = startNode.Previous ?? startNode.List.Last;
+            Point2D prevPoint = prevNode.Value.pt;
+            /*
+            if(actNode.Value.pt.type != Point2D.PointType_et.NORMAL)
+            {
+                LinkedListNode<Node> oppNode = actNode.Value.oppNode.Previous ?? actNode.Value.oppNode.List.Last;
+                LinkedListNode<Node> prevNode2 = oppNode.Previous ?? oppNode.List.Last;
+                Point2D prevPoint2 = prevNode2.Value.pt;
+                
+            }*/
+            bool initial = true;
 
-            Point2D prevPoint = f1.points.Last.Value.pt;
+
+            Polygon newPolygon = new Polygon();
 
             do
             {
                 Node n = actNode.Value;
-                LinkedListNode<Node> copiedNode = new LinkedListNode<Node>(n);
+                Node newNode = new Node();
+                newNode.pt = n.pt;
+                newNode.arc = n.arc;
+                newNode.oppNode = null;
+                LinkedListNode<Node> copiedNode = new LinkedListNode<Node>(newNode);
 
-
-
-                newFigure.points.AddLast(copiedNode);
+                newPolygon.points.AddLast(copiedNode);
 
                 if (actNode.Value.pt.type == Point2D.PointType_et.NORMAL)
                 {
                     prevPoint = actNode.Value.pt;
                     actNode = actNode.Next ?? actNode.List.First;
                 }
-                else if (actNode.Value.pt.type == Point2D.PointType_et.CROSS_X)
-                {
 
-                    prevPoint = actNode.Value.pt;
-                    actNode = actNode.Value.oppNode;
-
-                }
-                else if (actNode.Value.pt.type == Point2D.PointType_et.CROSS_T)
+                else if (actNode.Value.pt.type == Point2D.PointType_et.CROSS_T || initial)
                 {
+                    actNode.Value.pt.type = Point2D.PointType_et.NORMAL; /* reset type */
                     LinkedListNode<Node> nodeA = actNode.Next ?? actNode.List.First;
                     LinkedListNode<Node> nodeB = actNode.Value.oppNode;
 
@@ -269,7 +453,7 @@ namespace KiCad2Gcode
                     /* angle is for compare only so alfa function is enough */
 
                     Point2D actPoint = actNode.Value.pt;
-                    
+
                     Point2D nextPoint1 = nodeA.Value.pt;
                     Point2D nextPoint2 = nodeB.Value.pt;
 
@@ -298,13 +482,13 @@ namespace KiCad2Gcode
                     if (nodeB.Value.arc == null)
                     {
                         out2Angle = Vector.GetAlpha(actPoint, nextPoint2);
-                        
+
                         r2 = Double.MaxValue;
                     }
                     else
                     {
                         Vector v = nodeB.Value.arc.centre - actPoint;
-                        Vector vt = new Vector(- v.y, v.x);
+                        Vector vt = new Vector(-v.y, v.x);
                         out2Angle = Vector.GetAlpha(vt);
                         r1 = nodeB.Value.arc.radius;
                     }
@@ -319,9 +503,9 @@ namespace KiCad2Gcode
 
                     prevPoint = actNode.Value.pt;
 
-                    if(out1Angle == out2Angle)
+                    if (out1Angle == out2Angle)
                     {
-                        if(r1>r2)
+                        if (r1 > r2)
                         {
                             /*out1 is 2 */
                             actNode = nodeA;
@@ -332,12 +516,20 @@ namespace KiCad2Gcode
                             actNode = nodeB;
                         }
                     }
+                    else if(inputAngle == out1Angle)
+                    {
+                        actNode = nodeB;
+                    }
+                    else if (inputAngle == out2Angle)
+                    {
+                        actNode = nodeA;
+                    }
                     else if (inputAngle > out1Angle)
                     {
-                        if(inputAngle > out2Angle)
+                        if (inputAngle > out2Angle)
                         {
                             /* prev is 3 */
-                            if(out1Angle > out2Angle)
+                            if (out1Angle > out2Angle)
                             {
                                 /*out1 is 2 */
                                 actNode = nodeA;
@@ -354,7 +546,7 @@ namespace KiCad2Gcode
                             actNode = nodeA;
                         }
                     }
-                    else if(inputAngle > out2Angle)
+                    else if (inputAngle > out2Angle)
                     {
                         /* prev is 2 , out2 is 1*/
                         actNode = nodeB;
@@ -377,10 +569,280 @@ namespace KiCad2Gcode
                     mainForm.PrintText("Go to  " + actNode.Value.pt.x.ToString() + "," + actNode.Value.pt.y.ToString() + "\n");
 
                 }
+                else if (actNode.Value.pt.type == Point2D.PointType_et.CROSS_X)
+                {
+                    actNode.Value.pt.type = Point2D.PointType_et.NORMAL; /* reset type */
+                    prevPoint = actNode.Value.pt;
+                    actNode = actNode.Value.oppNode;
+
+
+
+                }
+                initial = false;
             }
-            while (actNode != firstNode);
+            while (actNode.Value.pt != firstNode.Value.pt);
+
+            newPolygon.GetExtPoints();
+
+            return newPolygon;
 
 
+
+        }
+
+        enum POLYGONS_POS_et
+        {
+            P1_IN_P2,
+            P2_IN_P1,
+            NONE
+        };
+
+        private POLYGONS_POS_et CheckPolygonsPosition(Polygon pol1, Polygon pol2)
+        {
+            /* this function assume that polygons have not any crossing points*/
+
+            LinkedListNode<Node> actNode = pol1.points.First;
+            while(actNode != null)
+            {
+                POINT_LOC_et res = CheckPointInPolygon(actNode.Value.pt, pol2);
+                if (res == POINT_LOC_et.IN)
+                {
+                    return POLYGONS_POS_et.P1_IN_P2;
+                }
+                else if(res == POINT_LOC_et.OUT)
+                {
+                    break;
+                }
+                actNode = actNode.Next;
+            }
+
+            actNode = pol2.points.First;
+            while (actNode != null)
+            {
+                POINT_LOC_et res = CheckPointInPolygon(actNode.Value.pt, pol1);
+                if (res == POINT_LOC_et.IN)
+                {
+                    return POLYGONS_POS_et.P2_IN_P1;
+                }
+                else if (res == POINT_LOC_et.OUT)
+                {
+                    break;
+                }
+                actNode = actNode.Next;
+            }
+
+            return POLYGONS_POS_et.NONE;
+        }
+
+        public Figure Merge(Figure f1, Figure f2)
+        {
+            bool cont = false;
+            /* find crossing points */
+
+            foreach (Node n in f1.shape.points)
+            {
+                if (n.pt.type != Point2D.PointType_et.NORMAL)
+                {
+                    mainForm.PrintText("Error\n");
+                }
+            }
+            foreach (Node n in f2.shape.points)
+            {
+                if (n.pt.type != Point2D.PointType_et.NORMAL)
+                {
+                    mainForm.PrintText("Error\n");
+                }
+            }
+
+
+            int crossingPoints = SelectCrossingPoints(f1.shape, f2.shape);
+            //return null;
+
+            Figure newFigure = null;
+
+            if (crossingPoints > 0)
+            {
+
+                /*choose start point */
+                f1.shape.GetExtPoints();
+                f2.shape.GetExtPoints();
+
+                //LinkedListNode<Node> actNode = GetNodeOutside(f1.shape, f2.shape);
+                LinkedListNode<Node> actNode = GetNodeForUnion(f1.shape, f2.shape);
+
+                if (actNode == null)
+                {
+                    /*something weird */
+                    return null;
+                }
+
+                /* sanity check */
+
+                foreach(Node n in f1.shape.points)
+                {
+                    if(n.pt.type != Point2D.PointType_et.NORMAL && n.oppNode == null)
+                    {
+                        mainForm.PrintText("Error\n");
+                    }
+                }
+
+                foreach (Node n in f2.shape.points)
+                {
+                    if (n.pt.type != Point2D.PointType_et.NORMAL && n.oppNode == null)
+                    {
+                        mainForm.PrintText("Error\n");
+                    }
+                }
+
+                Polygon newPol = CreatePolygon(f1.shape, f2.shape, actNode, true);
+
+                newFigure = new Figure();
+                newFigure.shape = newPol;
+
+                /* search holes in merged polygon*/
+
+                do
+                {
+                    actNode = GetNodeForHole(f1.shape);
+
+                    if (actNode != null)
+                    {
+                        mainForm.PrintText("Hole start at  " + actNode.Value.pt.x.ToString() + "," + actNode.Value.pt.y.ToString() + "\n");
+                        newPol = CreatePolygon(f1.shape, f2.shape, actNode, true);
+
+                        newFigure.holes.Add(newPol);
+                    }
+                } while (actNode != null);
+
+                cont = true;
+            }
+            else
+            {
+                /* shape 1 and shape 2 have not any crossing points. It is necessary to check if one shape not includes another one.
+                 * In this case outer polygon mut be returnd as result and origin holes must be proceeded. */
+
+                POLYGONS_POS_et pos = CheckPolygonsPosition(f1.shape, f2.shape);
+
+                if(pos == POLYGONS_POS_et.P1_IN_P2)
+                {
+                    newFigure = new Figure();
+                    newFigure.shape = f2.shape;
+                    cont = true;
+                }
+                else if(pos == POLYGONS_POS_et.P2_IN_P1)
+                {
+                    newFigure = new Figure();
+                    newFigure.shape = f2.shape;
+                    cont = true;
+                }
+                else
+                {
+                    return null;
+                }
+
+            }
+
+            if(cont)
+            {
+                /* cut holes in origin polygons */
+                LinkedListNode<Node> actNode;
+                Polygon newPol;
+
+
+                foreach (Polygon hole in f1.holes)
+                {
+                    crossingPoints = SelectCrossingPoints(hole, f2.shape);
+
+                    if (crossingPoints > 1)
+                    {
+                        actNode = GetNodeForHoleCutting(hole, f2.shape);
+
+                        newPol = CreatePolygon(hole, f2.shape, actNode, true);
+
+                        newFigure.holes.Add(newPol);
+                    }
+                    else
+                    {
+                        /* this mean that hole is fully covered or fully uncovered, additional check is necessary */
+                        POLYGONS_POS_et pos = CheckPolygonsPosition(hole, f2.shape);
+
+                        if(pos != POLYGONS_POS_et.P1_IN_P2)
+                        {
+                            newFigure.holes.Add(hole);
+                        }
+                    }
+                }
+                
+                foreach (Polygon hole in f2.holes)
+                {
+                    crossingPoints = SelectCrossingPoints(hole, f1.shape);
+                    if (crossingPoints > 1)
+                    {
+                        do
+                        {
+                            actNode = GetNodeForHoleCutting(hole, f1.shape);
+
+                            if (actNode != null)
+                            { 
+                                newPol = CreatePolygon(hole, f1.shape, actNode, true);
+
+                                newFigure.holes.Add(newPol);
+                            }
+                        } while (actNode != null);
+                    }
+                    else
+                    {
+                        /* this mean that hole is fully covered or fully uncovered, additional check is necessary */
+                        POLYGONS_POS_et pos = CheckPolygonsPosition(hole, f1.shape);
+
+                        if (pos != POLYGONS_POS_et.P1_IN_P2)
+                        {
+                            newFigure.holes.Add(hole);
+                        }
+                    }
+
+
+                }
+
+                /* search for common parts of holes */
+
+
+                /* merge holes */
+                foreach (Polygon hole1 in f1.holes)
+                {
+                    foreach (Polygon hole2 in f2.holes)
+                    {
+                        crossingPoints = SelectCrossingPoints(hole1, hole2);
+                        if (crossingPoints > 1)
+                        {
+                            do
+                            {
+                                actNode = GetNodeForHoleCutting(hole2, hole2);
+                                if (actNode != null)
+                                {         
+                                    newPol = CreatePolygon(hole2, hole2, actNode, true);
+
+                                    newFigure.holes.Add(newPol);
+                                }
+                            } while (actNode != null);
+                        }
+                        else
+                        {
+                            POLYGONS_POS_et pos = CheckPolygonsPosition(hole1, hole2);
+
+                            if(pos == POLYGONS_POS_et.P1_IN_P2)
+                            {
+                                newFigure.holes.Add(hole2);
+                            }
+                            else if (pos == POLYGONS_POS_et.P2_IN_P1)
+                            {
+                                newFigure.holes.Add(hole1);
+                            }
+                            /* check if holes are fully overlaped is necessary */
+                        }
+                    }
+                }
+            }
             return newFigure;
         }
     }

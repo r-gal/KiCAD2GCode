@@ -14,19 +14,33 @@ namespace KiCad2Gcode
 
         float H = 600;
 
-        int scale = 10;
-        /*int offX = 0;
-        int offY = 1000;*/
-        
+        int scale = 20;
         int offX = 0;
         int offY = 0;
+        /*
+         * int scale = 200;
+        int offX = -3500;
+        int offY = -2000;*/
 
-        
+
         public Drawer(PictureBox pBox_) 
         { 
             this.pBox = pBox_;
         }
 
+        private void DrawDot(Point2D position, int size, Bitmap bmp, System.Drawing.Color color)
+        {
+            using (Graphics g = Graphics.FromImage(bmp))
+            {
+                g.DrawArc(new Pen(color),
+                (float)((position.x ) * scale + offX - size),
+                H - ((float)((position.y ) * scale + offY + size)),
+                (float)(size * 2 ),
+                (float)(size * 2 ),
+                0,
+                360);
+            }
+        }
 
         private void DrawChunk(Point2D startPt, Point2D endPt, Arc arc, Bitmap bmp, System.Drawing.Color color )
         {
@@ -140,62 +154,76 @@ namespace KiCad2Gcode
             Bitmap bmp = new Bitmap(800, 600);
             pBox.Width = bmp.Width;
             pBox.Height = bmp.Height;
-            
+
             foreach (Figure f in figures)
             {
-                LinkedListNode<Node> n = f.points.First;
+                LinkedListNode<Node> n = f.shape.points.First;
 
-                while(n != null)
-                {                    
-                    LinkedListNode<Node> nPrev = n.Previous ?? f.points.Last;
-                    DrawChunk(nPrev.Value.pt, n.Value.pt, n.Value.arc, bmp, Color.Red);
-                    n = n.Next;
-                }
-            }
-
-            foreach (Figure f in cuts)
-            {
-                LinkedListNode<Node> n = f.points.First;
+                bool first = true;
 
                 while (n != null)
                 {
-                    LinkedListNode<Node> nPrev = n.Previous ?? f.points.Last;
-                    DrawChunk(nPrev.Value.pt, n.Value.pt, n.Value.arc, bmp, Color.Black);
+                    LinkedListNode<Node> nPrev = n.Previous ?? f.shape.points.Last;
+                    DrawChunk(nPrev.Value.pt, n.Value.pt, n.Value.arc, bmp, f.selected ? Color.Green : Color.Red);
+
+                    DrawDot(n.Value.pt, 3, bmp, first ? Color.DarkOrange :  Color.Black);
+                    if (first)
+                    {
+                        first = false;
+                    }
+                    
+
                     n = n.Next;
                 }
-            }
 
-
-            foreach (Drill drill in drills)
-            {
-                DrawDrill(drill, bmp);
-            }
-
-            pBox.Image = bmp;
-        }
-
-        public void RedrawOld(List<Figure> figures, List<Figure> cuts, List<Drill> drills)
-        {
-            Bitmap bmp = new Bitmap(800, 600);
-            pBox.Width = bmp.Width;
-            pBox.Height = bmp.Height;
-
-            foreach (Figure f in figures)
-            {
-                foreach (Chunk chunk in f.chunks)
+                foreach (Polygon p in f.holes)
                 {
-                    DrawChunkOld(chunk, bmp, Color.Red);
+                    n = p.points.First;
+
+                    while (n != null)
+                    {
+                        LinkedListNode<Node> nPrev = n.Previous ?? p.points.Last;
+                        DrawChunk(nPrev.Value.pt, n.Value.pt, n.Value.arc, bmp, Color.Blue);
+                        n = n.Next;
+                    }
                 }
             }
 
             foreach (Figure f in cuts)
             {
-                foreach (Chunk chunk in f.chunks)
-                {
-                    DrawChunkOld(chunk, bmp, Color.Black);
-                }
-            }
+                LinkedListNode<Node> n = f.shape.points.First;
 
+                while (n != null)
+                {
+                    LinkedListNode<Node> nPrev = n.Previous ?? f.shape.points.Last;
+                    DrawChunk(nPrev.Value.pt, n.Value.pt, n.Value.arc, bmp, Color.Black);
+                    n = n.Next;
+                }
+                
+                foreach (Polygon p in f.holes)
+                {
+                    n = p.points.First;
+
+                    while (n != null)
+                    {
+                        LinkedListNode<Node> nPrev = n.Previous ?? p.points.Last;
+                        DrawChunk(nPrev.Value.pt, n.Value.pt, n.Value.arc, bmp, Color.Violet);
+                        n = n.Next;
+                    }
+                }
+                /*Polygon p = f.holes[1];
+                {
+                    n = p.points.First;
+
+                    while (n != null)
+                    {
+                        LinkedListNode<Node> nPrev = n.Previous ?? p.points.Last;
+                        DrawChunk(nPrev.Value.pt, n.Value.pt, n.Value.arc, bmp, Color.Violet);
+                        n = n.Next;
+                    }
+
+                }*/
+            }
 
             foreach (Drill drill in drills)
             {
@@ -204,5 +232,6 @@ namespace KiCad2Gcode
 
             pBox.Image = bmp;
         }
+
     }
 }

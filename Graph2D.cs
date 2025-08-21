@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
@@ -58,7 +60,7 @@ namespace KiCad2Gcode
 
         public bool IsSameAs(Point2D pt)
         {
-            return (Math.Abs(pt.x - x) < Double.Epsilon && Math.Abs(pt.y - y) < Double.Epsilon);
+            return (Math.Abs(pt.x - x) < 0.0000000001 && Math.Abs(pt.y - y) < 0.0000000001);
         }
 
         public static Point2D operator +(Point2D a, Vector b)
@@ -244,6 +246,11 @@ namespace KiCad2Gcode
             startAngle -= angle;
             endAngle -= angle;
 
+            while(startAngle < -Math.PI) { startAngle += 2 * Math.PI;  }
+            while (startAngle > Math.PI) { startAngle -= 2 * Math.PI; }
+            while (endAngle < -Math.PI) { endAngle += 2 * Math.PI; }
+            while (endAngle > Math.PI) { endAngle -= 2 * Math.PI; }
+
         }
 
         override public void Move(Vector move)
@@ -262,6 +269,7 @@ namespace KiCad2Gcode
     public class Node
     {
 
+
         public Point2D pt;
         public Arc arc;
 
@@ -275,29 +283,28 @@ namespace KiCad2Gcode
 
     }
 
-    public class Figure
+    public class Polygon
     {
-
-        public List<Chunk> chunks = new List<Chunk>();
-
         public LinkedList<Node> points = new LinkedList<Node>();
 
-        public void Rotate(double angle)
+        int L = 0, U = 1, R = 2, D = 3;
+
+        public Point2D[] extPoint = new Point2D[4];
+        public Node[] extNode = new Node[4];
+
+        public void Rotate(Double angle)
         {
             foreach (Node n in points)
             {
                 n.pt.Rotate(angle);
-                if(n.arc != null)
+                if (n.arc != null)
                 {
                     n.arc.Rotate(angle);
                 }
             }
-            /*
-            foreach (Chunk chunk in chunks)
-            {
-                chunk.Rotate(angle);
-            }*/
+            GetExtPoints();
         }
+
         public void Move(Vector move)
         {
             foreach (Node n in points)
@@ -308,20 +315,118 @@ namespace KiCad2Gcode
                     n.arc.Move(move);
                 }
             }
-            /*
-            foreach (Chunk chunk in chunks)
-            {
-                chunk.Move(move);
-            }
-            */
+            GetExtPoints();
         }
 
-        public void SplitChunk(LinkedListNode<Node> node, Point2D[] pointArr)
+        public void GetExtPoints()
+        {
+            Point2D prevPt = points.Last.Value.pt;
+            LinkedListNode<Node> actNode = points.First;
+
+            for (int i = 0; i < 4; i++)
+            {
+                extNode[i] = actNode.Value;
+                extPoint[i] = actNode.Value.pt;
+            }
+
+            do
+            {
+                Point2D actPt = actNode.Value.pt;
+
+                if (actPt.x < extPoint[L].x) { extPoint[L] = actPt; extNode[L] = actNode.Value; }
+                if (actPt.y > extPoint[U].y) { extPoint[U] = actPt; extNode[U] = actNode.Value; }
+                if (actPt.x > extPoint[R].x) { extPoint[R] = actPt; extNode[R] = actNode.Value; }
+                if (actPt.y < extPoint[D].y) { extPoint[D] = actPt; extNode[D] = actNode.Value; }
+
+                if (actNode.Value.arc != null)
+                {
+                    Arc arc = actNode.Value.arc;
+                    if (arc.centre.x - arc.radius < extPoint[L].x)
+                    {
+                        if (arc.startAngle < arc.endAngle)
+                        {
+                            extPoint[L] = new Point2D(arc.centre.x - arc.radius, arc.centre.y);
+                            extNode[L] = actNode.Value;
+                        }
+                    }
+
+                    if (arc.centre.y + arc.radius > extPoint[U].y)
+                    {
+                        if (Graph2D.IsValueBeetween(Math.PI / 2, arc.startAngle, arc.endAngle))
+                        {
+                            extPoint[U] = new Point2D(arc.centre.x, arc.centre.y + arc.radius);
+                            extNode[U] = actNode.Value;
+                        }
+                    }
+
+                    if (arc.centre.x + arc.radius > extPoint[R].x)
+                    {
+                        if (Graph2D.IsValueBeetween(0, arc.startAngle, arc.endAngle))
+                        {
+                            extPoint[R] = new Point2D(arc.centre.x + arc.radius, arc.centre.y);
+                            extNode[R] = actNode.Value;
+                        }
+                    }
+
+                    if (arc.centre.y - arc.radius < extPoint[D].y)
+                    {
+                        if (Graph2D.IsValueBeetween(-Math.PI / 2, arc.startAngle, arc.endAngle))
+                        {
+                            extPoint[D] = new Point2D(arc.centre.x, arc.centre.y - arc.radius);
+                            extNode[D] = actNode.Value;
+                        }
+                    }
+                }
+                actNode = actNode.Next;
+            } while (actNode != null);
+        }
+    }
+
+    public class Figure
+    {
+
+        //public List<Chunk> chunks = new List<Chunk>();
+
+        public Polygon shape = new Polygon();
+
+        public List<Polygon> holes = new List<Polygon>();
+
+        public bool selected = false;
+
+        public void Rotate(double angle)
+        {
+            shape.Rotate(angle);
+            foreach (Polygon h in holes)
+            {
+                h.Rotate(angle);
+            }
+        }
+        public void Move(Vector move)
+        {
+            shape.Move(move);
+            foreach (Polygon h in holes)
+            {
+                h.Move(move);
+            }
+        }
+
+        public static void SplitChunk(LinkedListNode<Node> node, Point2D[] pointArr)
         {
             LinkedListNode < Node > prevNode = node.Previous ?? node.List.Last;
 
             Point2D sPt = prevNode.Value.pt;
             Point2D ePt = node.Value.pt;
+
+            int fail = 0;
+
+            if (pointArr[0].type == Point2D.PointType_et.NORMAL)
+            {
+                fail++;
+            }
+            if (pointArr.Length == 2 && pointArr[1].type == Point2D.PointType_et.NORMAL)
+            {
+                fail++;
+            }
 
             if (pointArr.Length == 1)
             {
@@ -367,7 +472,7 @@ namespace KiCad2Gcode
 
                 if (node.Value.arc == null)
                 {
-                    if( Math.Abs(ePt.x * sPt.x)  > Math.Abs(ePt.x * sPt.x))
+                    if( Math.Abs(ePt.x * sPt.x)  > Math.Abs(ePt.y * sPt.y))
                     {
                         if(ePt.x > sPt.x)
                         {
@@ -479,16 +584,16 @@ namespace KiCad2Gcode
                     if (Graph2D.IsAngleBetween(angleA, node.Value.arc.startAngle, angleB) == true)
                     {
                         /* point 1 is first */
-                        pt1 = pointArr[1];
-                        pt2 = pointArr[0];
+                        pt1 = pointArr[0];
+                        pt2 = pointArr[1];
                         angle1 = angleA;
                         angle2 = angleB;
                     }
                     else if (Graph2D.IsAngleBetween(angleB, node.Value.arc.startAngle, angleA) == true)
                     {
                         /* point 0 is first */
-                        pt1 = pointArr[0];
-                        pt2 = pointArr[1];
+                        pt1 = pointArr[1];
+                        pt2 = pointArr[0];
                         angle1 = angleB;
                         angle2 = angleA;
                     }
@@ -559,8 +664,45 @@ namespace KiCad2Gcode
 
     internal class Graph2D
     {
-        public static  bool IsAngleBetween(double a, double v1, double v2)
+        public static  bool IsAngleBetween2(double a, double v1, double v2)
         {
+           /* while(v1 > Math.PI)
+            {
+                v1 -= 2 * Math.PI;
+            }
+            while (v1 < -Math.PI)
+            {
+                v1 += 2 * Math.PI;
+            }
+
+            while (v2 > Math.PI)
+            {
+                v2 -= 2 * Math.PI;
+            }
+            while (v2 < -Math.PI)
+            {
+                v2 += 2 * Math.PI;
+            }
+
+            while (a > Math.PI)
+            {
+                a -= 2 * Math.PI;
+            }
+            while (a < -Math.PI)
+            {
+                a += 2 * Math.PI;
+            }
+
+            if(v1 > v2)
+            {
+                return ( a<  v1 && a > v2 );
+            }
+            else
+            {
+                return (a < v1 || a > v2);
+            }*/
+
+
 
             while (v1 < v2)
             {
@@ -573,6 +715,77 @@ namespace KiCad2Gcode
             }
 
             return (a < v1 );
+
+        }
+
+        public static bool IsAngleBetween(double a_, double v1_, double v2_)
+        {
+            /*
+             while(v1 >= 2*Math.PI)
+             {
+                 v1 -= 2 * Math.PI;
+             }
+             while (v1 < 0)
+             {
+                 v1 += 2 * Math.PI;
+             }
+
+             while (v2 >= 2*Math.PI)
+             {
+                 v2 -= 2 * Math.PI;
+             }
+             while (v2 < 0)
+             {
+                 v2 += 2 * Math.PI;
+             }
+
+             while (a >= 2*Math.PI)
+             {
+                 a -= 2 * Math.PI;
+             }
+             while (a < 0)
+             {
+                 a += 2 * Math.PI;
+             }
+
+             if(v1 > v2)
+             {
+                 return ( a<  v1 && a > v2 );
+             }
+             else
+             {
+                 return (a < v1 || a > v2);
+             }*/
+
+            double v1 = v1_;
+            double v2 = v2_;
+            double a = a_;
+
+            double v1_deg = 180 * v1 / Math.PI;
+            double v2_deg = 180 * v2 / Math.PI;
+            double a_deg = 180 * a / Math.PI;
+
+            while (v1 > (v2 + 2 * Math.PI))
+            {
+                v1 -= 2 * Math.PI;
+            }
+
+            while (a > (v2 + 2 * Math.PI))
+            {
+                a -= 2 * Math.PI;
+            }
+
+            while (v1 < v2)
+            {
+                v1 += 2 * Math.PI;
+            }
+
+            while (a < v2)
+            {
+                a += 2 * Math.PI;
+            }
+
+            return (a < v1);
 
         }
 

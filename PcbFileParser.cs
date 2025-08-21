@@ -296,7 +296,7 @@ namespace KiCad2Gcode
                         node = new Node();
                         node.pt = pts[2*i];
                         lln = new LinkedListNode<Node>(node);
-                        f.points.AddLast(lln);
+                        f.shape.points.AddLast(lln);
 
                         if (chamferSize[i] > 0)
                         {
@@ -311,9 +311,9 @@ namespace KiCad2Gcode
                                 arc.radius = chamferSize[i];
                                 arc.startAngle = startAngles[i];
                                 arc.endAngle = endAngles[i];
-                                f.chunks.Add(arc);
+                                node.arc = arc;
                             }
-                            f.points.AddLast(lln);
+                            f.shape.points.AddLast(lln);
                         }
                     }
 
@@ -458,19 +458,19 @@ namespace KiCad2Gcode
                     node = new Node();
                     node.pt = p1;
                     lln = new LinkedListNode<Node>(node);
-                    f.points.AddLast(lln);
+                    f.shape.points.AddLast(lln);
                     node = new Node();
                     node.pt = p2;
                     lln = new LinkedListNode<Node>(node);
-                    f.points.AddLast(lln);
+                    f.shape.points.AddLast(lln);
                     node = new Node();
                     node.pt = p3;
                     lln = new LinkedListNode<Node>(node);
-                    f.points.AddLast(lln);
+                    f.shape.points.AddLast(lln);
                     node = new Node();
                     node.pt = p4;
                     lln = new LinkedListNode<Node>(node);
-                    f.points.AddLast(lln);
+                    f.shape.points.AddLast(lln);
                     /*
                     Line line;
                     line = new Line();
@@ -519,7 +519,7 @@ namespace KiCad2Gcode
                     node.pt = p1;
                     node.arc = arc;
                     lln = new LinkedListNode<Node>(node);
-                    f.points.AddLast(lln);
+                    f.shape.points.AddLast(lln);
 
                     f.Move(posPt.ToVector());
                     /*
@@ -541,79 +541,99 @@ namespace KiCad2Gcode
                     Node node;
                     LinkedListNode<Node> lln;
 
-                    double r = size[1] / 2;
-                    double l = size[0] - size[1];
+                    if (size[0] >= size[1])
+                    {
+                        /*horizontal */
+                        double r = size[1] / 2;
+                        double l = size[0] - size[1];
 
-                    Point2D p1 = new Point2D(-l / 2, size[1] / 2);
-                    Point2D p2 = new Point2D(l / 2, size[1] / 2);
-                    Point2D p3 = new Point2D(l / 2, -size[1] / 2);
-                    Point2D p4 = new Point2D(-l / 2, -size[1] / 2);
-                    Point2D pc1 = new Point2D(-l / 2, 0);
-                    Point2D pc2 = new Point2D(l / 2, 0);
+                        Point2D p1 = new Point2D(-l / 2, size[1] / 2);
+                        Point2D p2 = new Point2D(l / 2, size[1] / 2);
+                        Point2D p3 = new Point2D(l / 2, -size[1] / 2);
+                        Point2D p4 = new Point2D(-l / 2, -size[1] / 2);
+                        Point2D pc1 = new Point2D(-l / 2, 0);
+                        Point2D pc2 = new Point2D(l / 2, 0);
 
-                    arc = new Arc();
-                    arc.centre = pc1;
-                    arc.startAngle = -Math.PI / 2;
-                    arc.endAngle = Math.PI / 2;
-                    arc.radius = r;
-                    node = new Node();
-                    node.pt = p1;
-                    node.arc = arc;
-                    lln = new LinkedListNode<Node>(node);
-                    f.points.AddLast(lln);
+                        arc = new Arc();
+                        arc.centre = pc1;
+                        arc.startAngle = -Math.PI / 2;
+                        arc.endAngle = Math.PI / 2;
+                        arc.radius = r;
+                        node = new Node();
+                        node.pt = p1;
+                        node.arc = arc;
+                        lln = new LinkedListNode<Node>(node);
+                        f.shape.points.AddLast(lln);
 
-                    node = new Node();
-                    node.pt = p2;
-                    lln = new LinkedListNode<Node>(node);
-                    f.points.AddLast(lln);
+                        node = new Node();
+                        node.pt = p2;
+                        lln = new LinkedListNode<Node>(node);
+                        f.shape.points.AddLast(lln);
 
-                    arc = new Arc();
-                    arc.centre = pc2;
-                    arc.startAngle = Math.PI / 2;
-                    arc.endAngle = -Math.PI / 2;
-                    arc.radius = r;
-                    node = new Node();
-                    node.pt = p3;
-                    node.arc = arc;
-                    lln = new LinkedListNode<Node>(node);
-                    f.points.AddLast(lln);
+                        arc = new Arc();
+                        arc.centre = pc2;
+                        arc.startAngle = Math.PI / 2;
+                        arc.endAngle = -Math.PI / 2;
+                        arc.radius = r;
+                        node = new Node();
+                        node.pt = p3;
+                        node.arc = arc;
+                        lln = new LinkedListNode<Node>(node);
+                        f.shape.points.AddLast(lln);
 
-                    node = new Node();
-                    node.pt = p4;
-                    lln = new LinkedListNode<Node>(node);
-                    f.points.AddLast(lln);
+                        node = new Node();
+                        node.pt = p4;
+                        lln = new LinkedListNode<Node>(node);
+                        f.shape.points.AddLast(lln);
+                    }
+                    else
+                    {
+                        /*vertical*/
+                        double r = size[0] / 2;
+                        double l = size[1] - size[0];
+
+                        Point2D p1 = new Point2D(r ,  l / 2 );
+                        Point2D p2 = new Point2D(r , -l / 2 );
+                        Point2D p3 = new Point2D(-r, -l / 2 );
+                        Point2D p4 = new Point2D(-r ,  l / 2 );
+                        Point2D pc1 = new Point2D( 0, l / 2);
+                        Point2D pc2 = new Point2D( 0, - l / 2);
+
+                        arc = new Arc();
+                        arc.centre = pc1;
+                        arc.startAngle = Math.PI ;
+                        arc.endAngle = 0;
+                        arc.radius = r;
+                        node = new Node();
+                        node.pt = p1;
+                        node.arc = arc;
+                        lln = new LinkedListNode<Node>(node);
+                        f.shape.points.AddLast(lln);
+
+                        node = new Node();
+                        node.pt = p2;
+                        lln = new LinkedListNode<Node>(node);
+                        f.shape.points.AddLast(lln);
+
+                        arc = new Arc();
+                        arc.centre = pc2;
+                        arc.startAngle = 0;
+                        arc.endAngle = -Math.PI;
+                        arc.radius = r;
+                        node = new Node();
+                        node.pt = p3;
+                        node.arc = arc;
+                        lln = new LinkedListNode<Node>(node);
+                        f.shape.points.AddLast(lln);
+
+                        node = new Node();
+                        node.pt = p4;
+                        lln = new LinkedListNode<Node>(node);
+                        f.shape.points.AddLast(lln);
+                    }
 
 
-                    /*
-                    Line line;
-                    line = new Line();
-                    line.start = new Point2D(-l / 2, size[1] / 2);
-                    line.end = new Point2D(l / 2, size[1] / 2);
-                    f.chunks.Add(line);
 
-                    arc = new Arc();
-                    arc.start = new Point2D(l / 2, size[1] / 2);
-                    arc.end = new Point2D(l / 2, -size[1] / 2);
-                    arc.centre = new Point2D(l / 2,0);
-                    arc.startAngle = Math.PI/2;
-                    arc.endAngle = -Math.PI/2;
-                    arc.radius = r;
-                    f.chunks.Add(arc);
-
-                    line = new Line();
-                    line.start = new Point2D(l / 2, -size[1] / 2);
-                    line.end = new Point2D(-l / 2, -size[1] / 2);
-                    f.chunks.Add(line);
-
-                    arc = new Arc();
-                    arc.start = new Point2D(-l / 2, -size[1] / 2);
-                    arc.end = new Point2D(-l / 2, size[1] / 2);
-                    arc.centre = new Point2D(-l / 2, 0);
-                    arc.startAngle = -Math.PI/2;
-                    arc.endAngle = Math.PI/2;
-                    arc.radius = r;
-                    f.chunks.Add(arc);
-                    */
                     f.Rotate(posRot * Math.PI / 180 );
                     f.Move(posPt.ToVector());
 
@@ -666,7 +686,7 @@ namespace KiCad2Gcode
                 node.pt = p1;
                 node.arc = arc;
                 lln = new LinkedListNode<Node>(node);
-                f.points.AddLast(lln);
+                f.shape.points.AddLast(lln);
                 f.Move(new Vector(pos[0], -pos[1]));
 
                 mainForm.AddFigure(f);
@@ -755,23 +775,23 @@ namespace KiCad2Gcode
                 node.pt = p2;
                 node.arc = arc1;
                 lln = new LinkedListNode<Node>(node);
-                f.points.AddLast(lln);
+                f.shape.points.AddLast(lln);
 
                 node = new Node();
                 node.pt = p4;
                 lln = new LinkedListNode<Node>(node);
-                f.points.AddLast(lln);
+                f.shape.points.AddLast(lln);
 
                 node = new Node();
                 node.pt = p3;
                 node.arc = arc2;
                 lln = new LinkedListNode<Node>(node);
-                f.points.AddLast(lln);
+                f.shape.points.AddLast(lln);
 
                 node = new Node();
                 node.pt = p1;
                 lln = new LinkedListNode<Node>(node);
-                f.points.AddLast(lln);
+                f.shape.points.AddLast(lln);
 
                 mainForm.AddFigure(f);
 
@@ -832,7 +852,7 @@ namespace KiCad2Gcode
                         node = new Node();
                         node.pt = new Point2D(x,y);
                         lln = new LinkedListNode<Node>(node);
-                        f.points.AddLast(lln);
+                        f.shape.points.AddLast(lln);
 
                         
 
@@ -884,14 +904,14 @@ namespace KiCad2Gcode
                 if (startArr == null) { return; }
                 double[] endArr = el.ParseParameterNumericArr("end", 2, 2);
                 if (endArr == null) { return; }
-
+                /*
                 Figure f = new Figure();
                 Line line = new Line();
                 line.start = new Point2D(startArr[0], -startArr[1]);
                 line.end = new Point2D(endArr[0], -endArr[1]);
                 f.chunks.Add(line);
 
-                mainForm.AddCuts(f);
+                mainForm.AddCuts(f);*/
             }
         }
 
@@ -911,7 +931,7 @@ namespace KiCad2Gcode
                 if (centerArr == null) { return; }
                 double[] endArr = el.ParseParameterNumericArr("end", 2, 2);
                 if (endArr == null) { return; }
-
+                /*
                 Figure f = new Figure();
                 Arc arc = new Arc();
                 arc.start = new Point2D(endArr[0], -endArr[1]);
@@ -922,7 +942,7 @@ namespace KiCad2Gcode
                 arc.radius = Math.Sqrt(Math.Pow(centerArr[0] - endArr[0], 2) + Math.Pow(centerArr[1] - endArr[1], 2));
                 f.chunks.Add(arc);
 
-                mainForm.AddCuts(f);
+                mainForm.AddCuts(f);*/
             }
         }
 
@@ -944,7 +964,7 @@ namespace KiCad2Gcode
                 }
                 else if (top.name == "filled_polygon")
                 {
-                    DecodePolygon(top);
+                    //DecodePolygon(top);
                 }
                 else if (top.name == "gr_line")
                 {

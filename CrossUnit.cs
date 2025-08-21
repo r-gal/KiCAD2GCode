@@ -105,15 +105,23 @@ namespace KiCad2Gcode
                         double x = x0 + m0 * t;
                         double y = y0 + n0 * t;
 
+                        
+
                         Point2D pt = new Point2D(x, y);
 
-                        if (t < 1 && k < 1)
+                        if(pt.IsSameAs(eP1))
                         {
-                            pt.type = Point2D.PointType_et.CROSS_X;
+                            pt = eP1;
+                            pt.type = Point2D.PointType_et.CROSS_T;
+                        }
+                        else if(pt.IsSameAs(eP2))
+                        {
+                            pt = eP2;
+                            pt.type = Point2D.PointType_et.CROSS_T;
                         }
                         else
                         {
-                            pt.type = Point2D.PointType_et.CROSS_T;
+                            pt.type = Point2D.PointType_et.CROSS_X;
                         }
 
 
@@ -434,7 +442,8 @@ namespace KiCad2Gcode
             END_DN,
             END_UP,
             END2_DN,
-            END2_UP
+            END2_UP,
+            EDGE
         };
 
         enum CR_PT_TYPE_et
@@ -470,7 +479,11 @@ namespace KiCad2Gcode
                     }
                     else if(sP.y == pt.y)
                     {
-                        if(sP.x <= pt.x)
+                        if(sP.x == pt.x)
+                        {
+                            return CROSS_TYPE_et.EDGE;
+                        }
+                        else if(sP.x < pt.x)
                         {
                             return CROSS_TYPE_et.END_UP;
                         }
@@ -482,7 +495,11 @@ namespace KiCad2Gcode
                     }
                     else if (eP.y == pt.y)
                     {
-                        if (eP.x <= pt.x)
+                        if (eP.x == pt.x)
+                        {
+                            return CROSS_TYPE_et.EDGE;
+                        }
+                        else if (eP.x < pt.x)
                         {
                             return CROSS_TYPE_et.END_DN;
                         }
@@ -504,7 +521,11 @@ namespace KiCad2Gcode
                     }
                     else if (eP.y == pt.y)
                     {
-                        if (eP.x <= pt.x)
+                        if (eP.x == pt.x)
+                        {
+                            return CROSS_TYPE_et.EDGE;
+                        }
+                        else if (eP.x < pt.x)
                         {
                             return CROSS_TYPE_et.END_UP;
                         }
@@ -515,7 +536,11 @@ namespace KiCad2Gcode
                     }
                     else if (sP.y == pt.y)
                     {
-                        if (eP.x <= pt.x)
+                        if (eP.x == pt.x)
+                        {
+                            return CROSS_TYPE_et.EDGE;
+                        }
+                        else if (eP.x < pt.x)
                         {
                             return CROSS_TYPE_et.END_DN;
                         }
@@ -544,7 +569,11 @@ namespace KiCad2Gcode
                 double sa = sb * a / (eb + sb);
                 double x = sP.x + sa;
 
-                if(pt.x >= x)
+                if (pt.x == x)
+                {
+                    return CROSS_TYPE_et.EDGE;
+                }
+                if (pt.x > x)
                 {
                     return CROSS_TYPE_et.NORMAL;
                 }
@@ -679,13 +708,20 @@ namespace KiCad2Gcode
                     double leftx = cP.x - a;
                     double rightx = cP.x + a;
 
-
-                    if (leftx > pt.x)
+                    if (leftx == pt.x && leftCr != CR_PT_TYPE_et.CR_NONE)
+                    {
+                        return CROSS_TYPE_et.EDGE;
+                    }
+                    else if (leftx > pt.x)
                     {
                         leftCr = CR_PT_TYPE_et.CR_NONE;
                     }
 
-                    if (rightx > pt.x)
+                    if (rightx == pt.x && rightCr != CR_PT_TYPE_et.CR_NONE)
+                    {
+                        return CROSS_TYPE_et.EDGE;
+                    }
+                    else if (rightx > pt.x)
                     {
                         rightCr = CR_PT_TYPE_et.CR_NONE;
                     }
