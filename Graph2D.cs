@@ -393,6 +393,8 @@ namespace KiCad2Gcode
 
         public bool selected = false;
 
+        public string name;
+
         public void Rotate(double angle)
         {
             shape.Rotate(angle);

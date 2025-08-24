@@ -241,7 +241,9 @@ namespace KiCad2Gcode
                     }
 
                     Figure f = new Figure();
-                    
+                    f.name = "roundrect at " + offsetX.ToString() + "," + offsetY.ToString();
+
+
                     Arc arc;
 
                     Node node;
@@ -445,7 +447,7 @@ namespace KiCad2Gcode
                 else if(pad.values.Contains("rect"))
                 {
                     Figure f = new Figure();
-                    
+                    f.name = "rect at " + offsetX.ToString() + "," + offsetY.ToString();
 
                     Node node;
                     LinkedListNode<Node> lln;
@@ -505,6 +507,8 @@ namespace KiCad2Gcode
                     Figure f = new Figure();
                     Arc arc = new Arc();
 
+                    f.name = "circle at " + offsetX.ToString() + "," + offsetY.ToString();
+
                     Node node;
                     LinkedListNode<Node> lln;
 
@@ -535,7 +539,9 @@ namespace KiCad2Gcode
                 else if (pad.values.Contains("oval"))
                 {
                     Figure f = new Figure();
-                    
+
+                    f.name = "oval at " + offsetX.ToString() + "," + offsetY.ToString();
+
                     Arc arc;
 
                     Node node;
@@ -672,6 +678,8 @@ namespace KiCad2Gcode
                 Figure f = new Figure();
                 Arc arc = new Arc();
 
+                f.name = "via at " + pos[0].ToString() + "," + pos[1].ToString();
+
                 Node node;
                 LinkedListNode<Node> lln;
 
@@ -734,6 +742,8 @@ namespace KiCad2Gcode
                 double angle = Math.Atan2(dirY, dirX);
 
                 Figure f = new Figure();
+
+                f.name = "seg " + startArr[0].ToString() + "," + startArr[1].ToString() + " - " + endArr[0].ToString() + "," + endArr[1].ToString();
 
                 Node node;
                 LinkedListNode<Node> lln;

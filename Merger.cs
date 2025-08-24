@@ -1,4 +1,5 @@
 ﻿using System;
+using System.CodeDom;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Globalization;
@@ -152,32 +153,67 @@ namespace KiCad2Gcode
         {
             int pointCnt = 0;
 
+
+
+            int n1Idx = 0;
+            int n2Idx = 0;
+
+
+            Point2D lastFoundPoint = null;
+            Point2D lastFoundPoint2 = null;
+            int lastIdx1 = 0;
+            int lastIdx2 = 0;
+
             LinkedListNode<Node> n1 = pol1.points.First;
 
             while (n1 != null)
             {
                 LinkedListNode<Node> n2 = pol2.points.First;
+                n2Idx = 0;
 
                 while (n2 != null)
                 {
                     CrossUnit crossUnit = new CrossUnit();
+
+                    foreach (Node n in pol1.points)
+                    {
+                        if (n.pt.type != Point2D.PointType_et.NORMAL && n.oppNode == null)
+                        {
+                            mainForm.PrintText("Error\n");
+                        }
+                    }
+                    foreach (Node n in pol2.points)
+                    {
+                        if (n.pt.type != Point2D.PointType_et.NORMAL && n.oppNode == null)
+                        {
+                            mainForm.PrintText("Error\n");
+                        }
+                    }
+
                     Point2D[] points = crossUnit.GetCrosssingPoints(n1, n2);
 
+                    
                     if (points != null)
                     {
                         mainForm.PrintText("Find Point 1 at " + points[0].x.ToString() + "," + points[0].y.ToString() + " type is " + points[0].type.ToString() + "\n");
                         pointCnt++;
+                        lastFoundPoint = points[0];
+                        lastIdx1 = n1Idx;
+                        lastIdx2 = n2Idx;
                         if (points.Length == 2)
                         {
                             mainForm.PrintText("Find Point 2 at " + points[1].x.ToString() + "," + points[1].y.ToString() + " type is " + points[1].type.ToString() + "\n");
                             pointCnt++;
+                            lastFoundPoint2 = points[1];
                         }
-
+                        else
+                        {
+                            lastFoundPoint2 = null;
+                        }
 
                         /* cut f1 */
 
                         Figure.SplitChunk(n1, points);
-
 
                         /* cut f2 */
 
@@ -239,9 +275,27 @@ namespace KiCad2Gcode
                         }
 
                     }
+
+                    foreach (Node n in pol1.points)
+                    {
+                        if (n.pt.type != Point2D.PointType_et.NORMAL && n.oppNode == null)
+                        {
+                            mainForm.PrintText("Error\n");
+                        }
+                    }
+                    foreach (Node n in pol2.points)
+                    {
+                        if (n.pt.type != Point2D.PointType_et.NORMAL && n.oppNode == null)
+                        {
+                            mainForm.PrintText("Error\n");
+                        }
+                    }
+
                     n2 = n2.Next;
+                    n2Idx++;
                 }
                 n1 = n1.Next;
+                n1Idx++;
             }
 
             return pointCnt;
@@ -732,7 +786,7 @@ namespace KiCad2Gcode
                 else if(pos == POLYGONS_POS_et.P2_IN_P1)
                 {
                     newFigure = new Figure();
-                    newFigure.shape = f2.shape;
+                    newFigure.shape = f1.shape;
                     cont = true;
                 }
                 else
@@ -843,6 +897,12 @@ namespace KiCad2Gcode
                     }
                 }
             }
+            if(newFigure != null)
+            {
+                newFigure.name = f1.name + " || " + f2.name;
+            }
+
+
             return newFigure;
         }
     }

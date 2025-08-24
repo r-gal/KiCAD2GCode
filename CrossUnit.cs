@@ -308,78 +308,82 @@ namespace KiCad2Gcode
                 }
 
             }
-            else if (c > r1 + r2)
-            {
-                return null;
-            }
-            else if (c < Math.Abs(r1 - r2))
-            {
-                return null;
-            }
             else
             {
-                vcc.Normalize();
-
-
-                double a = (c * c + r1 * r1 - r2 * r2) / (2 * c);
-                double h2 = r1 * r1 - a * a;
-                double h = 0;
-
-                pt1 = pc1 + a * vcc;
-                pt1.type = Point2D.PointType_et.CROSS_T;
-                if (h2 > 0)
+                if (c > r1 + r2)
                 {
-                    Vector vcc2 = new Vector(vcc.y, -vcc.x);
-                    h = Math.Sqrt(h2);
-                    pt2 = pt1 + h * vcc2;
-                    pt1 = pt1 - h * vcc2;
+                    return null;
+                }
+                else if (c < Math.Abs(r1 - r2))
+                {
+                    return null;
+                }
+                else
+                {
+                    vcc.Normalize();
 
-                    pt1.type = Point2D.PointType_et.CROSS_X;
-                    pt2.type = Point2D.PointType_et.CROSS_X;
+
+                    double a = (c * c + r1 * r1 - r2 * r2) / (2 * c);
+                    double h2 = r1 * r1 - a * a;
+                    double h = 0;
+
+                    pt1 = pc1 + a * vcc;
+                    pt1.type = Point2D.PointType_et.CROSS_T;
+                    if (h2 > 0)
+                    {
+                        Vector vcc2 = new Vector(vcc.y, -vcc.x);
+                        h = Math.Sqrt(h2);
+                        pt2 = pt1 + h * vcc2;
+                        pt1 = pt1 - h * vcc2;
+
+                        pt1.type = Point2D.PointType_et.CROSS_X;
+                        pt2.type = Point2D.PointType_et.CROSS_X;
+                    }
+                }
+
+                /* check if points are on arc1 */
+                if (pt1 != null)
+                {
+                    Vector vTmp = pt1 - arc1.centre;
+                    double angle = Math.Atan2(vTmp.y, vTmp.x);
+                    if (Graph2D.IsAngleBetween(angle, arc1.startAngle, arc1.endAngle) == false)
+                    {
+                        pt1 = null;
+                    }
+                }
+
+                if (pt2 != null)
+                {
+                    Vector vTmp = pt2 - arc1.centre;
+                    double angle = Math.Atan2(vTmp.y, vTmp.x);
+                    if (Graph2D.IsAngleBetween(angle, arc1.startAngle, arc1.endAngle) == false)
+                    {
+                        pt2 = null;
+                    }
+                }
+
+                /* check if points are on arc2 */
+                if (pt1 != null)
+                {
+                    Vector vTmp = pt1 - arc2.centre;
+                    double angle = Math.Atan2(vTmp.y, vTmp.x);
+                    if (Graph2D.IsAngleBetween(angle, arc2.startAngle, arc2.endAngle) == false)
+                    {
+                        pt1 = null;
+                    }
+                }
+
+                if (pt2 != null)
+                {
+                    Vector vTmp = pt2 - arc2.centre;
+                    double angle = Math.Atan2(vTmp.y, vTmp.x);
+                    if (Graph2D.IsAngleBetween(angle, arc2.startAngle, arc2.endAngle) == false)
+                    {
+                        pt2 = null;
+                    }
                 }
             }
-
-            /* check if points are on arc1 */
-            if (pt1 != null)
-            {
-                Vector vTmp = pt1 - arc1.centre;
-                double angle = Math.Atan2(vTmp.y, vTmp.x);
-                if (Graph2D.IsAngleBetween(angle, arc1.startAngle, arc1.endAngle) == false)
-                {
-                    pt1 = null;
-                }
-            }
-
-            if (pt2 != null)
-            {
-                Vector vTmp = pt2 - arc1.centre;
-                double angle = Math.Atan2(vTmp.y, vTmp.x);
-                if (Graph2D.IsAngleBetween(angle, arc1.startAngle, arc1.endAngle) == false)
-                {
-                    pt2 = null;
-                }
-            }
-
-            /* check if points are on arc2 */
-            if (pt1 != null)
-            {
-                Vector vTmp = pt1 - arc2.centre;
-                double angle = Math.Atan2(vTmp.y, vTmp.x);
-                if (Graph2D.IsAngleBetween(angle, arc2.startAngle, arc2.endAngle) == false)
-                {
-                    pt1 = null;
-                }
-            }
-
-            if (pt2 != null)
-            {
-                Vector vTmp = pt2 - arc2.centre;
-                double angle = Math.Atan2(vTmp.y, vTmp.x);
-                if (Graph2D.IsAngleBetween(angle, arc2.startAngle, arc2.endAngle) == false)
-                {
-                    pt2 = null;
-                }
-            }
+            
 
             int cnt = 0;
             if (pt1 != null)

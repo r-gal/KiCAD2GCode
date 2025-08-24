@@ -48,6 +48,7 @@ namespace KiCad2Gcode
         {
             /*step button */
             bool result;
+            bool merged = false;
 
             foreach (Figure f in figures)
             {
@@ -57,10 +58,11 @@ namespace KiCad2Gcode
             {
                 PrintText("Try " + idxA.ToString() + " vs " + idxB.ToString() + "size = " + figures.Count
                     .ToString() + "\n");
-                if (idxA == 0 && idxB == 17)
+                if (idxA == 11 && idxB == 10)
                 {
                     PrintText("trap\n");
                 }
+                merged = false;
 
                 Merger m = new Merger(this);
                 Figure mergedFigure = m.Merge(figures[idxA], figures[idxB]);
@@ -68,10 +70,12 @@ namespace KiCad2Gcode
                 if (mergedFigure != null)
                 {
                     figures[idxA] = mergedFigure;
+                    figures[idxA].selected = true;
                     figures.RemoveAt(idxB);
                     PrintText("foud\n");
 
-                    figures[idxA].selected = true;
+                    
+                    merged = true;
                 }
                 else
                 {
@@ -88,8 +92,16 @@ namespace KiCad2Gcode
                 if (idxB >= figures.Count)
                 {
                     idxA++;
-                    idxB = idxA + 1;
+                    if(merged == true)
+                    {
+                        idxB = 0;
+                    }
+                    else
+                    {
+                        idxB = idxA + 1;
+                    }
                     idxB = 0;
+
 
                 }
 
@@ -109,6 +121,10 @@ namespace KiCad2Gcode
         private void button6_Click(object sender, EventArgs e)
         {
             bool res = false;
+
+            idxA = 0;
+            idxB = 1;
+
             do
             {
                 res = Step();
