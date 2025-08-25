@@ -48,22 +48,22 @@ namespace KiCad2Gcode
 
                     if (Math.Abs(m0) > Math.Abs(n0))
                     {
-                        if (Graph2D.IsValueBeetween(eP2.x, sP1.x, eP1.x) == true)
+                        if (Graph2D.IsValueBetween(eP2.x, sP1.x, eP1.x) == true)
                         {
                             pt = eP2;
                         }
-                        else if (Graph2D.IsValueBeetween(eP1.x, sP2.x, eP2.x) == true)
+                        else if (Graph2D.IsValueBetween(eP1.x, sP2.x, eP2.x) == true)
                         {
                             pt = eP1;
                         }
                     }
                     else
                     {
-                        if (Graph2D.IsValueBeetween(eP2.y, sP1.y, eP1.y) == true)
+                        if (Graph2D.IsValueBetween(eP2.y, sP1.y, eP1.y) == true)
                         {
                             pt = eP2;
                         }
-                        else if (Graph2D.IsValueBeetween(eP1.y, sP2.y, eP2.y) == true)
+                        else if (Graph2D.IsValueBetween(eP1.y, sP2.y, eP2.y) == true)
                         {
                             pt = eP1;
                         }
@@ -100,14 +100,37 @@ namespace KiCad2Gcode
                         t = (y1 + n1 * k - y0) / n0;
                     }
 
+                    double x = x0 + m0 * t;
+                    double y = y0 + n0 * t;
+
+                    Point2D pt = new Point2D(x, y);
+
+                    if (Graph2D.IsPointOnLine(pt, sP1, eP1) == true && Graph2D.IsPointOnLine(pt, sP2, eP2) == true)
+                    {
+                        if (pt.IsSameAs(eP1))
+                        {
+                            pt = eP1;
+                            pt.type = Point2D.PointType_et.CROSS_T;
+                        }
+                        else if (pt.IsSameAs(eP2))
+                        {
+                            pt = eP2;
+                            pt.type = Point2D.PointType_et.CROSS_T;
+                        }
+                        else
+                        {
+                            pt.type = Point2D.PointType_et.CROSS_X;
+                        }
+
+
+                        Point2D[] ptArr = new Point2D[1];
+                        ptArr[0] = pt;
+                        return ptArr;
+                    }
+
+                    /*
                     if (t > 0 && t <= 1)
                     {
-                        double x = x0 + m0 * t;
-                        double y = y0 + n0 * t;
-
-                        
-
-                        Point2D pt = new Point2D(x, y);
 
                         if(pt.IsSameAs(eP1))
                         {
@@ -128,7 +151,7 @@ namespace KiCad2Gcode
                         Point2D[] ptArr = new Point2D[1];
                         ptArr[0] = pt;
                         return ptArr;
-                    }
+                    }*/
                 }
             }
 
@@ -140,12 +163,12 @@ namespace KiCad2Gcode
         public Point2D[] GetCrossingLineArc(LinkedListNode<Node> node1, LinkedListNode<Node> node2)
         {
             LinkedListNode<Node> n1Prev = node1.Previous ?? node1.List.Last;
-            //LinkedListNode<Node> n2Prev = node1.Previous ?? node2.List.Last;
+            LinkedListNode<Node> n2Prev = node2.Previous ?? node2.List.Last;
 
             Point2D sP1 = n1Prev.Value.pt;
             Point2D eP1 = node1.Value.pt;
-            //Point2D sP2 = n2Prev.Value.pt;
-            //Point2D eP2 = node2.Value.pt;
+            Point2D sP2 = n2Prev.Value.pt;
+            Point2D eP2 = node2.Value.pt;
 
             Arc arc = node2.Value.arc;
 
@@ -163,7 +186,7 @@ namespace KiCad2Gcode
 
             double a = (vL.x * vC.y - vC.x * vL.y) / vL.Length * vL.Length;
 
-            if (Math.Abs(a) > arc.radius) { return null; }
+            if (Math.Abs(a) > arc.radius + 0.0000001) { return null; }
 
             double b;
             if (Math.Abs(vL.x) > Math.Abs(vL.y))
@@ -182,7 +205,7 @@ namespace KiCad2Gcode
 
             Point2D ptM2 = null;
 
-            if (c != 0)
+            if (c > 0.0000001)
             {
                 ptM2 = ptM + c * vL;
                 ptM = ptM - c * vL;
@@ -192,22 +215,34 @@ namespace KiCad2Gcode
 
             /* check if points ane on line */
 
-            if (Graph2D.IsValueBeetween(ptM.x, sP1.x, eP1.x) == false)
+            /*
+
+            if (Graph2D.IsValueBetween(ptM.x, sP1.x, eP1.x) == false)
             {
                 ptM = null;
             }
-            else if (Graph2D.IsValueBeetween(ptM.y, sP1.y, eP1.y) == false)
+            else if (Graph2D.IsValueBetween(ptM.y, sP1.y, eP1.y) == false)
+            {
+                ptM = null;
+            }*/
+
+            if(Graph2D.IsPointOnLine(ptM, sP1, eP1) == false)
             {
                 ptM = null;
             }
 
             if (ptM2 != null)
-            {
-                if (Graph2D.IsValueBeetween(ptM2.x, sP1.x, eP1.x) == false)
+            {/*
+                if (Graph2D.IsValueBetween(ptM2.x, sP1.x, eP1.x) == false)
                 {
                     ptM2 = null;
                 }
-                else if (Graph2D.IsValueBeetween(ptM2.y, sP1.y, eP1.y) == false)
+                else if (Graph2D.IsValueBetween(ptM2.y, sP1.y, eP1.y) == false)
+                {
+                    ptM2 = null;
+                }*/
+
+                if (Graph2D.IsPointOnLine(ptM2, sP1, eP1) == false)
                 {
                     ptM2 = null;
                 }
@@ -216,19 +251,16 @@ namespace KiCad2Gcode
             /* check if points are on arc */
             if (ptM != null)
             {
-                Vector vTmp = ptM - arc.centre;
-                double angle = Math.Atan2(vTmp.y, vTmp.x);
-                if (Graph2D.IsAngleBetween(angle, arc.startAngle, arc.endAngle) == false)
+                if (Graph2D.IsPointOnArc(ptM, sP2, eP2, arc) == false)
                 {
                     ptM = null;
                 }
+
             }
 
             if (ptM2 != null)
             {
-                Vector vTmp = ptM2 - arc.centre;
-                double angle = Math.Atan2(vTmp.y, vTmp.x);
-                if (Graph2D.IsAngleBetween(angle, arc.startAngle, arc.endAngle) == false)
+                if (Graph2D.IsPointOnArc(ptM2, sP2, eP2, arc) == false)
                 {
                     ptM2 = null;
                 }
@@ -265,6 +297,14 @@ namespace KiCad2Gcode
 
         public Point2D[] GetCrossingArcArc(LinkedListNode<Node> node1, LinkedListNode<Node> node2)
         {
+            LinkedListNode<Node> n1Prev = node1.Previous ?? node1.List.Last;
+            LinkedListNode<Node> n2Prev = node1.Previous ?? node2.List.Last;
+
+            Point2D sP1 = n1Prev.Value.pt;
+            Point2D eP1 = node1.Value.pt;
+            Point2D sP2 = n2Prev.Value.pt;
+            Point2D eP2 = node2.Value.pt;
+
             Point2D pc1 = node1.Value.arc.centre;
             Point2D pc2 = node2.Value.arc.centre;
 
@@ -310,7 +350,7 @@ namespace KiCad2Gcode
             }
             else
             {
-                if (c > r1 + r2)
+                if (c + 0.000001  > r1 + r2 )
                 {
                     return null;
                 }
@@ -329,7 +369,7 @@ namespace KiCad2Gcode
 
                     pt1 = pc1 + a * vcc;
                     pt1.type = Point2D.PointType_et.CROSS_T;
-                    if (h2 > 0)
+                    if (h2 > 0.0000001)
                     {
                         Vector vcc2 = new Vector(vcc.y, -vcc.x);
                         h = Math.Sqrt(h2);
@@ -339,14 +379,13 @@ namespace KiCad2Gcode
                         pt1.type = Point2D.PointType_et.CROSS_X;
                         pt2.type = Point2D.PointType_et.CROSS_X;
                     }
+
                 }
 
                 /* check if points are on arc1 */
                 if (pt1 != null)
                 {
-                    Vector vTmp = pt1 - arc1.centre;
-                    double angle = Math.Atan2(vTmp.y, vTmp.x);
-                    if (Graph2D.IsAngleBetween(angle, arc1.startAngle, arc1.endAngle) == false)
+                    if(Graph2D.IsPointOnArc(pt1, sP1, eP1, arc1 ) == false)
                     {
                         pt1 = null;
                     }
@@ -354,9 +393,7 @@ namespace KiCad2Gcode
 
                 if (pt2 != null)
                 {
-                    Vector vTmp = pt2 - arc1.centre;
-                    double angle = Math.Atan2(vTmp.y, vTmp.x);
-                    if (Graph2D.IsAngleBetween(angle, arc1.startAngle, arc1.endAngle) == false)
+                    if (Graph2D.IsPointOnArc(pt2, sP1, eP1, arc1) == false)
                     {
                         pt2 = null;
                     }
@@ -365,9 +402,7 @@ namespace KiCad2Gcode
                 /* check if points are on arc2 */
                 if (pt1 != null)
                 {
-                    Vector vTmp = pt1 - arc2.centre;
-                    double angle = Math.Atan2(vTmp.y, vTmp.x);
-                    if (Graph2D.IsAngleBetween(angle, arc2.startAngle, arc2.endAngle) == false)
+                    if (Graph2D.IsPointOnArc(pt1, sP2, eP2, arc2) == false)
                     {
                         pt1 = null;
                     }
@@ -375,9 +410,7 @@ namespace KiCad2Gcode
 
                 if (pt2 != null)
                 {
-                    Vector vTmp = pt2 - arc2.centre;
-                    double angle = Math.Atan2(vTmp.y, vTmp.x);
-                    if (Graph2D.IsAngleBetween(angle, arc2.startAngle, arc2.endAngle) == false)
+                    if (Graph2D.IsPointOnArc(pt2, sP2, eP2, arc2) == false)
                     {
                         pt2 = null;
                     }

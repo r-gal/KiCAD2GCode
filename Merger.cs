@@ -275,6 +275,10 @@ namespace KiCad2Gcode
                         }
 
                     }
+                    else
+                    {
+                        int x = 0;/*skip */
+                    }
 
                     foreach (Node n in pol1.points)
                     {
@@ -557,7 +561,7 @@ namespace KiCad2Gcode
 
                     prevPoint = actNode.Value.pt;
 
-                    if (out1Angle == out2Angle)
+                    if (Math.Abs(out1Angle - out2Angle) < 0.00000001)
                     {
                         if (r1 > r2)
                         {
@@ -691,23 +695,21 @@ namespace KiCad2Gcode
         public Figure Merge(Figure f1, Figure f2)
         {
             bool cont = false;
+
+            /*early check */
+
+            if (f1.shape.extPoint[0].x > f2.shape.extPoint[2].x) { return null; }
+            if (f2.shape.extPoint[0].x > f1.shape.extPoint[2].x) { return null; }
+
+            if (f1.shape.extPoint[3].y > f2.shape.extPoint[1].y) { return null; }
+            if (f2.shape.extPoint[3].y > f1.shape.extPoint[1].y) { return null; }
+
+
+
+
+
+
             /* find crossing points */
-
-            foreach (Node n in f1.shape.points)
-            {
-                if (n.pt.type != Point2D.PointType_et.NORMAL)
-                {
-                    mainForm.PrintText("Error\n");
-                }
-            }
-            foreach (Node n in f2.shape.points)
-            {
-                if (n.pt.type != Point2D.PointType_et.NORMAL)
-                {
-                    mainForm.PrintText("Error\n");
-                }
-            }
-
 
             int crossingPoints = SelectCrossingPoints(f1.shape, f2.shape);
             //return null;

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
@@ -241,7 +242,7 @@ namespace KiCad2Gcode
                     }
 
                     Figure f = new Figure();
-                    f.name = "roundrect at " + offsetX.ToString() + "," + offsetY.ToString();
+                    f.name = "roundrect at " + offsetX.ToString(CultureInfo.InvariantCulture) + " -" + offsetY.ToString(CultureInfo.InvariantCulture);
 
 
                     Arc arc;
@@ -447,7 +448,7 @@ namespace KiCad2Gcode
                 else if(pad.values.Contains("rect"))
                 {
                     Figure f = new Figure();
-                    f.name = "rect at " + offsetX.ToString() + "," + offsetY.ToString();
+                    f.name = "rect at " + offsetX.ToString(CultureInfo.InvariantCulture) + " -" + offsetY.ToString(CultureInfo.InvariantCulture);
 
                     Node node;
                     LinkedListNode<Node> lln;
@@ -507,7 +508,7 @@ namespace KiCad2Gcode
                     Figure f = new Figure();
                     Arc arc = new Arc();
 
-                    f.name = "circle at " + offsetX.ToString() + "," + offsetY.ToString();
+                    f.name = "circle at " + offsetX.ToString(CultureInfo.InvariantCulture) + " -" + offsetY.ToString(CultureInfo.InvariantCulture);
 
                     Node node;
                     LinkedListNode<Node> lln;
@@ -540,7 +541,7 @@ namespace KiCad2Gcode
                 {
                     Figure f = new Figure();
 
-                    f.name = "oval at " + offsetX.ToString() + "," + offsetY.ToString();
+                    f.name = "oval at " + offsetX.ToString(CultureInfo.InvariantCulture) + " -" + offsetY.ToString(CultureInfo.InvariantCulture);
 
                     Arc arc;
 
@@ -678,7 +679,7 @@ namespace KiCad2Gcode
                 Figure f = new Figure();
                 Arc arc = new Arc();
 
-                f.name = "via at " + pos[0].ToString() + "," + pos[1].ToString();
+                f.name = "via at " + pos[0].ToString(CultureInfo.InvariantCulture) + " -" + pos[1].ToString(CultureInfo.InvariantCulture);
 
                 Node node;
                 LinkedListNode<Node> lln;
@@ -743,7 +744,8 @@ namespace KiCad2Gcode
 
                 Figure f = new Figure();
 
-                f.name = "seg " + startArr[0].ToString() + "," + startArr[1].ToString() + " - " + endArr[0].ToString() + "," + endArr[1].ToString();
+                f.name = "seg " + startArr[0].ToString(CultureInfo.InvariantCulture) + " -" + startArr[1].ToString(CultureInfo.InvariantCulture) + " <-> " + 
+                    endArr[0].ToString(CultureInfo.InvariantCulture) + " -" + endArr[1].ToString(CultureInfo.InvariantCulture);
 
                 Node node;
                 LinkedListNode<Node> lln;

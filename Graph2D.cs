@@ -60,7 +60,7 @@ namespace KiCad2Gcode
 
         public bool IsSameAs(Point2D pt)
         {
-            return (Math.Abs(pt.x - x) < 0.0000000001 && Math.Abs(pt.y - y) < 0.0000000001);
+            return (Math.Abs(pt.x - x) < 0.000001 && Math.Abs(pt.y - y) < 0.000001);
         }
 
         public static Point2D operator +(Point2D a, Vector b)
@@ -352,7 +352,7 @@ namespace KiCad2Gcode
 
                     if (arc.centre.y + arc.radius > extPoint[U].y)
                     {
-                        if (Graph2D.IsValueBeetween(Math.PI / 2, arc.startAngle, arc.endAngle))
+                        if (Graph2D.IsAngleBetween(Math.PI / 2, arc.startAngle, arc.endAngle))
                         {
                             extPoint[U] = new Point2D(arc.centre.x, arc.centre.y + arc.radius);
                             extNode[U] = actNode.Value;
@@ -361,7 +361,7 @@ namespace KiCad2Gcode
 
                     if (arc.centre.x + arc.radius > extPoint[R].x)
                     {
-                        if (Graph2D.IsValueBeetween(0, arc.startAngle, arc.endAngle))
+                        if (Graph2D.IsAngleBetween(0, arc.startAngle, arc.endAngle))
                         {
                             extPoint[R] = new Point2D(arc.centre.x + arc.radius, arc.centre.y);
                             extNode[R] = actNode.Value;
@@ -370,7 +370,7 @@ namespace KiCad2Gcode
 
                     if (arc.centre.y - arc.radius < extPoint[D].y)
                     {
-                        if (Graph2D.IsValueBeetween(-Math.PI / 2, arc.startAngle, arc.endAngle))
+                        if (Graph2D.IsAngleBetween(-Math.PI / 2, arc.startAngle, arc.endAngle))
                         {
                             extPoint[D] = new Point2D(arc.centre.x, arc.centre.y - arc.radius);
                             extNode[D] = actNode.Value;
@@ -791,7 +791,7 @@ namespace KiCad2Gcode
 
         }
 
-        public static bool IsValueBeetween(double val, double v1, double v2)
+        public static bool IsValueBetween(double val, double v1, double v2)
         {
             if (v1 < v2)
             {
@@ -805,6 +805,53 @@ namespace KiCad2Gcode
             {
                 return (val == v1);
             }
+        }
+
+        public static bool IsPointOnLine(Point2D pt, Point2D sPt, Point2D ePt)
+        {
+            if(pt.IsSameAs(ePt))
+            {
+                return true;
+            }
+
+            if (pt.IsSameAs(sPt))
+            {
+                return false;
+            }
+
+
+            double diffX = Math.Abs(ePt.x - sPt.x);
+            double diffY = Math.Abs(ePt.y - sPt.y);
+
+            if(diffX + diffY == 0)
+            {
+                return false;
+            }
+
+            if(diffX > diffY)
+            {
+                return IsValueBetween(pt.x, sPt.x, ePt.x);
+            }
+            else
+            {
+                return IsValueBetween(pt.y, sPt.y, ePt.y);
+            }
+        }
+
+        public static bool IsPointOnArc(Point2D pt, Point2D sPt, Point2D ePt, Arc arc)
+        {
+            if (pt.IsSameAs(ePt))
+            {
+                return true;
+            }
+
+            if (pt.IsSameAs(sPt))
+            {
+                return false;
+            }
+
+            double angle = Math.Atan2(pt.y - arc.centre.y, pt.x - arc.centre.x);      
+            return Graph2D.IsAngleBetween(angle, arc.startAngle, arc.endAngle);
         }
     }
 }

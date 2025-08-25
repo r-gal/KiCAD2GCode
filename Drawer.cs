@@ -13,28 +13,40 @@ namespace KiCad2Gcode
         PictureBox pBox;
 
         float H = 600;
-
-        int scale = 20;
+        /*
+        int scale = 10;
         int offX = 0;
         int offY = 0;
-        /*
-         * int scale = 200;
-        int offX = -3500;
-        int offY = -2000;*/
-
+        */
+        int scale = 20;
+        int offX = -100;
+        int offY = -800;
+        
 
         public Drawer(PictureBox pBox_) 
         { 
             this.pBox = pBox_;
         }
 
+        public void SetScale(int scale_)
+        {
+            scale = scale_;
+        }
+
+        public void SetPos(int x,int y)
+        {
+            offX = x;
+            offY = y;
+        }
+
+
         private void DrawDot(Point2D position, int size, Bitmap bmp, System.Drawing.Color color)
         {
             using (Graphics g = Graphics.FromImage(bmp))
             {
                 g.DrawArc(new Pen(color),
-                (float)((position.x ) * scale + offX - size),
-                H - ((float)((position.y ) * scale + offY + size)),
+                (float)((position.x ) * scale + offX * scale - size),
+                H - ((float)((position.y ) * scale + offY * scale + size)),
                 (float)(size * 2 ),
                 (float)(size * 2 ),
                 0,
@@ -49,10 +61,10 @@ namespace KiCad2Gcode
                 using (Graphics g = Graphics.FromImage(bmp))
                 {
                     g.DrawLine(new Pen(color), 
-                        (float)startPt.x * scale + offX,
-                        H-((float)startPt.y * scale + offY),
-                        (float)endPt.x * scale + offX,
-                        H-((float)endPt.y * scale + offY));
+                        (float)startPt.x * scale + offX * scale,
+                        H-((float)startPt.y * scale + offY * scale),
+                        (float)endPt.x * scale + offX * scale,
+                        H-((float)endPt.y * scale + offY * scale));
                 } 
             }
             else
@@ -71,8 +83,8 @@ namespace KiCad2Gcode
                     while (angleStart > 360) { angleStart -= 360; }
 
                     g.DrawArc(new Pen(color),
-                        (float)((arc.centre.x -  arc.radius) * scale + offX),
-                        H - ((float)((arc.centre.y +  arc.radius) * scale + offY)),
+                        (float)((arc.centre.x -  arc.radius) * scale + offX * scale),
+                        H - ((float)((arc.centre.y +  arc.radius) * scale + offY * scale)),
                         (float)(arc.radius * 2* scale),
                         (float)(arc.radius * 2 *scale),
                         angleStart,
@@ -83,54 +95,6 @@ namespace KiCad2Gcode
 
         }
 
-        private void DrawChunkOld(Chunk chunk, Bitmap bmp, System.Drawing.Color color)
-        {
-            if (chunk.type == Chunk.ChunkType.Line)
-            {
-
-
-
-                using (Graphics g = Graphics.FromImage(bmp))
-                {
-                    g.DrawLine(new Pen(color),
-                        (float)chunk.start.x * scale + offX,
-                        H - ((float)chunk.start.y * scale + offY),
-                        (float)chunk.end.x * scale + offX,
-                        H - ((float)chunk.end.y * scale + offY));
-                }
-
-
-
-
-            }
-            else if (chunk.type == Chunk.ChunkType.Arc)
-            {
-                Arc arc = (Arc)chunk;
-                using (Graphics g = Graphics.FromImage(bmp))
-                {
-                    float angleStart = (float)(arc.startAngle * 180 / Math.PI);
-                    float angleEnd = (float)(arc.endAngle * 180 / Math.PI);
-
-                    float angleSweep = angleStart - angleEnd;
-                    while (angleSweep < 0) { angleSweep += 360; }
-                    while (angleSweep > 360) { angleSweep -= 360; }
-
-                    angleStart = -angleStart;
-                    while (angleStart < 0) { angleStart += 360; }
-                    while (angleStart > 360) { angleStart -= 360; }
-
-                    g.DrawArc(new Pen(color),
-                        (float)((arc.centre.x - arc.radius) * scale + offX),
-                        H - ((float)((arc.centre.y + arc.radius) * scale + offY)),
-                        (float)(arc.radius * 2 * scale),
-                        (float)(arc.radius * 2 * scale),
-                        angleStart,
-                        angleSweep);
-                }
-
-            }
-
-        }
 
         private void DrawDrill(Drill drill, Bitmap bmp)
         {
@@ -138,8 +102,8 @@ namespace KiCad2Gcode
             {
 
                 g.DrawArc(new Pen(Color.Black),
-                    (float)((drill.pos.x - drill.diameter/2) * scale + offX),
-                    H - ((float)((drill.pos.y + drill.diameter/2) * scale + offY)),
+                    (float)((drill.pos.x - drill.diameter/2) * scale + offX * scale),
+                    H - ((float)((drill.pos.y + drill.diameter/2) * scale + offY * scale)),
                     (float)(drill.diameter  * scale),
                     (float)(drill.diameter  * scale),
                     0,

@@ -32,10 +32,21 @@ namespace KiCad2Gcode
 
         private void button1_Click(object sender, EventArgs e)
         {
+            figures.Clear();
+            cuts.Clear();
+            drills.Clear();
+
+
             //textBox1.Text = pcbFileParser.Parse("manipulator.kicad_pcb").ToString();
-            textBox1.Text = pcbFileParser.Parse("test1.kicad_pcb").ToString();
+            //textBox1.Text = pcbFileParser.Parse("test1.kicad_pcb").ToString();
+            //textBox1.Text = pcbFileParser.Parse("error5.kicad_pcb").ToString();
+            textBox1.Text = pcbFileParser.Parse("error7.kicad_pcb").ToString();
 
 
+            foreach (Figure f in figures)
+            {
+                f.shape.GetExtPoints();
+            }
 
 
 
@@ -50,18 +61,20 @@ namespace KiCad2Gcode
             bool result;
             bool merged = false;
 
+
             foreach (Figure f in figures)
             {
                 f.selected = false;
             }
             if (idxA < figures.Count && idxB < figures.Count && idxA != idxB)
             {
-                PrintText("Try " + idxA.ToString() + " vs " + idxB.ToString() + "size = " + figures.Count
-                    .ToString() + "\n");
-                if (idxA == 11 && idxB == 10)
+               /* PrintText("Try " + idxA.ToString() + " vs " + idxB.ToString() + "size = " + figures.Count
+                    .ToString() + "\n");*/
+                if (idxA == 0 && idxB == 4 && figures.Count == 5)
                 {
                     PrintText("trap\n");
                 }
+
                 merged = false;
 
                 Merger m = new Merger(this);
@@ -69,10 +82,14 @@ namespace KiCad2Gcode
 
                 if (mergedFigure != null)
                 {
+
+                    PrintText("Foud " + idxA.ToString() + " vs " + idxB.ToString() + "size = " + figures.Count.ToString() + "\n");
+
                     figures[idxA] = mergedFigure;
                     figures[idxA].selected = true;
                     figures.RemoveAt(idxB);
-                    PrintText("foud\n");
+
+                    //PrintText("foud\n");
 
                     
                     merged = true;
@@ -82,27 +99,22 @@ namespace KiCad2Gcode
                     figures[idxA].selected = true;
                     figures[idxB].selected = true;
 
-                    PrintText("skip\n");
+                    //PrintText("skip\n");
                     idxB++;
                     if (idxB == idxA) { idxB++; }
                 }
 
+                if(merged == true)
+                {
+                    //idxB = 0;
+                    idxB = idxA + 1;
+                }
 
 
                 if (idxB >= figures.Count)
-                {
+                {  
                     idxA++;
-                    if(merged == true)
-                    {
-                        idxB = 0;
-                    }
-                    else
-                    {
-                        idxB = idxA + 1;
-                    }
-                    idxB = 0;
-
-
+                    idxB = idxA + 1;  
                 }
 
 
@@ -114,7 +126,7 @@ namespace KiCad2Gcode
                 result = false;
             }
 
-            drawer.Redraw(figures, cuts, drills);
+            
             return result;
         }
 
@@ -129,12 +141,14 @@ namespace KiCad2Gcode
             {
                 res = Step();
             } while (res == true);
+            drawer.Redraw(figures, cuts, drills);
         }
 
         private void button5_Click(object sender, EventArgs e)
         {
 
             Step();
+            drawer.Redraw(figures, cuts, drills);
         }
 
         public void PrintText(string text)
@@ -248,7 +262,12 @@ namespace KiCad2Gcode
 
             figures.Add(figure1);
             figures.Add(figure2);
-            cuts.Add(mergedFigure);
+
+            if(mergedFigure != null)
+            {
+                cuts.Add(mergedFigure);
+            }
+            
 
         }
 
@@ -266,7 +285,7 @@ namespace KiCad2Gcode
                 arc2[i] = null;
             }
 
-
+            
             pts1[0] = new Point2D(10, 10);
             pts1[1] = new Point2D(15, 10);
             pts1[2] = new Point2D(15, 4);
@@ -332,6 +351,7 @@ namespace KiCad2Gcode
             arc2[3].startAngle = 0;
             arc2[3].endAngle = -Math.PI;
             AddTestForm(pts1, arc1, pts2, arc2, new Vector(20, 40));
+            //AddTestForm(pts1, arc1, pts2, arc2, new Vector(0, 0));
             
             pts2[0] = new Point2D(10.5, 15);
             pts2[1] = new Point2D(14.5, 15);
@@ -390,7 +410,7 @@ namespace KiCad2Gcode
             AddTestForm(pts1, arc1, pts2tmp, arc2, new Vector(40, 20));
             //AddTestForm(pts1, arc1, pts2tmp, arc2, new Vector(0, 0));
             arc2[0] = null;
-
+           
             // change  form 1 to arc 
 
             arc1[1] = new Arc();
@@ -435,8 +455,35 @@ namespace KiCad2Gcode
             arc2[2].startAngle = -Math.PI;
             arc2[2].endAngle = 0;
             AddTestForm(pts1, arc1, pts2, arc2, new Vector(50, 20));
-            arc2[3] = null;
+            //AddTestForm(pts1, arc1, pts2, arc2, new Vector(0, 0));
+            arc2[2] = null;
+            
+            // change  form 1 
+            
+            pts1[0] = new Point2D(10, 15);
+            pts1[1] = new Point2D(15, 15);
+            pts1[2] = new Point2D(15, 10);
+            pts1[3] = new Point2D(10, 10);
+            arc1[1] = null;
 
+            arc1[3] = new Arc();
+            arc1[3].radius = 2.5;
+            arc1[3].startAngle = 0;
+            arc1[3].endAngle = -Math.PI;
+            arc1[3].centre = new Point2D(12.5, 10);
+
+            pts2[0] = new Point2D(12.5 + 1.25 * Math.Sqrt(2), 10 + 1.25 * Math.Sqrt(2));
+            pts2[1] = new Point2D(15 + 1.25 * Math.Sqrt(2), 7.5 + 1.25 * Math.Sqrt(2));
+            pts2[2] = new Point2D(15 - 1.25 * Math.Sqrt(2), 7.5 - 1.25 * Math.Sqrt(2));
+            pts2[3] = new Point2D(12.5 - 1.25 * Math.Sqrt(2), 10 - 1.25 * Math.Sqrt(2));
+            arc2[0] = new Arc();
+            arc2[0].radius = 2.5;
+            arc2[0].centre = new Point2D(12.5, 10);
+            arc2[0].startAngle = -0.75*Math.PI;
+            arc2[0].endAngle = Math.PI / 4;
+            AddTestForm(pts1, arc1, pts2, arc2, new Vector(50, 40));
+            //AddTestForm(pts1, arc1, pts2, arc2, new Vector(0, 0));
+            arc2[3] = null;
             
 
             drawer.Redraw(figures, cuts, drills);
@@ -619,6 +666,16 @@ namespace KiCad2Gcode
             drawer.Redraw(figures, cuts, drills);
         }
 
+        private void button7_Click(object sender, EventArgs e)
+        {
+            int scale = int.Parse(textBox2.Text);
+            int xpos = int.Parse(textBox3.Text);
+            int ypos = int.Parse(textBox4.Text);
 
+            drawer.SetScale(scale);
+            drawer.SetPos(xpos, ypos);
+
+            drawer.Redraw(figures, cuts, drills);
+        }
     }
 }
