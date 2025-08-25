@@ -474,7 +474,7 @@ namespace KiCad2Gcode
 
                 if (node.Value.arc == null)
                 {
-                    if( Math.Abs(ePt.x * sPt.x)  > Math.Abs(ePt.y * sPt.y))
+                    if( Math.Abs(ePt.x - sPt.x)  > Math.Abs(ePt.y - sPt.y))
                     {
                         if(ePt.x > sPt.x)
                         {
@@ -509,7 +509,7 @@ namespace KiCad2Gcode
                     }
                     else
                     {
-                        if (ePt.y > sPt.x)
+                        if (ePt.y > sPt.y)
                         {
                             if (pointArr[0].y < pointArr[1].y)
                             {

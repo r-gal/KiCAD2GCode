@@ -37,10 +37,10 @@ namespace KiCad2Gcode
             drills.Clear();
 
 
-            //textBox1.Text = pcbFileParser.Parse("manipulator.kicad_pcb").ToString();
+            textBox1.Text = pcbFileParser.Parse("manipulator.kicad_pcb").ToString();
             //textBox1.Text = pcbFileParser.Parse("test1.kicad_pcb").ToString();
             //textBox1.Text = pcbFileParser.Parse("error5.kicad_pcb").ToString();
-            textBox1.Text = pcbFileParser.Parse("error7.kicad_pcb").ToString();
+            //textBox1.Text = pcbFileParser.Parse("error9.kicad_pcb").ToString();
 
 
             foreach (Figure f in figures)
@@ -70,7 +70,7 @@ namespace KiCad2Gcode
             {
                /* PrintText("Try " + idxA.ToString() + " vs " + idxB.ToString() + "size = " + figures.Count
                     .ToString() + "\n");*/
-                if (idxA == 0 && idxB == 4 && figures.Count == 5)
+                if (idxA == 1 && idxB == 9 && figures.Count == 10)
                 {
                     PrintText("trap\n");
                 }

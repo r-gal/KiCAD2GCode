@@ -212,6 +212,13 @@ namespace KiCad2Gcode
                 ptM2.type = Point2D.PointType_et.CROSS_X;
                 ptM.type = Point2D.PointType_et.CROSS_X;
             }
+            else
+            {
+                if(ptM.IsSameAs(eP1) == false)
+                {
+                    ptM = null;
+                }
+            }
 
             /* check if points ane on line */
 
@@ -225,10 +232,12 @@ namespace KiCad2Gcode
             {
                 ptM = null;
             }*/
-
-            if(Graph2D.IsPointOnLine(ptM, sP1, eP1) == false)
+            if (ptM != null)
             {
-                ptM = null;
+                if (Graph2D.IsPointOnLine(ptM, sP1, eP1) == false)
+                {
+                    ptM = null;
+                }
             }
 
             if (ptM2 != null)
