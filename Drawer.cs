@@ -13,14 +13,11 @@ namespace KiCad2Gcode
         PictureBox pBox;
 
         float H = 600;
-        /*
+        
         int scale = 10;
         int offX = 0;
         int offY = 0;
-        */
-        int scale = 20;
-        int offX = -100;
-        int offY = -800;
+
         
 
         public Drawer(PictureBox pBox_) 
@@ -128,7 +125,7 @@ namespace KiCad2Gcode
                 while (n != null)
                 {
                     LinkedListNode<Node> nPrev = n.Previous ?? f.shape.points.Last;
-                    DrawChunk(nPrev.Value.pt, n.Value.pt, n.Value.arc, bmp, f.selected ? Color.Green : Color.Red);
+                    DrawChunk(nPrev.Value.pt, n.Value.pt, n.Value.arc, bmp, f.selected ? Color.Green : ( n.Value.pt.type == Point2D.PointType_et.BRIDGE ? Color.Cyan : Color.Red));
 
                     DrawDot(n.Value.pt, 3, bmp, first ? Color.DarkOrange :  Color.Black);
                     if (first)
@@ -148,6 +145,13 @@ namespace KiCad2Gcode
                     {
                         LinkedListNode<Node> nPrev = n.Previous ?? p.points.Last;
                         DrawChunk(nPrev.Value.pt, n.Value.pt, n.Value.arc, bmp, Color.Blue);
+                        
+                        DrawDot(n.Value.pt, 3, bmp, first ? Color.DarkOrange : Color.Black);
+                        if (first)
+                        {
+                            first = false;
+                        }
+
                         n = n.Next;
                     }
                 }

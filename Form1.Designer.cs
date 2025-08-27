@@ -44,6 +44,7 @@
             this.label1 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
             this.label3 = new System.Windows.Forms.Label();
+            this.button8 = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.SuspendLayout();
             // 
@@ -66,9 +67,9 @@
             // 
             // richTextBox1
             // 
-            this.richTextBox1.Location = new System.Drawing.Point(145, 167);
+            this.richTextBox1.Location = new System.Drawing.Point(23, 167);
             this.richTextBox1.Name = "richTextBox1";
-            this.richTextBox1.Size = new System.Drawing.Size(327, 495);
+            this.richTextBox1.Size = new System.Drawing.Size(469, 495);
             this.richTextBox1.TabIndex = 2;
             this.richTextBox1.Text = "";
             // 
@@ -145,7 +146,7 @@
             this.textBox3.Name = "textBox3";
             this.textBox3.Size = new System.Drawing.Size(265, 26);
             this.textBox3.TabIndex = 10;
-            this.textBox3.Text = "-7";
+            this.textBox3.Text = "0";
             // 
             // textBox4
             // 
@@ -153,7 +154,7 @@
             this.textBox4.Name = "textBox4";
             this.textBox4.Size = new System.Drawing.Size(265, 26);
             this.textBox4.TabIndex = 11;
-            this.textBox4.Text = "-93";
+            this.textBox4.Text = "0";
             // 
             // button7
             // 
@@ -192,11 +193,22 @@
             this.label3.TabIndex = 15;
             this.label3.Text = "ypos";
             // 
+            // button8
+            // 
+            this.button8.Location = new System.Drawing.Point(64, 106);
+            this.button8.Name = "button8";
+            this.button8.Size = new System.Drawing.Size(75, 23);
+            this.button8.TabIndex = 16;
+            this.button8.Text = "button8";
+            this.button8.UseVisualStyleBackColor = true;
+            this.button8.Click += new System.EventHandler(this.button8_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(2617, 1190);
+            this.Controls.Add(this.button8);
             this.Controls.Add(this.label3);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.label1);
@@ -239,6 +251,7 @@
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Label label3;
+        private System.Windows.Forms.Button button8;
     }
 }
 

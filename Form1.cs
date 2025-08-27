@@ -37,10 +37,12 @@ namespace KiCad2Gcode
             drills.Clear();
 
 
-            textBox1.Text = pcbFileParser.Parse("manipulator.kicad_pcb").ToString();
-            //textBox1.Text = pcbFileParser.Parse("test1.kicad_pcb").ToString();
+            //textBox1.Text = pcbFileParser.Parse("manipulator.kicad_pcb").ToString();
+            textBox1.Text = pcbFileParser.Parse("test1.kicad_pcb").ToString();
             //textBox1.Text = pcbFileParser.Parse("error5.kicad_pcb").ToString();
             //textBox1.Text = pcbFileParser.Parse("error9.kicad_pcb").ToString();
+
+            //textBox1.Text = pcbFileParser.Parse("testZone1.kicad_pcb").ToString();
 
 
             foreach (Figure f in figures)
@@ -674,6 +676,107 @@ namespace KiCad2Gcode
 
             drawer.SetScale(scale);
             drawer.SetPos(xpos, ypos);
+
+            drawer.Redraw(figures, cuts, drills);
+        }
+
+        private void button8_Click(object sender, EventArgs e)
+        {
+
+
+
+            Point2D[] pts1 = new Point2D[4];
+            Point2D[] ptsh1 = new Point2D[4];
+            Point2D[] ptsh1a = new Point2D[4];
+            Point2D[] pts2 = new Point2D[4];
+
+
+
+            pts1[0] = new Point2D(5, 30);
+            pts1[1] = new Point2D(45, 30);
+            pts1[2] = new Point2D(45, 5);
+            pts1[3] = new Point2D(5, 5);
+
+
+            ptsh1[0] = new Point2D(8, 8);
+            ptsh1[1] = new Point2D(20, 8);
+            ptsh1[2] = new Point2D(20, 22);
+            ptsh1[3] = new Point2D(8, 22);
+
+            ptsh1a[0] = new Point2D(25, 8);
+            ptsh1a[1] = new Point2D(30, 8);
+            ptsh1a[2] = new Point2D(30, 22);
+            ptsh1a[3] = new Point2D(25, 22);
+
+            Figure figure1 = new Figure();
+            Figure figure2 = new Figure();
+
+
+            Node node;
+            LinkedListNode<Node> lln;
+
+            for (int i = 0; i < pts1.Length; i++)
+            {
+                node = new Node();
+                node.pt = new Point2D(pts1[i]);
+
+                lln = new LinkedListNode<Node>(node);
+                figure1.shape.points.AddLast(lln);
+            }
+
+
+
+            Polygon hole = new Polygon();
+            for (int i = 0; i < ptsh1.Length; i++)
+            {
+                node = new Node();
+                node.pt = new Point2D(ptsh1[i]);
+
+
+                lln = new LinkedListNode<Node>(node);
+                hole.points.AddLast(lln);
+            }
+            figure1.holes.Add(hole);
+
+            hole = new Polygon();
+            for (int i = 0; i < ptsh1a.Length; i++)
+            {
+                node = new Node();
+                node.pt = new Point2D(ptsh1a[i]);
+
+
+                lln = new LinkedListNode<Node>(node);
+                hole.points.AddLast(lln);
+            }
+            figure1.holes.Add(hole);
+
+            pts2[0] = new Point2D(10, 16);
+            pts2[1] = new Point2D(18, 16);
+            pts2[2] = new Point2D(18, 12);
+            pts2[3] = new Point2D(10, 12);
+
+
+
+            for (int i = 0; i < pts2.Length; i++)
+            {
+                node = new Node();
+                node.pt = new Point2D(pts2[i]);
+
+                lln = new LinkedListNode<Node>(node);
+                figure2.shape.points.AddLast(lln);
+            }
+
+
+            figure1.Move(new Vector(0, 0));
+            figure2.Move(new Vector(0, 0));
+
+            Merger m = new Merger(this);
+            Figure mergedFigure = m.Merge(figure1, figure2);
+
+            figures.Add(figure1);
+            figures.Add(figure2);
+            cuts.Add(mergedFigure);
+
 
             drawer.Redraw(figures, cuts, drills);
         }

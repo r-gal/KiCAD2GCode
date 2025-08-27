@@ -22,7 +22,9 @@ namespace KiCad2Gcode
             NORMAL,
             CROSS_X,
             CROSS_T,
-            CROSS_V
+            CROSS_V,
+            DOUBLED,
+            BRIDGE
         };
         public PointType_et type;
 

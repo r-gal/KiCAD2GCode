@@ -696,6 +696,8 @@ namespace KiCad2Gcode
         {
             bool cont = false;
 
+            bool merged = false;
+
             /*early check */
 
             if (f1.shape.extPoint[0].x > f2.shape.extPoint[2].x) { return null; }
@@ -770,6 +772,7 @@ namespace KiCad2Gcode
                     }
                 } while (actNode != null);
 
+                merged = true;
                 cont = true;
             }
             else
@@ -811,20 +814,32 @@ namespace KiCad2Gcode
 
                     if (crossingPoints > 1)
                     {
-                        actNode = GetNodeForHoleCutting(hole, f2.shape);
+                        do
+                        {
+                            actNode = GetNodeForHoleCutting(hole, f2.shape);
+                            if (actNode != null)
+                            {
+                                newPol = CreatePolygon(hole, f2.shape, actNode, true);
 
-                        newPol = CreatePolygon(hole, f2.shape, actNode, true);
-
-                        newFigure.holes.Add(newPol);
+                                newFigure.holes.Add(newPol);
+                            }
+                        } while (actNode != null);
+                        merged = true;
                     }
                     else
                     {
-                        /* this mean that hole is fully covered or fully uncovered, additional check is necessary */
+                        /* this mean that hole is fully covered or fully uncovered or polygon is fully within hole, additional check is necessary */
                         POLYGONS_POS_et pos = CheckPolygonsPosition(hole, f2.shape);
 
-                        if(pos != POLYGONS_POS_et.P1_IN_P2)
+                        if(pos == POLYGONS_POS_et.NONE)
                         {
+                            /* hole is fully uncovered */
                             newFigure.holes.Add(hole);
+                        }
+                        else if(pos == POLYGONS_POS_et.P2_IN_P1)
+                        {
+                            /*polygon is fully within hole */
+                            return null;
                         }
                     }
                 }
@@ -845,15 +860,23 @@ namespace KiCad2Gcode
                                 newFigure.holes.Add(newPol);
                             }
                         } while (actNode != null);
+                        merged = true;
                     }
                     else
                     {
-                        /* this mean that hole is fully covered or fully uncovered, additional check is necessary */
+                        /* this mean that hole is fully covered or fully uncovered or polygon is fully within hole, additional check is necessary */
                         POLYGONS_POS_et pos = CheckPolygonsPosition(hole, f1.shape);
 
-                        if (pos != POLYGONS_POS_et.P1_IN_P2)
+
+                        if (pos == POLYGONS_POS_et.NONE)
                         {
+                            /* hole is fully uncovered */
                             newFigure.holes.Add(hole);
+                        }
+                        else if (pos == POLYGONS_POS_et.P2_IN_P1)
+                        {
+                            /*polygon is fully within hole */
+                            return null;
                         }
                     }
 

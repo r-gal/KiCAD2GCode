@@ -895,6 +895,9 @@ namespace KiCad2Gcode
                 line.end = new Point2D(firstX, firstY);
                 f.chunks.Add(line);*/
 
+                ZoneUnit zoneUnit = new ZoneUnit(mainForm);
+                zoneUnit.ConvertToValidFigure(f);
+
                 mainForm.AddFigure(f);
 
             }
@@ -976,15 +979,15 @@ namespace KiCad2Gcode
                 }
                 else if (top.name == "filled_polygon")
                 {
-                    //DecodePolygon(top);
+                    DecodePolygon(top);
                 }
                 else if (top.name == "gr_line")
                 {
-                    DecodeLine(top);
+                    //DecodeLine(top);
                 }
                 else if (top.name == "gr_circle")
                 {
-                    DecodeCircle(top);
+                    //DecodeCircle(top);
                 }
                 /*else if (top.name == "zone")
                 {
