@@ -342,13 +342,13 @@ namespace KiCad2Gcode
                 {
                     /* arcs have same centre and radius */
 
-                    if (Graph2D.IsAngleBetween(arc2.endAngle, arc1.startAngle, arc1.endAngle) == true)
+                    if (Graph2D.IsAngleBetween(arc2.endAngle, arc1.startAngle, arc1.endAngle, arc1.ccw) == true)
                     {
                         pt1 = node2.Value.pt;
                         pt1.type = Point2D.PointType_et.CROSS_T;
                     }
 
-                    if (Graph2D.IsAngleBetween(arc1.endAngle, arc2.startAngle, arc2.endAngle) == true)
+                    if (Graph2D.IsAngleBetween(arc1.endAngle, arc2.startAngle, arc2.endAngle, arc2.ccw) == true)
                     {
                         pt2 = node1.Value.pt;
                         pt2.type = Point2D.PointType_et.CROSS_T;
@@ -663,7 +663,12 @@ namespace KiCad2Gcode
                 }
 
 
-
+                if(node.Value.arc.ccw)
+                {
+                    Point2D tmp = sP;
+                    sP = eP;
+                    eP = tmp;
+                }
 
                 CR_PT_TYPE_et leftCr = CR_PT_TYPE_et.CR_NONE;
                 CR_PT_TYPE_et rightCr = CR_PT_TYPE_et.CR_NONE;

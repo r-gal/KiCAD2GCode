@@ -68,8 +68,18 @@ namespace KiCad2Gcode
             {
                 using (Graphics g = Graphics.FromImage(bmp))
                 {
-                    float angleStart = (float)(arc.startAngle *180 / Math.PI);
-                    float angleEnd = (float)(arc.endAngle * 180 / Math.PI);
+                    float angleStart;
+                    float angleEnd;
+                    if (arc.ccw == false)
+                    {
+                        angleStart = (float)(arc.startAngle * 180 / Math.PI);
+                        angleEnd = (float)(arc.endAngle * 180 / Math.PI);
+                    }
+                    else
+                    {
+                        angleEnd = (float)(arc.startAngle * 180 / Math.PI);
+                        angleStart = (float)(arc.endAngle * 180 / Math.PI);
+                    }
 
                     float angleSweep = angleStart - angleEnd;
                     while (angleSweep < 0) { angleSweep += 360; }

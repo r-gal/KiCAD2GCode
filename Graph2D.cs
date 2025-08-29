@@ -24,7 +24,9 @@ namespace KiCad2Gcode
             CROSS_T,
             CROSS_V,
             DOUBLED,
-            BRIDGE
+            BRIDGE,
+            CW,
+            CCW
         };
         public PointType_et type;
 
@@ -235,9 +237,12 @@ namespace KiCad2Gcode
 
         public Point2D centre;
 
+        public bool ccw;
+
         public Arc()
         {
             type = ChunkType.Arc;
+            ccw = false;
         }
 
         override public void Rotate(double angle)
@@ -354,7 +359,7 @@ namespace KiCad2Gcode
 
                     if (arc.centre.y + arc.radius > extPoint[U].y)
                     {
-                        if (Graph2D.IsAngleBetween(Math.PI / 2, arc.startAngle, arc.endAngle))
+                        if (Graph2D.IsAngleBetween(Math.PI / 2, arc.startAngle, arc.endAngle, arc.ccw))
                         {
                             extPoint[U] = new Point2D(arc.centre.x, arc.centre.y + arc.radius);
                             extNode[U] = actNode.Value;
@@ -363,7 +368,7 @@ namespace KiCad2Gcode
 
                     if (arc.centre.x + arc.radius > extPoint[R].x)
                     {
-                        if (Graph2D.IsAngleBetween(0, arc.startAngle, arc.endAngle))
+                        if (Graph2D.IsAngleBetween(0, arc.startAngle, arc.endAngle, arc.ccw))
                         {
                             extPoint[R] = new Point2D(arc.centre.x + arc.radius, arc.centre.y);
                             extNode[R] = actNode.Value;
@@ -372,7 +377,7 @@ namespace KiCad2Gcode
 
                     if (arc.centre.y - arc.radius < extPoint[D].y)
                     {
-                        if (Graph2D.IsAngleBetween(-Math.PI / 2, arc.startAngle, arc.endAngle))
+                        if (Graph2D.IsAngleBetween(-Math.PI / 2, arc.startAngle, arc.endAngle, arc.ccw))
                         {
                             extPoint[D] = new Point2D(arc.centre.x, arc.centre.y - arc.radius);
                             extNode[D] = actNode.Value;
@@ -585,7 +590,7 @@ namespace KiCad2Gcode
                     double angle1 = 0;
                     double angle2 = 0;
 
-                    if (Graph2D.IsAngleBetween(angleA, node.Value.arc.startAngle, angleB) == true)
+                    if (Graph2D.IsAngleBetween(angleA, node.Value.arc.startAngle, angleB, node.Value.arc.ccw) == true)
                     {
                         /* point 1 is first */
                         pt1 = pointArr[0];
@@ -593,7 +598,7 @@ namespace KiCad2Gcode
                         angle1 = angleA;
                         angle2 = angleB;
                     }
-                    else if (Graph2D.IsAngleBetween(angleB, node.Value.arc.startAngle, angleA) == true)
+                    else if (Graph2D.IsAngleBetween(angleB, node.Value.arc.startAngle, angleA, node.Value.arc.ccw) == true)
                     {
                         /* point 0 is first */
                         pt1 = pointArr[1];
@@ -668,101 +673,21 @@ namespace KiCad2Gcode
 
     internal class Graph2D
     {
-        public static  bool IsAngleBetween2(double a, double v1, double v2)
+        
+
+        public static bool IsAngleBetween(double a_, double v1_, double v2_, bool ccw)
         {
-           /* while(v1 > Math.PI)
+            double v1, v2;
+            if (ccw)
             {
-                v1 -= 2 * Math.PI;
-            }
-            while (v1 < -Math.PI)
-            {
-                v1 += 2 * Math.PI;
-            }
-
-            while (v2 > Math.PI)
-            {
-                v2 -= 2 * Math.PI;
-            }
-            while (v2 < -Math.PI)
-            {
-                v2 += 2 * Math.PI;
-            }
-
-            while (a > Math.PI)
-            {
-                a -= 2 * Math.PI;
-            }
-            while (a < -Math.PI)
-            {
-                a += 2 * Math.PI;
-            }
-
-            if(v1 > v2)
-            {
-                return ( a<  v1 && a > v2 );
+                v1 = v2_;
+                v2 = v1_;
             }
             else
             {
-                return (a < v1 || a > v2);
-            }*/
-
-
-
-            while (v1 < v2)
-            {
-                v1 += 2 * Math.PI;   
+                v1 = v1_;
+                v2 = v2_;
             }
-
-            while(a < v2)
-            {
-               a += 2 * Math.PI; 
-            }
-
-            return (a < v1 );
-
-        }
-
-        public static bool IsAngleBetween(double a_, double v1_, double v2_)
-        {
-            /*
-             while(v1 >= 2*Math.PI)
-             {
-                 v1 -= 2 * Math.PI;
-             }
-             while (v1 < 0)
-             {
-                 v1 += 2 * Math.PI;
-             }
-
-             while (v2 >= 2*Math.PI)
-             {
-                 v2 -= 2 * Math.PI;
-             }
-             while (v2 < 0)
-             {
-                 v2 += 2 * Math.PI;
-             }
-
-             while (a >= 2*Math.PI)
-             {
-                 a -= 2 * Math.PI;
-             }
-             while (a < 0)
-             {
-                 a += 2 * Math.PI;
-             }
-
-             if(v1 > v2)
-             {
-                 return ( a<  v1 && a > v2 );
-             }
-             else
-             {
-                 return (a < v1 || a > v2);
-             }*/
-
-            double v1 = v1_;
-            double v2 = v2_;
             double a = a_;
 
             double v1_deg = 180 * v1 / Math.PI;
@@ -853,7 +778,7 @@ namespace KiCad2Gcode
             }
 
             double angle = Math.Atan2(pt.y - arc.centre.y, pt.x - arc.centre.x);      
-            return Graph2D.IsAngleBetween(angle, arc.startAngle, arc.endAngle);
+            return Graph2D.IsAngleBetween(angle, arc.startAngle, arc.endAngle,arc.ccw);
         }
     }
 }

@@ -42,7 +42,7 @@ namespace KiCad2Gcode
             //textBox1.Text = pcbFileParser.Parse("error5.kicad_pcb").ToString();
             //textBox1.Text = pcbFileParser.Parse("error9.kicad_pcb").ToString();
 
-            //textBox1.Text = pcbFileParser.Parse("testZone1.kicad_pcb").ToString();
+            //textBox1.Text = pcbFileParser.Parse("testZone4.kicad_pcb").ToString();
 
 
             foreach (Figure f in figures)
