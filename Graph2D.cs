@@ -402,6 +402,8 @@ namespace KiCad2Gcode
 
         public string name;
 
+        public int net = -1;
+
         public void Rotate(double angle)
         {
             shape.Rotate(angle);
@@ -661,6 +663,13 @@ namespace KiCad2Gcode
             }
         }
 
+
+    }
+
+    public class Net
+    {
+        public List<Figure> figures = new List<Figure>();
+        public int net;
 
     }
 

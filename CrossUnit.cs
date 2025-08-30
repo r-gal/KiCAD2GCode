@@ -647,136 +647,62 @@ namespace KiCad2Gcode
                     return CROSS_TYPE_et.NONE;
                 }
 
-                if (sP.y == eP.y && sP.y == pt.y)
-                {
-                    return CROSS_TYPE_et.NONE;
-                }
+                /* calc arc - line crossing points */
 
-                if( sP.y < pt.y && eP.y < pt.y && sP.x > eP.x )
-                {
-                    return CROSS_TYPE_et.NONE;
-                }
+                /* close case */
+                double h = pt.y - cP.y;
+                double a = Math.Sqrt(r * r - h * h);
 
-                if (sP.y > pt.y && eP.y > pt.y && sP.x < eP.x)
-                {
-                    return CROSS_TYPE_et.NONE;
-                }
+                double leftx = cP.x - a;
+                double rightx = cP.x + a;
 
+                Point2D leftPt = new Point2D(leftx, pt.y);
+                Point2D rightPt = new Point2D(rightx, pt.y);
 
-                if(node.Value.arc.ccw)
+                CR_PT_TYPE_et leftCr = CR_PT_TYPE_et.CR_NONE;
+                CR_PT_TYPE_et rightCr = CR_PT_TYPE_et.CR_NONE;
+
+                if (node.Value.arc.ccw)
                 {
                     Point2D tmp = sP;
                     sP = eP;
                     eP = tmp;
                 }
 
-                CR_PT_TYPE_et leftCr = CR_PT_TYPE_et.CR_NONE;
-                CR_PT_TYPE_et rightCr = CR_PT_TYPE_et.CR_NONE;
 
-                if (sP.y > pt.y)
+                if (leftx < pt.x)
                 {
-                    if (eP.y > pt.y)
+                    if (leftPt.IsSameAs(sP))
                     {
-                        leftCr = CR_PT_TYPE_et.CR_NORMAL;
-                        rightCr = CR_PT_TYPE_et.CR_NORMAL;
+                         leftCr = CR_PT_TYPE_et.CR_UP;
                     }
-                    else if (eP.y < pt.y)
+                    else if (leftPt.IsSameAs(eP))
                     {
-                        rightCr = CR_PT_TYPE_et.CR_NORMAL;
+                        leftCr = CR_PT_TYPE_et.CR_DN;
                     }
-                    else /*eP.y == pt.y */
-                    {
-                        if (eP.x < cP.x)
-                        {
-                            rightCr = CR_PT_TYPE_et.CR_NORMAL;
-                            leftCr = CR_PT_TYPE_et.CR_DN;
-                        }
-                        else
-                        {
-                            rightCr = CR_PT_TYPE_et.CR_UP;
-                        }
-                    }
-                }
-                else if (sP.y < pt.y)
-                {
-                    if (eP.y < pt.y)
-                    {
-                        leftCr = CR_PT_TYPE_et.CR_NORMAL;
-                        rightCr = CR_PT_TYPE_et.CR_NORMAL;
-                    }
-                    else if (eP.y > pt.y)
+                    else if (Graph2D.IsPointOnArc(leftPt, sP, eP, node.Value.arc))
                     {
                         leftCr = CR_PT_TYPE_et.CR_NORMAL;
                     }
-                    else/* sP.y == pt.y */
-                    {
-                        if (eP.x < cP.x)
-                        {
-                            leftCr = CR_PT_TYPE_et.CR_DN;
-                        }
-                        else
-                        {
-                            leftCr = CR_PT_TYPE_et.CR_NORMAL;
-                            rightCr = CR_PT_TYPE_et.CR_UP;
-                        }
-                    }
                 }
-                else /* sp.y == pt.y */
+
+
+                if (rightx < pt.x)
                 {
-                    if (sP.x < cP.x)
+                    if (leftPt.IsSameAs(sP))
                     {
-                        if(eP.y > pt.y)
-                        {
-                            leftCr = CR_PT_TYPE_et.CR_UP;
-                        }
-                        else
-                        {
-                            leftCr = CR_PT_TYPE_et.CR_UP;
-                            rightCr = CR_PT_TYPE_et.CR_NORMAL;
-                        }
+                        rightCr = CR_PT_TYPE_et.CR_DN;
                     }
-                    else
+                    else if (leftPt.IsSameAs(eP))
                     {
-                        if (eP.y > pt.y)
-                        {
-                            rightCr = CR_PT_TYPE_et.CR_DN;
-                            leftCr = CR_PT_TYPE_et.CR_NORMAL;
-                        }
-                        else
-                        {
-                            rightCr = CR_PT_TYPE_et.CR_DN;
-                        }
-
+                        rightCr = CR_PT_TYPE_et.CR_UP;
+                    }
+                    else if ( Graph2D.IsPointOnArc(rightPt, sP, eP, node.Value.arc))
+                    {
+                        rightCr = CR_PT_TYPE_et.CR_NORMAL;
                     }
                 }
-
-                if (cP.x + r > pt.x)
-                {
-                    /* close case */
-                    double h = pt.y - cP.y;
-                    double a = Math.Sqrt(r * r - h * h);
-
-                    double leftx = cP.x - a;
-                    double rightx = cP.x + a;
-
-                    if (leftx == pt.x && leftCr != CR_PT_TYPE_et.CR_NONE)
-                    {
-                        return CROSS_TYPE_et.EDGE;
-                    }
-                    else if (leftx > pt.x)
-                    {
-                        leftCr = CR_PT_TYPE_et.CR_NONE;
-                    }
-
-                    if (rightx == pt.x && rightCr != CR_PT_TYPE_et.CR_NONE)
-                    {
-                        return CROSS_TYPE_et.EDGE;
-                    }
-                    else if (rightx > pt.x)
-                    {
-                        rightCr = CR_PT_TYPE_et.CR_NONE;
-                    }
-                }
+                
 
                 if (leftCr == CR_PT_TYPE_et.CR_UP || rightCr == CR_PT_TYPE_et.CR_UP)
                 {

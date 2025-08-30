@@ -15,12 +15,15 @@ namespace KiCad2Gcode
         PcbFileParser pcbFileParser;
         Drawer drawer;
 
-        List<Figure> figures = new List<Figure>();
+        List<Net> zones = new List<Net>();
         List<Figure> cuts = new List<Figure>();
         List<Drill> drills = new List<Drill>();
 
+        Net[] netList;
+
         int idxA = 0;
         int idxB = 1;
+        int idxNet = 0;
 
 
         public Form1()
@@ -32,47 +35,83 @@ namespace KiCad2Gcode
 
         private void button1_Click(object sender, EventArgs e)
         {
-            figures.Clear();
+            netList = null;
             cuts.Clear();
             drills.Clear();
+            zones.Clear();
 
 
             //textBox1.Text = pcbFileParser.Parse("manipulator.kicad_pcb").ToString();
-            textBox1.Text = pcbFileParser.Parse("test1.kicad_pcb").ToString();
+            // textBox1.Text = pcbFileParser.Parse("test1.kicad_pcb").ToString();
             //textBox1.Text = pcbFileParser.Parse("error5.kicad_pcb").ToString();
-            //textBox1.Text = pcbFileParser.Parse("error9.kicad_pcb").ToString();
+            //textBox1.Text = pcbFileParser.Parse("error10.kicad_pcb").ToString();
 
-            //textBox1.Text = pcbFileParser.Parse("testZone4.kicad_pcb").ToString();
+            //textBox1.Text = pcbFileParser.Parse("testZone5.kicad_pcb").ToString();
+            textBox1.Text = pcbFileParser.Parse("manipulator_no_islands.kicad_pcb").ToString();
 
-
-            foreach (Figure f in figures)
+            foreach (Net n in netList)
             {
-                f.shape.GetExtPoints();
+                foreach (Figure f in n.figures)
+                {
+                    f.shape.GetExtPoints();
+                }
             }
 
-
-
+            foreach (Net n in zones)
+            {
+                foreach (Figure f in n.figures)
+                {
+                    f.shape.GetExtPoints();
+                }
+            }
 
             idxA = 0;
             idxB = 1;
         }
 
-        private bool Step()
+        private bool Step(int phase)
         {
             /*step button */
             bool result;
             bool merged = false;
 
+            List<Figure> listA = null;
+            List<Figure> listB;
 
-            foreach (Figure f in figures)
+            if(phase == 0)
+            {
+                listA = netList[idxNet].figures;
+                listB = netList[idxNet].figures;
+            }
+            else
+            {
+
+                foreach (Net z in zones)
+                {
+                    if (z.net == idxNet)
+                    {
+                        listA = z.figures;
+                        break;
+                    }
+                }
+
+                
+                listB = netList[idxNet].figures;
+            }
+
+
+            foreach (Figure f in netList[idxNet].figures)
             {
                 f.selected = false;
             }
-            if (idxA < figures.Count && idxB < figures.Count && idxA != idxB)
+
+            if ((listA == listB) && (idxB == idxA)) { idxB++; }
+
+            if (listA != null && idxA < listA.Count && idxB < listB.Count && ((listA != listB)||(idxA != idxB)))
             {
                /* PrintText("Try " + idxA.ToString() + " vs " + idxB.ToString() + "size = " + figures.Count
                     .ToString() + "\n");*/
-                if (idxA == 1 && idxB == 9 && figures.Count == 10)
+                if (idxA == 0 && idxB == 1 && netList[idxNet].figures.Count == 7)
                 {
                     PrintText("trap\n");
                 }
@@ -80,16 +119,16 @@ namespace KiCad2Gcode
                 merged = false;
 
                 Merger m = new Merger(this);
-                Figure mergedFigure = m.Merge(figures[idxA], figures[idxB]);
+                Figure mergedFigure = m.Merge(listA[idxA], listB[idxB]);
 
                 if (mergedFigure != null)
                 {
 
-                    PrintText("Foud " + idxA.ToString() + " vs " + idxB.ToString() + "size = " + figures.Count.ToString() + "\n");
+                    PrintText("Foud " + idxA.ToString() + " vs " + idxB.ToString() + "size = " + netList[idxNet].figures.Count.ToString() + "\n");
 
-                    figures[idxA] = mergedFigure;
-                    figures[idxA].selected = true;
-                    figures.RemoveAt(idxB);
+                    listA[idxA] = mergedFigure;
+                    listA[idxA].selected = true;
+                    listB.RemoveAt(idxB);
 
                     //PrintText("foud\n");
 
@@ -98,25 +137,40 @@ namespace KiCad2Gcode
                 }
                 else
                 {
-                    figures[idxA].selected = true;
-                    figures[idxB].selected = true;
+                    listA[idxA].selected = true;
+                    listB[idxB].selected = true;
 
                     //PrintText("skip\n");
                     idxB++;
-                    if (idxB == idxA) { idxB++; }
+                    if ((listA == listB) && (idxB == idxA )) { idxB++; }
                 }
 
                 if(merged == true)
                 {
                     //idxB = 0;
-                    idxB = idxA + 1;
+                    if(listA == listB)
+                    {
+                        idxB = idxA + 1;
+                    }
+                    else
+                    {
+                        idxB = 0;
+                    }
+                    
                 }
 
 
-                if (idxB >= figures.Count)
+                if (idxB >= netList[idxNet].figures.Count)
                 {  
                     idxA++;
-                    idxB = idxA + 1;  
+                    if (listA == listB)
+                    {
+                        idxB = idxA + 1;
+                    }
+                    else
+                    {
+                        idxB = 0;
+                    }
                 }
 
 
@@ -124,11 +178,20 @@ namespace KiCad2Gcode
             }
             else
             {
-                PrintText("Nothing to do ! \n");
-                result = false;
-            }
+                idxNet++;
+                if (idxNet < netList.Length)
+                {
+                    idxA = 0;
+                    idxB = 0;
 
-            
+                    return true;
+                }
+                else
+                {
+                    PrintText("Nothing to do ! \n");
+                    result = false;
+                }
+            }            
             return result;
         }
 
@@ -137,20 +200,50 @@ namespace KiCad2Gcode
             bool res = false;
 
             idxA = 0;
-            idxB = 1;
+            idxB = 0;
+            idxNet = 0;
 
             do
             {
-                res = Step();
+                res = Step(0);
             } while (res == true);
-            drawer.Redraw(figures, cuts, drills);
+            drawer.Redraw(netList, zones, cuts, drills);
+
+            idxA = 0;
+            idxB = 0;
+            idxNet = 0;
+        }
+
+        private void button9_Click(object sender, EventArgs e)
+        {
+            bool res = false;
+
+            idxA = 0;
+            idxB = 0;
+            idxNet = 0;
+
+            do
+            {
+                res = Step(1);
+            } while (res == true);
+            drawer.Redraw(netList, zones, cuts, drills);
+
+            idxA = 0;
+            idxB = 0;
+            idxNet = 0;
         }
 
         private void button5_Click(object sender, EventArgs e)
         {
 
-            Step();
-            drawer.Redraw(figures, cuts, drills);
+            Step(0);
+            drawer.Redraw(netList, zones, cuts, drills);
+        }
+
+        private void button10_Click(object sender, EventArgs e)
+        {
+            Step(1);
+            drawer.Redraw(netList, zones, cuts, drills);
         }
 
         public void PrintText(string text)
@@ -193,14 +286,43 @@ namespace KiCad2Gcode
             
 
 
-            drawer.Redraw(figures,cuts,drills);
+            drawer.Redraw(netList, zones, cuts,drills);
 
 
         }
 
         public void AddFigure(Figure f)
         {
-            figures.Add(f);
+            netList[f.net].figures.Add(f);
+            //figures.Add(f);
+        }
+
+        public void InitZone(int net)
+        {
+            foreach(Net z in zones)
+            {
+                if(z.net == net)
+                {
+                    /*zone already defined */
+                    return;
+                }
+            }
+
+            Net zn = new Net();
+            zn.net = net;
+            zn.figures = new List<Figure>();
+            zones.Add(zn);
+        }
+        public void AddZoneFigure(Figure f)
+        {
+            foreach (Net z in zones)
+            {
+                if (z.net == f.net)
+                {                    
+                    z.figures.Add(f);
+                    return;
+                }
+            }
         }
 
         public void AddCuts(Figure f)
@@ -213,10 +335,28 @@ namespace KiCad2Gcode
             drills.Add(drill);
         }
 
+        public void InitNetList(int netCnt)
+        {
+            if(netCnt > 0)
+            {
+                netList = new Net[netCnt];
+            }
+
+            for(int i=0;i< netCnt; i++)
+            {
+                netList[i] = new Net();
+                netList[i].figures = new List<Figure>();
+            }
+            
+        }
+
         private void AddTestForm(Point2D[] pts1, Arc[] arc1, Point2D[] pts2, Arc[] arc2, Vector position)
         {
             Figure figure1 = new Figure();
             Figure figure2 = new Figure();
+
+            figure1.net = 0;
+            figure2.net = 0;
             Line line;
             Arc arc;
 
@@ -262,8 +402,9 @@ namespace KiCad2Gcode
             Merger m = new Merger(this);
             Figure mergedFigure = m.Merge(figure1, figure2);
 
-            figures.Add(figure1);
-            figures.Add(figure2);
+            InitNetList(1);
+            AddFigure(figure1);
+            AddFigure(figure2);
 
             if(mergedFigure != null)
             {
@@ -488,7 +629,7 @@ namespace KiCad2Gcode
             arc2[3] = null;
             
 
-            drawer.Redraw(figures, cuts, drills);
+            drawer.Redraw(netList, zones, cuts, drills);
         }
 
         private void button4_Click(object sender, EventArgs e)
@@ -533,6 +674,10 @@ namespace KiCad2Gcode
 
             Figure figure1 = new Figure();
             Figure figure2 = new Figure();
+
+            figure1.net = 0;
+            figure2.net = 0;
+
             Line line;
             Arc arc;
 
@@ -650,8 +795,9 @@ namespace KiCad2Gcode
             Merger m = new Merger(this);
             Figure mergedFigure = m.Merge(figure1, figure2);
 
-            figures.Add(figure1);
-            figures.Add(figure2);
+            InitNetList(1);
+            AddFigure(figure1);
+            AddFigure(figure2);
             cuts.Add(mergedFigure);
 
 
@@ -665,7 +811,7 @@ namespace KiCad2Gcode
 
 
 
-            drawer.Redraw(figures, cuts, drills);
+            drawer.Redraw(netList, zones, cuts, drills);
         }
 
         private void button7_Click(object sender, EventArgs e)
@@ -677,7 +823,7 @@ namespace KiCad2Gcode
             drawer.SetScale(scale);
             drawer.SetPos(xpos, ypos);
 
-            drawer.Redraw(figures, cuts, drills);
+            drawer.Redraw(netList, zones, cuts, drills);
         }
 
         private void button8_Click(object sender, EventArgs e)
@@ -710,6 +856,9 @@ namespace KiCad2Gcode
 
             Figure figure1 = new Figure();
             Figure figure2 = new Figure();
+
+            figure1.net = 0;
+            figure2.net = 0;
 
 
             Node node;
@@ -773,12 +922,15 @@ namespace KiCad2Gcode
             Merger m = new Merger(this);
             Figure mergedFigure = m.Merge(figure1, figure2);
 
-            figures.Add(figure1);
-            figures.Add(figure2);
+            InitNetList(1);            
+            AddFigure(figure1);
+            AddFigure(figure2);
             cuts.Add(mergedFigure);
 
 
-            drawer.Redraw(figures, cuts, drills);
+            drawer.Redraw(netList, zones, cuts, drills);
         }
+
+
     }
 }

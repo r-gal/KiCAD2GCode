@@ -120,49 +120,96 @@ namespace KiCad2Gcode
 
         }
 
-        public void Redraw(List<Figure> figures, List<Figure> cuts, List<Drill> drills)
+        public void Redraw(Net[] netList, List<Net> zones,  List<Figure> cuts, List<Drill> drills)
         {
             Bitmap bmp = new Bitmap(800, 600);
             pBox.Width = bmp.Width;
             pBox.Height = bmp.Height;
 
-            foreach (Figure f in figures)
+            foreach (Net net in netList)
             {
-                LinkedListNode<Node> n = f.shape.points.First;
-
-                bool first = true;
-
-                while (n != null)
+                foreach (Figure f in net.figures)
                 {
-                    LinkedListNode<Node> nPrev = n.Previous ?? f.shape.points.Last;
-                    DrawChunk(nPrev.Value.pt, n.Value.pt, n.Value.arc, bmp, f.selected ? Color.Green : ( n.Value.pt.type == Point2D.PointType_et.BRIDGE ? Color.Cyan : Color.Red));
+                    LinkedListNode<Node> n = f.shape.points.First;
 
-                    DrawDot(n.Value.pt, 3, bmp, first ? Color.DarkOrange :  Color.Black);
-                    if (first)
-                    {
-                        first = false;
-                    }
-                    
-
-                    n = n.Next;
-                }
-
-                foreach (Polygon p in f.holes)
-                {
-                    n = p.points.First;
+                    bool first = true;
 
                     while (n != null)
                     {
-                        LinkedListNode<Node> nPrev = n.Previous ?? p.points.Last;
-                        DrawChunk(nPrev.Value.pt, n.Value.pt, n.Value.arc, bmp, Color.Blue);
-                        
+                        LinkedListNode<Node> nPrev = n.Previous ?? f.shape.points.Last;
+                        DrawChunk(nPrev.Value.pt, n.Value.pt, n.Value.arc, bmp, f.selected ? Color.Green : (n.Value.pt.type == Point2D.PointType_et.BRIDGE ? Color.Cyan : Color.Red));
+
                         DrawDot(n.Value.pt, 3, bmp, first ? Color.DarkOrange : Color.Black);
                         if (first)
                         {
                             first = false;
                         }
 
+
                         n = n.Next;
+                    }
+
+                    foreach (Polygon p in f.holes)
+                    {
+                        n = p.points.First;
+
+                        while (n != null)
+                        {
+                            LinkedListNode<Node> nPrev = n.Previous ?? p.points.Last;
+                            DrawChunk(nPrev.Value.pt, n.Value.pt, n.Value.arc, bmp, Color.Blue);
+
+                            DrawDot(n.Value.pt, 3, bmp, first ? Color.DarkOrange : Color.Black);
+                            if (first)
+                            {
+                                first = false;
+                            }
+
+                            n = n.Next;
+                        }
+                    }
+                }
+            }
+
+            foreach (Net z in zones)
+            {
+                foreach (Figure f in z.figures)
+                {
+                    LinkedListNode<Node> n = f.shape.points.First;
+
+                    bool first = true;
+
+                    while (n != null)
+                    {
+                        LinkedListNode<Node> nPrev = n.Previous ?? f.shape.points.Last;
+                        DrawChunk(nPrev.Value.pt, n.Value.pt, n.Value.arc, bmp, f.selected ? Color.Green : (n.Value.pt.type == Point2D.PointType_et.BRIDGE ? Color.Cyan : Color.Red));
+
+                        DrawDot(n.Value.pt, 3, bmp, first ? Color.DarkOrange : Color.Black);
+                        if (first)
+                        {
+                            first = false;
+                        }
+
+
+                        n = n.Next;
+                    }
+
+                    foreach (Polygon p in f.holes)
+                    {
+                        n = p.points.First;
+
+                        while (n != null)
+                        {
+                            LinkedListNode<Node> nPrev = n.Previous ?? p.points.Last;
+                            DrawChunk(nPrev.Value.pt, n.Value.pt, n.Value.arc, bmp, Color.Blue);
+
+                            DrawDot(n.Value.pt, 3, bmp, first ? Color.DarkOrange : Color.Black);
+                            if (first)
+                            {
+                                first = false;
+                            }
+
+                            n = n.Next;
+                        }
                     }
                 }
             }

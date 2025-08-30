@@ -45,6 +45,8 @@
             this.label2 = new System.Windows.Forms.Label();
             this.label3 = new System.Windows.Forms.Label();
             this.button8 = new System.Windows.Forms.Button();
+            this.button9 = new System.Windows.Forms.Button();
+            this.button10 = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.SuspendLayout();
             // 
@@ -114,21 +116,21 @@
             // 
             // button5
             // 
-            this.button5.Location = new System.Drawing.Point(294, 12);
+            this.button5.Location = new System.Drawing.Point(281, 12);
             this.button5.Name = "button5";
             this.button5.Size = new System.Drawing.Size(103, 46);
             this.button5.TabIndex = 7;
-            this.button5.Text = "step";
+            this.button5.Text = "step path";
             this.button5.UseVisualStyleBackColor = true;
             this.button5.Click += new System.EventHandler(this.button5_Click);
             // 
             // button6
             // 
-            this.button6.Location = new System.Drawing.Point(294, 64);
+            this.button6.Location = new System.Drawing.Point(281, 64);
             this.button6.Name = "button6";
             this.button6.Size = new System.Drawing.Size(103, 46);
             this.button6.TabIndex = 8;
-            this.button6.Text = "step";
+            this.button6.Text = "merge  path";
             this.button6.UseVisualStyleBackColor = true;
             this.button6.Click += new System.EventHandler(this.button6_Click);
             // 
@@ -203,11 +205,33 @@
             this.button8.UseVisualStyleBackColor = true;
             this.button8.Click += new System.EventHandler(this.button8_Click);
             // 
+            // button9
+            // 
+            this.button9.Location = new System.Drawing.Point(390, 64);
+            this.button9.Name = "button9";
+            this.button9.Size = new System.Drawing.Size(119, 46);
+            this.button9.TabIndex = 17;
+            this.button9.Text = "merge zones";
+            this.button9.UseVisualStyleBackColor = true;
+            this.button9.Click += new System.EventHandler(this.button9_Click);
+            // 
+            // button10
+            // 
+            this.button10.Location = new System.Drawing.Point(390, 12);
+            this.button10.Name = "button10";
+            this.button10.Size = new System.Drawing.Size(119, 46);
+            this.button10.TabIndex = 18;
+            this.button10.Text = "step zones";
+            this.button10.UseVisualStyleBackColor = true;
+            this.button10.Click += new System.EventHandler(this.button10_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(2617, 1190);
+            this.Controls.Add(this.button10);
+            this.Controls.Add(this.button9);
             this.Controls.Add(this.button8);
             this.Controls.Add(this.label3);
             this.Controls.Add(this.label2);
@@ -252,6 +276,8 @@
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.Button button8;
+        private System.Windows.Forms.Button button9;
+        private System.Windows.Forms.Button button10;
     }
 }
 

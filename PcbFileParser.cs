@@ -91,6 +91,34 @@ namespace KiCad2Gcode
             return result;
         }
 
+        internal int ParseNet()
+        {
+
+            PcbFileElement element = FindElement("net");
+            int result = 0;
+
+            if (element == null)
+            {
+                return 0;
+            }
+            else
+            {
+                string[] valStr = element.values.Split(' ');
+                if (valStr.Length > 0 )
+                {                     
+                    try
+                    {
+                        
+                        result = int.Parse(valStr[0]);
+                        
+                    }
+                    catch { return 0; }
+                }
+                else { return 0; }
+            }
+            return result;
+        }
+
         internal bool CheckLayer(string layer)
         {
 
@@ -173,6 +201,7 @@ namespace KiCad2Gcode
 
         }
 
+ 
 
 
         private void DecodePad(PcbFileElement pad, double offsetX, double offsetY, double offsetRot)
@@ -209,6 +238,8 @@ namespace KiCad2Gcode
                 posPt.y += offsetY;
 
 
+
+
                 if (pad.values.Contains("thru_hole"))
                 {
                     /*add hole */
@@ -243,7 +274,7 @@ namespace KiCad2Gcode
 
                     Figure f = new Figure();
                     f.name = "roundrect at " + offsetX.ToString(CultureInfo.InvariantCulture) + " -" + offsetY.ToString(CultureInfo.InvariantCulture);
-
+                    f.net = pad.ParseNet();
 
                     Arc arc;
 
@@ -322,121 +353,6 @@ namespace KiCad2Gcode
 
 
 
-                    /*left up */
-                    /*
-                     * Line line;
-                    if (chamferSize[0] > 0)
-                    {
-                        if (chamferRounded[0])
-                        {
-                            arc = new Arc();
-                            arc.start = new Point2D(-xl, yl - chamferSize[0]);
-                            arc.end = new Point2D(-xl + chamferSize[0], yl);
-                            arc.centre = new Point2D(-xl + chamferSize[0], yl - chamferSize[0]);
-                            arc.radius = chamferSize[0];
-                            arc.startAngle = Math.PI;
-                            arc.endAngle = Math.PI/2;
-                            f.chunks.Add(arc);
-
-                        }
-                        else
-                        {
-                            line = new Line();
-                            line.start = new Point2D(-xl, yl - chamferSize[0]);
-                            line.end = new Point2D(-xl + chamferSize[0], yl );
-                            f.chunks.Add(line);
-                        }
-                    }
-
-                    line = new Line();
-                    line.start = new Point2D(-xl + chamferSize[0], yl);
-                    line.end = new Point2D(xl - chamferSize[1], yl);
-                    f.chunks.Add(line);*/
-                    /*rigth up */
-                    /*if (chamferSize[1] > 0)
-                    {
-                        if (chamferRounded[1])
-                        {
-                            arc = new Arc();
-                            arc.start = new Point2D(xl - chamferSize[1], yl);
-                            arc.end = new Point2D(xl, yl - chamferSize[1]);
-                            arc.centre = new Point2D(xl - chamferSize[1], yl - chamferSize[1]);
-                            arc.radius = chamferSize[0];
-                            arc.startAngle = Math.PI/2;
-                            arc.endAngle = 0;
-                            f.chunks.Add(arc);
-
-                        }
-                        else
-                        {
-                            line = new Line();
-                            line.start = new Point2D(xl - chamferSize[1], yl);
-                            line.end = new Point2D(xl , yl - chamferSize[1]);
-                            f.chunks.Add(line);
-                        }
-                    }
-
-                    line = new Line();
-                    line.start = new Point2D(xl, yl - chamferSize[1]); 
-                    line.end = new Point2D(xl, -yl + chamferSize[2]);
-                    f.chunks.Add(line);*/
-                    /*rigth bottom */
-                    /*if (chamferSize[2] > 0)
-                    {
-                        if (chamferRounded[2])
-                        {
-                            arc = new Arc();
-                            arc.start = new Point2D(xl, -yl + chamferSize[2]);
-                            arc.end = new Point2D(xl - chamferSize[2], -yl);
-                            arc.centre = new Point2D(xl - chamferSize[2], -yl + chamferSize[2]);
-                            arc.radius = chamferSize[0];
-                            arc.startAngle = 0;
-                            arc.endAngle = -Math.PI/2;
-                            f.chunks.Add(arc);
-
-                        }
-                        else
-                        {
-                            line = new Line();
-                            line.start = new Point2D(xl, -yl + chamferSize[2]);
-                            line.end = new Point2D(xl - chamferSize[2], -yl ) ;
-                            f.chunks.Add(line);
-                        }
-                    }
-
-                    line = new Line();
-                    line.start = new Point2D(xl - chamferSize[2], -yl);
-                    line.end = new Point2D(-xl + chamferSize[3], -yl);
-                    f.chunks.Add(line);*/
-                    /*left bottom */
-                    /*if (chamferSize[3] > 0)
-                    {
-                        if (chamferRounded[3])
-                        {
-                            arc = new Arc();
-                            arc.start = new Point2D(-xl + chamferSize[3], -yl);
-                            arc.end = new Point2D(-xl, -yl + chamferSize[3]);
-                            arc.centre = new Point2D(-xl + chamferSize[3], -yl + chamferSize[3]);
-                            arc.radius = chamferSize[0];
-                            arc.startAngle = -Math.PI/2;
-                            arc.endAngle = -Math.PI;
-                            f.chunks.Add(arc);
-
-                        }
-                        else
-                        {
-                            line = new Line();
-                            line.start = new Point2D(-xl + chamferSize[3], -yl);
-                            line.end = new Point2D(-xl , -yl + chamferSize[3]);
-                            f.chunks.Add(line);
-                        }
-                    }
-
-                    line = new Line();
-                    line.start = new Point2D(-xl, -yl + chamferSize[3]);
-                    line.end = new Point2D(-xl, yl - chamferSize[0]);
-                    f.chunks.Add(line);*/
-
                     f.Rotate(posRot * Math.PI / 180);
                     f.Move(posPt.ToVector());
 
@@ -449,6 +365,7 @@ namespace KiCad2Gcode
                 {
                     Figure f = new Figure();
                     f.name = "rect at " + offsetX.ToString(CultureInfo.InvariantCulture) + " -" + offsetY.ToString(CultureInfo.InvariantCulture);
+                    f.net = pad.ParseNet();
 
                     Node node;
                     LinkedListNode<Node> lln;
@@ -474,28 +391,7 @@ namespace KiCad2Gcode
                     node.pt = p4;
                     lln = new LinkedListNode<Node>(node);
                     f.shape.points.AddLast(lln);
-                    /*
-                    Line line;
-                    line = new Line();
-                    line.start = new Point2D(-size[0] / 2, size[1] / 2);
-                    line.end = new Point2D(size[0] / 2, size[1] / 2);
-                    f.chunks.Add(line);
-
-                    line = new Line();
-                    line.start = new Point2D(size[0] / 2, size[1] / 2);
-                    line.end = new Point2D(size[0] / 2, -size[1] / 2);
-                    f.chunks.Add(line);
-
-                    line = new Line();
-                    line.start = new Point2D(size[0] / 2, -size[1] / 2);
-                    line.end = new Point2D(-size[0] / 2, -size[1] / 2);
-                    f.chunks.Add(line);
-
-                    line = new Line();
-                    line.start = new Point2D(-size[0] / 2, -size[1] / 2);
-                    line.end = new Point2D(-size[0] / 2, size[1] / 2);
-                    f.chunks.Add(line);
-                    */
+                    
                     f.Rotate(posRot * Math.PI / 180);
                     f.Move(posPt.ToVector());
 
@@ -509,6 +405,7 @@ namespace KiCad2Gcode
                     Arc arc = new Arc();
 
                     f.name = "circle at " + offsetX.ToString(CultureInfo.InvariantCulture) + " -" + offsetY.ToString(CultureInfo.InvariantCulture);
+                    f.net = pad.ParseNet();
 
                     Node node;
                     LinkedListNode<Node> lln;
@@ -527,12 +424,7 @@ namespace KiCad2Gcode
                     f.shape.points.AddLast(lln);
 
                     f.Move(posPt.ToVector());
-                    /*
-                    arc.centre = posPt;
-                    arc.radius = size[0] / 2;
-                    arc.startAngle = Math.PI;
-                    arc.endAngle = - Math.PI;
-                    f.chunks.Add(arc);*/
+
                     mainForm.AddFigure(f);
 
                     mainForm.PrintText("PAD TH CIRCLE " + arc.centre.x.ToString() + " " + arc.centre.y.ToString() + " " + arc.radius.ToString() + "\n");
@@ -542,6 +434,7 @@ namespace KiCad2Gcode
                     Figure f = new Figure();
 
                     f.name = "oval at " + offsetX.ToString(CultureInfo.InvariantCulture) + " -" + offsetY.ToString(CultureInfo.InvariantCulture);
+                    f.net = pad.ParseNet();
 
                     Arc arc;
 
@@ -680,7 +573,7 @@ namespace KiCad2Gcode
                 Arc arc = new Arc();
 
                 f.name = "via at " + pos[0].ToString(CultureInfo.InvariantCulture) + " -" + pos[1].ToString(CultureInfo.InvariantCulture);
-
+                f.net = via.ParseNet();
                 Node node;
                 LinkedListNode<Node> lln;
 
@@ -746,7 +639,7 @@ namespace KiCad2Gcode
 
                 f.name = "seg " + startArr[0].ToString(CultureInfo.InvariantCulture) + " -" + startArr[1].ToString(CultureInfo.InvariantCulture) + " <-> " + 
                     endArr[0].ToString(CultureInfo.InvariantCulture) + " -" + endArr[1].ToString(CultureInfo.InvariantCulture);
-
+                f.net = seg.ParseNet();
                 Node node;
                 LinkedListNode<Node> lln;
 
@@ -810,7 +703,7 @@ namespace KiCad2Gcode
             }
         }
 
-        private void DecodePolygon(PcbFileElement polygon)
+        private void DecodePolygon(PcbFileElement polygon, int net)
         {
             if ((polygon.name != null) && (polygon.name == "filled_polygon"))
             {
@@ -827,6 +720,7 @@ namespace KiCad2Gcode
                 PcbFileElement pts = polygon.FindElement("pts");
 
                 Figure f = new Figure();
+                f.net = net;
 
                 bool firstFetched = false;
                 double firstX = 0;
@@ -898,7 +792,7 @@ namespace KiCad2Gcode
                 ZoneUnit zoneUnit = new ZoneUnit(mainForm);
                 zoneUnit.ConvertToValidFigure(f);
 
-                mainForm.AddFigure(f);
+                mainForm.AddZoneFigure(f);
 
             }
         }
@@ -961,6 +855,41 @@ namespace KiCad2Gcode
             }
         }
 
+        private void DecodeMaster(PcbFileElement el)
+        {
+            int netCnt = 0;
+
+            foreach (PcbFileElement n in el.children)
+            {
+                if (n.name == "net")
+                {
+                    netCnt++;
+                }
+            }
+            mainForm.InitNetList(netCnt);
+
+
+
+        }
+
+        private void DecodeZone(PcbFileElement el)
+        {
+            int net = el.ParseNet();
+
+            mainForm.InitZone(net);
+
+            foreach (PcbFileElement fp in el.children)
+            {
+                if (fp.name == "filled_polygon")
+                {
+                    DecodePolygon(fp,net);
+                }
+            }
+
+
+
+        }
+
         private void Decode(PcbFileElement top)
         {
             if(top.name != null)
@@ -977,10 +906,6 @@ namespace KiCad2Gcode
                 {
                     DecodeSegment(top);
                 }
-                else if (top.name == "filled_polygon")
-                {
-                    DecodePolygon(top);
-                }
                 else if (top.name == "gr_line")
                 {
                     //DecodeLine(top);
@@ -989,10 +914,14 @@ namespace KiCad2Gcode
                 {
                     //DecodeCircle(top);
                 }
-                /*else if (top.name == "zone")
+                else if (top.name == "kicad_pcb")
                 {
-                    DecodePolygon(top);
-                }*/
+                    DecodeMaster(top);
+                }
+                else if (top.name == "zone")
+                {
+                    DecodeZone(top);
+                }
 
 
             }
