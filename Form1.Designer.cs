@@ -233,11 +233,11 @@
             // 
             // button11
             // 
-            this.button11.Location = new System.Drawing.Point(390, 115);
+            this.button11.Location = new System.Drawing.Point(390, 167);
             this.button11.Name = "button11";
             this.button11.Size = new System.Drawing.Size(119, 46);
             this.button11.TabIndex = 19;
-            this.button11.Text = "step poly";
+            this.button11.Text = "merge zones2";
             this.button11.UseVisualStyleBackColor = true;
             this.button11.Click += new System.EventHandler(this.button11_Click);
             // 
@@ -262,11 +262,11 @@
             // 
             // button13
             // 
-            this.button13.Location = new System.Drawing.Point(390, 167);
+            this.button13.Location = new System.Drawing.Point(390, 116);
             this.button13.Name = "button13";
             this.button13.Size = new System.Drawing.Size(119, 46);
             this.button13.TabIndex = 22;
-            this.button13.Text = "step poly";
+            this.button13.Text = "step zones2";
             this.button13.UseVisualStyleBackColor = true;
             this.button13.Click += new System.EventHandler(this.button13_Click);
             // 

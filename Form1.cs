@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -129,7 +130,7 @@ namespace KiCad2Gcode
             if (listA != null && idxA < listA.Count && idxB < listB.Count && ((listA != listB)||(idxA != idxB)))
             {
 
-                if (idxA == 0 && idxB == 1 && netList[idxNet].figures.Count == 2)
+                if (idxA == 0 && idxB == 1 && listA.Count == 2)
                 {
                     PrintText("trap\n");
                 }
@@ -179,7 +180,7 @@ namespace KiCad2Gcode
                 }
 
 
-                if (idxB >= netList[idxNet].figures.Count)
+                if (idxB >= listB.Count)
                 {  
                     idxA++;
                     if (listA == listB)
