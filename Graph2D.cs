@@ -275,7 +275,7 @@ namespace KiCad2Gcode
 
     public class Node
     {
-
+        public bool active = false;
 
         public Point2D pt;
         public Arc arc;
@@ -298,6 +298,8 @@ namespace KiCad2Gcode
 
         public Point2D[] extPoint = new Point2D[4];
         public Node[] extNode = new Node[4];
+
+        public int selected = 0;
 
         public void Rotate(Double angle)
         {
@@ -398,7 +400,7 @@ namespace KiCad2Gcode
 
         public List<Polygon> holes = new List<Polygon>();
 
-        public bool selected = false;
+        
 
         public string name;
 
@@ -469,6 +471,7 @@ namespace KiCad2Gcode
                         node.Value.arc.endAngle = angle;
                         newNode.arc.radius = node.Value.arc.radius;
                         newNode.arc.centre = node.Value.arc.centre;
+                        newNode.arc.ccw = node.Value.arc.ccw;
                     }
                     LinkedListNode<Node> newElement = new LinkedListNode<Node>(newNode);
                     node.List.AddAfter(node, newElement);
@@ -627,6 +630,7 @@ namespace KiCad2Gcode
                         node.Value.arc.endAngle = angle2;
                         newNode.arc.radius = node.Value.arc.radius;
                         newNode.arc.centre = node.Value.arc.centre;
+                        newNode.arc.ccw = node.Value.arc.ccw;
                         node.Value.pt = pt2;
                         LinkedListNode<Node> newElement = new LinkedListNode<Node>(newNode);
                         node.List.AddAfter(node, newElement);
@@ -649,6 +653,7 @@ namespace KiCad2Gcode
                         node.Value.arc.endAngle = angle1;
                         newNode.arc.radius = node.Value.arc.radius;
                         newNode.arc.centre = node.Value.arc.centre;
+                        newNode.arc.ccw = node.Value.arc.ccw;
                         node.Value.pt = pt1;
                         LinkedListNode<Node> newElement = new LinkedListNode<Node>(newNode);
                         node.List.AddAfter(node, newElement);

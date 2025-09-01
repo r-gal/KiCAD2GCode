@@ -307,7 +307,7 @@ namespace KiCad2Gcode
         public Point2D[] GetCrossingArcArc(LinkedListNode<Node> node1, LinkedListNode<Node> node2)
         {
             LinkedListNode<Node> n1Prev = node1.Previous ?? node1.List.Last;
-            LinkedListNode<Node> n2Prev = node1.Previous ?? node2.List.Last;
+            LinkedListNode<Node> n2Prev = node2.Previous ?? node2.List.Last;
 
             Point2D sP1 = n1Prev.Value.pt;
             Point2D eP1 = node1.Value.pt;
@@ -341,7 +341,27 @@ namespace KiCad2Gcode
                 else
                 {
                     /* arcs have same centre and radius */
+                    if (Graph2D.IsPointOnArc(eP2, sP1, eP1, arc1))
+                    {
+                        pt1 = eP2;
+                        pt1.type = Point2D.PointType_et.CROSS_T;
+                    }
 
+                    if (Graph2D.IsPointOnArc(eP1, sP2, eP2, arc2))
+                    {
+                        if( pt1 == null || pt1.IsSameAs(eP1) == false)
+                        {
+                            pt2 = eP1;
+                            pt2.type = Point2D.PointType_et.CROSS_T;
+                        }
+
+                    }
+
+
+
+                    
+
+                    /*
                     if (Graph2D.IsAngleBetween(arc2.endAngle, arc1.startAngle, arc1.endAngle, arc1.ccw) == true)
                     {
                         pt1 = node2.Value.pt;
@@ -352,7 +372,7 @@ namespace KiCad2Gcode
                     {
                         pt2 = node1.Value.pt;
                         pt2.type = Point2D.PointType_et.CROSS_T;
-                    }
+                    }*/
 
                 }
 
@@ -425,6 +445,7 @@ namespace KiCad2Gcode
                     }
                 }
             }
+
             
 
             int cnt = 0;

@@ -464,7 +464,7 @@ namespace KiCad2Gcode
             return GetNode(selectPol, areaPol, true);            
         }
 
-        private Polygon CreatePolygon(Polygon pol1, Polygon pol2, LinkedListNode<Node> startNode, bool goLeft)
+        private Polygon CreatePolygon(Polygon pol1, Polygon pol2, LinkedListNode<Node> startNode, bool goLeft, bool redraw)
         {
             LinkedListNode<Node> actNode = startNode;
             LinkedListNode<Node> firstNode = startNode;
@@ -482,6 +482,28 @@ namespace KiCad2Gcode
 
 
             Polygon newPolygon = new Polygon();
+            if (redraw)
+            {
+                mainForm.drawer.DrawDot(startNode.Value.pt, 2, Color.LightGreen);
+                mainForm.drawer.SetCentre(startNode.Value.pt);
+
+                foreach (Node nt in pol1.points)
+                {
+                    if(nt.pt.type == Point2D.PointType_et.CROSS_X)
+                    {
+                        mainForm.drawer.DrawDot(nt.pt, 2, Color.Pink);
+                    }
+                    else if (nt.pt.type == Point2D.PointType_et.CROSS_T)
+                    {
+                        mainForm.drawer.DrawDot(nt.pt, 2, Color.Violet);
+                    }
+                    else
+                    {
+                        mainForm.drawer.DrawDot(nt.pt, 2, Color.Black);
+                    }
+                }
+            }
+                
 
             do
             {
@@ -493,6 +515,12 @@ namespace KiCad2Gcode
                 LinkedListNode<Node> copiedNode = new LinkedListNode<Node>(newNode);
 
                 newPolygon.points.AddLast(copiedNode);
+                if(redraw)
+                {
+                    mainForm.drawer.SetCentre(n.pt);
+                    mainForm.drawer.DrawElement(prevPoint, n.pt, n.arc);
+                }
+                
 
                 if (actNode.Value.pt.type == Point2D.PointType_et.NORMAL)
                 {
@@ -520,35 +548,55 @@ namespace KiCad2Gcode
                     double out1Angle = 0;
                     double out2Angle = 0;
 
-                    double r1 = 0;
-                    double r2 = 0;
+                    double wgt1 = 0;
+                    double wgt2 = 0;
 
 
                     if (nodeA.Value.arc == null)
                     {
                         out1Angle = Vector.GetAlpha(actPoint, nextPoint1);
-                        r1 = Double.MaxValue;
+                        wgt1 = 0;// Double.MaxValue;
                     }
                     else
                     {
                         Vector v = nodeA.Value.arc.centre - actPoint;
-                        Vector vt = new Vector(-v.y, v.x);
+                        Vector vt;
+                        if(nodeA.Value.arc.ccw == false)
+                        {
+                            vt = new Vector(-v.y, v.x);
+                            wgt1 = 1/nodeA.Value.arc.radius;
+                        }
+                        else
+                        {
+                            vt = new Vector(v.y, -v.x);
+                            wgt1 = -1/nodeA.Value.arc.radius;
+                        }
                         out1Angle = Vector.GetAlpha(vt);
-                        r1 = nodeA.Value.arc.radius;
+                        
                     }
 
                     if (nodeB.Value.arc == null)
                     {
                         out2Angle = Vector.GetAlpha(actPoint, nextPoint2);
 
-                        r2 = Double.MaxValue;
+                        wgt2 = 0;// Double.MaxValue;
                     }
                     else
                     {
                         Vector v = nodeB.Value.arc.centre - actPoint;
-                        Vector vt = new Vector(-v.y, v.x);
+                        Vector vt;
+                        if (nodeB.Value.arc.ccw == false)
+                        {
+                            vt = new Vector(-v.y, v.x);
+                            wgt2 = 1/nodeB.Value.arc.radius;
+                        }
+                        else
+                        {
+                            vt = new Vector(v.y, -v.x);
+                            wgt2 = -1/nodeB.Value.arc.radius;
+                        }
                         out2Angle = Vector.GetAlpha(vt);
-                        r1 = nodeB.Value.arc.radius;
+                        
                     }
 
 
@@ -563,7 +611,8 @@ namespace KiCad2Gcode
 
                     if (Math.Abs(out1Angle - out2Angle) < 0.00000001)
                     {
-                        if (r1 > r2)
+
+                        if (wgt1 < wgt2)
                         {
                             /*out1 is 2 */
                             actNode = nodeA;
@@ -637,8 +686,16 @@ namespace KiCad2Gcode
 
                 }
                 initial = false;
+
+                
             }
             while (actNode.Value.pt != firstNode.Value.pt);
+
+            if(actNode != firstNode)
+            {
+                /* point is this same but different figure, check arcs */
+                newPolygon.points.First.Value = actNode.Value;
+            }
 
             newPolygon.GetExtPoints();
 
@@ -647,6 +704,15 @@ namespace KiCad2Gcode
 
 
         }
+
+        public void Step()
+        {
+
+        }
+
+
+
+        
 
         enum POLYGONS_POS_et
         {
@@ -752,7 +818,7 @@ namespace KiCad2Gcode
                     }
                 }
 
-                Polygon newPol = CreatePolygon(f1.shape, f2.shape, actNode, true);
+                Polygon newPol = CreatePolygon(f1.shape, f2.shape, actNode, true,false);
 
                 newFigure = new Figure();
                 newFigure.shape = newPol;
@@ -766,7 +832,7 @@ namespace KiCad2Gcode
                     if (actNode != null)
                     {
                         mainForm.PrintText("Hole start at  " + actNode.Value.pt.x.ToString() + "," + actNode.Value.pt.y.ToString() + "\n");
-                        newPol = CreatePolygon(f1.shape, f2.shape, actNode, true);
+                        newPol = CreatePolygon(f1.shape, f2.shape, actNode, true,false);
 
                         newFigure.holes.Add(newPol);
                     }
@@ -810,6 +876,11 @@ namespace KiCad2Gcode
 
                 foreach (Polygon hole in f1.holes)
                 {
+
+                    hole.selected = 1;
+                    f2.shape.selected = 2;
+                    mainForm.RedrawAll();
+
                     crossingPoints = SelectCrossingPoints(hole, f2.shape);
 
                     if (crossingPoints > 1)
@@ -819,7 +890,7 @@ namespace KiCad2Gcode
                             actNode = GetNodeForHoleCutting(hole, f2.shape);
                             if (actNode != null)
                             {
-                                newPol = CreatePolygon(hole, f2.shape, actNode, true);
+                                newPol = CreatePolygon(hole, f2.shape, actNode, true,false);
 
                                 newFigure.holes.Add(newPol);
                             }
@@ -842,6 +913,10 @@ namespace KiCad2Gcode
                             return null;
                         }
                     }
+
+                    hole.selected = 0;
+                    f2.shape.selected = 0;
+                    mainForm.RedrawAll();
                 }
                 
                 foreach (Polygon hole in f2.holes)
@@ -855,7 +930,7 @@ namespace KiCad2Gcode
 
                             if (actNode != null)
                             { 
-                                newPol = CreatePolygon(hole, f1.shape, actNode, true);
+                                newPol = CreatePolygon(hole, f1.shape, actNode, true, false);
 
                                 newFigure.holes.Add(newPol);
                             }
@@ -899,7 +974,7 @@ namespace KiCad2Gcode
                                 actNode = GetNodeForHoleCutting(hole2, hole2);
                                 if (actNode != null)
                                 {         
-                                    newPol = CreatePolygon(hole2, hole2, actNode, true);
+                                    newPol = CreatePolygon(hole2, hole2, actNode, true, false);
 
                                     newFigure.holes.Add(newPol);
                                 }
@@ -925,6 +1000,7 @@ namespace KiCad2Gcode
             if(newFigure != null)
             {
                 newFigure.name = f1.name + " || " + f2.name;
+                newFigure.net = f1.net;
             }
 
 

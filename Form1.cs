@@ -13,7 +13,8 @@ namespace KiCad2Gcode
     public partial class Form1 : Form
     {
         PcbFileParser pcbFileParser;
-        Drawer drawer;
+        internal Drawer drawer;
+        Merger merger;
 
         List<Net> zones = new List<Net>();
         List<Figure> cuts = new List<Figure>();
@@ -30,7 +31,8 @@ namespace KiCad2Gcode
         {
             InitializeComponent();
             pcbFileParser = new PcbFileParser(this);
-            drawer = new Drawer(pictureBox1);
+            drawer = new Drawer(pictureBox1,panel1);
+            merger = new Merger(this);
         }
 
         private void button1_Click(object sender, EventArgs e)
@@ -39,15 +41,15 @@ namespace KiCad2Gcode
             cuts.Clear();
             drills.Clear();
             zones.Clear();
+            
 
-
-            //textBox1.Text = pcbFileParser.Parse("manipulator.kicad_pcb").ToString();
-            // textBox1.Text = pcbFileParser.Parse("test1.kicad_pcb").ToString();
+            textBox1.Text = pcbFileParser.Parse("manipulator.kicad_pcb").ToString();
+            //textBox1.Text = pcbFileParser.Parse("test1.kicad_pcb").ToString();
             //textBox1.Text = pcbFileParser.Parse("error5.kicad_pcb").ToString();
-            //textBox1.Text = pcbFileParser.Parse("error10.kicad_pcb").ToString();
+            //textBox1.Text = pcbFileParser.Parse("error12.kicad_pcb").ToString();
 
             //textBox1.Text = pcbFileParser.Parse("testZone5.kicad_pcb").ToString();
-            textBox1.Text = pcbFileParser.Parse("manipulator_no_islands.kicad_pcb").ToString();
+            //textBox1.Text = pcbFileParser.Parse("manipulator_no_islands.kicad_pcb").ToString();
 
             foreach (Net n in netList)
             {
@@ -76,14 +78,14 @@ namespace KiCad2Gcode
             bool merged = false;
 
             List<Figure> listA = null;
-            List<Figure> listB;
+            List<Figure> listB = null;
 
             if(phase == 0)
             {
                 listA = netList[idxNet].figures;
                 listB = netList[idxNet].figures;
             }
-            else
+            else if(phase == 1)
             {
 
                 foreach (Net z in zones)
@@ -98,28 +100,48 @@ namespace KiCad2Gcode
                 
                 listB = netList[idxNet].figures;
             }
+            else if(phase == 2)
+            {
+                foreach (Net z in zones)
+                {
+                    if (z.net == idxNet)
+                    {
+                        listA = z.figures;
+                        listB = z.figures;
+                        PrintText("Run phase 2 for net " + idxNet.ToString() + "\n");
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                return false;
+            }
 
 
             foreach (Figure f in netList[idxNet].figures)
             {
-                f.selected = false;
+                f.shape.selected = 0;
             }
 
             if ((listA == listB) && (idxB == idxA)) { idxB++; }
 
             if (listA != null && idxA < listA.Count && idxB < listB.Count && ((listA != listB)||(idxA != idxB)))
             {
-               /* PrintText("Try " + idxA.ToString() + " vs " + idxB.ToString() + "size = " + figures.Count
-                    .ToString() + "\n");*/
-                if (idxA == 0 && idxB == 1 && netList[idxNet].figures.Count == 7)
+
+                if (idxA == 0 && idxB == 1 && netList[idxNet].figures.Count == 2)
                 {
                     PrintText("trap\n");
                 }
 
                 merged = false;
 
-                Merger m = new Merger(this);
-                Figure mergedFigure = m.Merge(listA[idxA], listB[idxB]);
+                listA[idxA].shape.selected = 1;
+                listB[idxB].shape.selected = 2;
+
+
+
+                Figure mergedFigure = merger.Merge(listA[idxA], listB[idxB]);
 
                 if (mergedFigure != null)
                 {
@@ -127,7 +149,6 @@ namespace KiCad2Gcode
                     PrintText("Foud " + idxA.ToString() + " vs " + idxB.ToString() + "size = " + netList[idxNet].figures.Count.ToString() + "\n");
 
                     listA[idxA] = mergedFigure;
-                    listA[idxA].selected = true;
                     listB.RemoveAt(idxB);
 
                     //PrintText("foud\n");
@@ -137,8 +158,6 @@ namespace KiCad2Gcode
                 }
                 else
                 {
-                    listA[idxA].selected = true;
-                    listB[idxB].selected = true;
 
                     //PrintText("skip\n");
                     idxB++;
@@ -206,6 +225,7 @@ namespace KiCad2Gcode
             do
             {
                 res = Step(0);
+                //drawer.Redraw(netList, zones, cuts, drills);
             } while (res == true);
             drawer.Redraw(netList, zones, cuts, drills);
 
@@ -237,6 +257,38 @@ namespace KiCad2Gcode
         {
 
             Step(0);
+            drawer.Redraw(netList, zones, cuts, drills);
+        }
+
+
+        private void button11_Click(object sender, EventArgs e)
+        {
+            bool res = false;
+
+            idxA = 0;
+            idxB = 0;
+            idxNet = 0;
+
+            do
+            {
+                res = Step(2);
+            } while (res == true);
+            drawer.Redraw(netList, zones, cuts, drills);
+
+            idxA = 0;
+            idxB = 0;
+            idxNet = 0;
+        }
+
+        private void button13_Click(object sender, EventArgs e)
+        {
+            Step(2);
+            drawer.Redraw(netList, zones, cuts, drills);
+        }
+
+
+        public void RedrawAll()
+        {
             drawer.Redraw(netList, zones, cuts, drills);
         }
 
@@ -929,6 +981,17 @@ namespace KiCad2Gcode
 
 
             drawer.Redraw(netList, zones, cuts, drills);
+        }
+
+
+
+        private void button12_Click(object sender, EventArgs e)
+        {
+            int xpos = int.Parse(textBox3.Text);
+            int ypos = int.Parse(textBox4.Text);
+
+            Point2D pos = new Point2D(xpos, ypos);
+            drawer.SetCentre(pos);
         }
 
 
