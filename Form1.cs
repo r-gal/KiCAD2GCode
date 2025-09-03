@@ -21,6 +21,8 @@ namespace KiCad2Gcode
         List<Figure> cuts = new List<Figure>();
         List<Drill> drills = new List<Drill>();
 
+        List<Polygon> millPath = new List<Polygon>();
+
         Net[] netList;
 
         int idxA = 0;
@@ -42,10 +44,13 @@ namespace KiCad2Gcode
             cuts.Clear();
             drills.Clear();
             zones.Clear();
-            
 
-            textBox1.Text = pcbFileParser.Parse("manipulator.kicad_pcb").ToString();
-            //textBox1.Text = pcbFileParser.Parse("test1.kicad_pcb").ToString();
+            millPath.Clear();
+
+
+
+            //textBox1.Text = pcbFileParser.Parse("manipulator.kicad_pcb").ToString();
+            textBox1.Text = pcbFileParser.Parse("test1.kicad_pcb").ToString();
             //textBox1.Text = pcbFileParser.Parse("error5.kicad_pcb").ToString();
             //textBox1.Text = pcbFileParser.Parse("error12.kicad_pcb").ToString();
 
@@ -228,7 +233,7 @@ namespace KiCad2Gcode
                 res = Step(0);
                 //drawer.Redraw(netList, zones, cuts, drills);
             } while (res == true);
-            drawer.Redraw(netList, zones, cuts, drills);
+            RedrawAll();
 
             idxA = 0;
             idxB = 0;
@@ -247,7 +252,7 @@ namespace KiCad2Gcode
             {
                 res = Step(1);
             } while (res == true);
-            drawer.Redraw(netList, zones, cuts, drills);
+            RedrawAll();
 
             idxA = 0;
             idxB = 0;
@@ -258,7 +263,7 @@ namespace KiCad2Gcode
         {
 
             Step(0);
-            drawer.Redraw(netList, zones, cuts, drills);
+            RedrawAll();
         }
 
 
@@ -274,7 +279,7 @@ namespace KiCad2Gcode
             {
                 res = Step(2);
             } while (res == true);
-            drawer.Redraw(netList, zones, cuts, drills);
+            RedrawAll();
 
             idxA = 0;
             idxB = 0;
@@ -284,19 +289,19 @@ namespace KiCad2Gcode
         private void button13_Click(object sender, EventArgs e)
         {
             Step(2);
-            drawer.Redraw(netList, zones, cuts, drills);
+            RedrawAll();
         }
 
 
         public void RedrawAll()
         {
-            drawer.Redraw(netList, zones, cuts, drills);
+            drawer.Redraw(netList, zones, cuts, drills,millPath);
         }
 
         private void button10_Click(object sender, EventArgs e)
         {
             Step(1);
-            drawer.Redraw(netList, zones, cuts, drills);
+            RedrawAll();
         }
 
         public void PrintText(string text)
@@ -336,10 +341,10 @@ namespace KiCad2Gcode
 
             figures.Add(figure);*/
 
-            
 
 
-            drawer.Redraw(netList, zones, cuts,drills);
+
+            RedrawAll();
 
 
         }
@@ -680,9 +685,9 @@ namespace KiCad2Gcode
             AddTestForm(pts1, arc1, pts2, arc2, new Vector(50, 40));
             //AddTestForm(pts1, arc1, pts2, arc2, new Vector(0, 0));
             arc2[3] = null;
-            
 
-            drawer.Redraw(netList, zones, cuts, drills);
+
+            RedrawAll();
         }
 
         private void button4_Click(object sender, EventArgs e)
@@ -864,7 +869,7 @@ namespace KiCad2Gcode
 
 
 
-            drawer.Redraw(netList, zones, cuts, drills);
+            RedrawAll();
         }
 
         private void button7_Click(object sender, EventArgs e)
@@ -876,7 +881,7 @@ namespace KiCad2Gcode
             drawer.SetScale(scale);
             drawer.SetPos(xpos, ypos);
 
-            drawer.Redraw(netList, zones, cuts, drills);
+            RedrawAll();
         }
 
         private void button8_Click(object sender, EventArgs e)
@@ -980,8 +985,8 @@ namespace KiCad2Gcode
             AddFigure(figure2);
             cuts.Add(mergedFigure);
 
-
-            drawer.Redraw(netList, zones, cuts, drills);
+            RedrawAll();
+            
         }
 
 
@@ -995,6 +1000,53 @@ namespace KiCad2Gcode
             drawer.SetCentre(pos);
         }
 
+        private void button14_Click(object sender, EventArgs e)
+        {
+            PatchUnit path = new PatchUnit(this);
 
+            double millDiameter = 0.2;
+
+            foreach(Net n in netList)
+            {
+                foreach(Figure f in n.figures)
+                {
+                    List<Polygon> pathPolygons = path.CreatePatch(f.shape, millDiameter);
+
+                    foreach(Polygon p in pathPolygons)
+                    {
+                        millPath.Add(p);
+                    }
+  
+                }
+            }
+
+            foreach (Net z in zones )
+            {
+                foreach (Figure f in z.figures)
+                {
+                    List<Polygon> pathPolygons = path.CreatePatch(f.shape, millDiameter);
+
+                    foreach (Polygon p in pathPolygons)
+                    {
+                        millPath.Add(p);
+                    }
+
+                    foreach (Polygon h in f.holes)
+                    {
+                         pathPolygons = path.CreatePatch(h, millDiameter);
+
+                        foreach (Polygon p in pathPolygons)
+                        {
+                            millPath.Add(p);
+                        }
+
+                    }
+
+                }
+            }
+
+
+            RedrawAll();
+        }
     }
 }

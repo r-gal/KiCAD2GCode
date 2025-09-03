@@ -156,7 +156,7 @@ namespace KiCad2Gcode
 
         }
 
-        public void Redraw(Net[] netList, List<Net> zones,  List<Figure> cuts, List<Drill> drills)
+        public void Redraw(Net[] netList, List<Net> zones,  List<Figure> cuts, List<Drill> drills, List<Polygon> millPath)
         {
 
 
@@ -405,6 +405,37 @@ namespace KiCad2Gcode
                     }
 
                 }*/
+            }
+
+            foreach (Polygon p in millPath)
+            {
+
+                LinkedListNode<Node> n = p.points.First;
+
+                while (n != null)
+                {
+                    LinkedListNode<Node> nPrev = n.Previous ?? p.points.Last;
+                    DrawChunk(nPrev.Value.pt, n.Value.pt, n.Value.arc, bmp, Color.LightBlue);
+
+                    if(n.Value.pt.type == Point2D.PointType_et.CROSS_X)
+                    {
+                        DrawDotInt(n.Value.pt, 3, bmp, Color.LightBlue);
+                    }
+                    else if (n.Value.pt.type == Point2D.PointType_et.BAD)
+                    {
+                        DrawDotInt(n.Value.pt, 3, bmp, Color.OrangeRed);
+                    }
+                    else
+                    {
+                        DrawDotInt(n.Value.pt, 3, bmp, Color.Black);
+                    }
+
+
+
+                        
+                    n = n.Next;
+                }
+
             }
 
             foreach (Drill drill in drills)

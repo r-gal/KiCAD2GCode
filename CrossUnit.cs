@@ -1,10 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Security.Cryptography;
-using System.Text;
-using System.Threading.Tasks;
-using System.Xml.Linq;
 
 namespace KiCad2Gcode
 {
@@ -16,9 +11,9 @@ namespace KiCad2Gcode
             LinkedListNode<Node> n1Prev = node1.Previous ?? node1.List.Last;
             LinkedListNode<Node> n2Prev = node2.Previous ?? node2.List.Last;
 
-            Point2D sP1 = n1Prev.Value.pt;
+            Point2D sP1 = node1.Value.startPt ?? n1Prev.Value.pt;
             Point2D eP1 = node1.Value.pt;
-            Point2D sP2 = n2Prev.Value.pt;
+            Point2D sP2 = node2.Value.startPt ?? n2Prev.Value.pt;
             Point2D eP2 = node2.Value.pt;
 
 
@@ -165,9 +160,9 @@ namespace KiCad2Gcode
             LinkedListNode<Node> n1Prev = node1.Previous ?? node1.List.Last;
             LinkedListNode<Node> n2Prev = node2.Previous ?? node2.List.Last;
 
-            Point2D sP1 = n1Prev.Value.pt;
+            Point2D sP1 = node1.Value.startPt ?? n1Prev.Value.pt;
             Point2D eP1 = node1.Value.pt;
-            Point2D sP2 = n2Prev.Value.pt;
+            Point2D sP2 = node2.Value.startPt ?? n2Prev.Value.pt;
             Point2D eP2 = node2.Value.pt;
 
             Arc arc = node2.Value.arc;
@@ -301,6 +296,12 @@ namespace KiCad2Gcode
             if (ptM != null) { ptArr[cnt] = ptM; cnt++; }
             if (ptM2 != null) { ptArr[cnt] = ptM2; }
 
+            if(ptArr == null)
+            {
+                cnt = 0; /* trap */
+
+            }
+
             return ptArr;
         }
 
@@ -309,9 +310,9 @@ namespace KiCad2Gcode
             LinkedListNode<Node> n1Prev = node1.Previous ?? node1.List.Last;
             LinkedListNode<Node> n2Prev = node2.Previous ?? node2.List.Last;
 
-            Point2D sP1 = n1Prev.Value.pt;
+            Point2D sP1 = node1.Value.startPt ?? n1Prev.Value.pt;
             Point2D eP1 = node1.Value.pt;
-            Point2D sP2 = n2Prev.Value.pt;
+            Point2D sP2 = node2.Value.startPt ?? n2Prev.Value.pt;
             Point2D eP2 = node2.Value.pt;
 
             Point2D pc1 = node1.Value.arc.centre;

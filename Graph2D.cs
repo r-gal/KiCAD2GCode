@@ -26,7 +26,9 @@ namespace KiCad2Gcode
             DOUBLED,
             BRIDGE,
             CW,
-            CCW
+            CCW,
+            USED,
+            BAD
         };
         public PointType_et type;
 
@@ -162,6 +164,23 @@ namespace KiCad2Gcode
             return alpha;
         }
 
+        public Vector GetOrtogonal(bool ccw)
+        {
+            Vector nV = new Vector(this);
+            if(ccw )
+            {
+                nV.x = this.y;
+                nV.y = -this.x;
+            }
+            else
+            {
+                nV.x = -this.y;
+                nV.y = this.x;
+            }
+            return nV;
+            
+        }
+
         public static double GetAlpha(Vector v)
         {
             return GetAlpha(new Point2D(0, 0), new Point2D(v.x, v.y));
@@ -276,6 +295,11 @@ namespace KiCad2Gcode
     public class Node
     {
         public bool active = false;
+
+        public Point2D startPt = null; /* used only as temporary value in path unit*/
+        public Vector vIn, vOut; /* used in path unit */
+
+
 
         public Point2D pt;
         public Arc arc;
