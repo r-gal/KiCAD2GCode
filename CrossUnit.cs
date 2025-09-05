@@ -5,7 +5,7 @@ namespace KiCad2Gcode
 {
     internal class CrossUnit
     {
-        public Point2D[] GetCrossingLineLine(LinkedListNode<Node> node1, LinkedListNode<Node> node2)
+        public List<Point2D> GetCrossingLineLine(LinkedListNode<Node> node1, LinkedListNode<Node> node2)
         {
 
             LinkedListNode<Node> n1Prev = node1.Previous ?? node1.List.Last;
@@ -67,8 +67,7 @@ namespace KiCad2Gcode
                     if (pt != null)
                     {
                         pt.type = Point2D.PointType_et.CROSS_T;
-                        Point2D[] ptArr = new Point2D[1];
-                        ptArr[0] = pt;
+                        List<Point2D> ptArr = new List<Point2D> { pt };
                         return ptArr;
                     }
 
@@ -118,8 +117,7 @@ namespace KiCad2Gcode
                         }
 
 
-                        Point2D[] ptArr = new Point2D[1];
-                        ptArr[0] = pt;
+                        List<Point2D> ptArr = new List<Point2D> { pt };
                         return ptArr;
                     }
 
@@ -155,7 +153,7 @@ namespace KiCad2Gcode
 
         }
 
-        public Point2D[] GetCrossingLineArc(LinkedListNode<Node> node1, LinkedListNode<Node> node2)
+        public List<Point2D> GetCrossingLineArc(LinkedListNode<Node> node1, LinkedListNode<Node> node2)
         {
             LinkedListNode<Node> n1Prev = node1.Previous ?? node1.List.Last;
             LinkedListNode<Node> n2Prev = node2.Previous ?? node2.List.Last;
@@ -287,14 +285,14 @@ namespace KiCad2Gcode
                     ptM2.type = Point2D.PointType_et.CROSS_T;
                 }
             }
-            Point2D[] ptArr = null;
+            List<Point2D> ptArr = null;
             if (cnt > 0)
             {
-                ptArr = new Point2D[cnt];
+                 ptArr = new List<Point2D>() ;
             }
             cnt = 0;
-            if (ptM != null) { ptArr[cnt] = ptM; cnt++; }
-            if (ptM2 != null) { ptArr[cnt] = ptM2; }
+            if (ptM != null) { ptArr.Add(ptM);  }
+            if (ptM2 != null) { ptArr.Add( ptM2);  }
 
             if(ptArr == null)
             {
@@ -305,7 +303,7 @@ namespace KiCad2Gcode
             return ptArr;
         }
 
-        public Point2D[] GetCrossingArcArc(LinkedListNode<Node> node1, LinkedListNode<Node> node2)
+        public List<Point2D> GetCrossingArcArc(LinkedListNode<Node> node1, LinkedListNode<Node> node2)
         {
             LinkedListNode<Node> n1Prev = node1.Previous ?? node1.List.Last;
             LinkedListNode<Node> n2Prev = node2.Previous ?? node2.List.Last;
@@ -466,20 +464,20 @@ namespace KiCad2Gcode
                     pt2.type = Point2D.PointType_et.CROSS_T;
                 }
             }
-            Point2D[] ptArr = null;
+            List<Point2D> ptArr = null;
             if (cnt > 0)
             {
-                ptArr = new Point2D[cnt];
+                ptArr = new List<Point2D>();
             }
             cnt = 0;
-            if (pt1 != null) { ptArr[cnt] = pt1; cnt++; }
-            if (pt2 != null) { ptArr[cnt] = pt2; }
+            if (pt1 != null) { ptArr.Add(pt1); }
+            if (pt2 != null) { ptArr.Add(pt2); }
 
             return ptArr;
         }
 
 
-        public Point2D[] GetCrosssingPoints(LinkedListNode<Node> node1, LinkedListNode<Node> node2)
+        public List<Point2D> GetCrosssingPoints(LinkedListNode<Node> node1, LinkedListNode<Node> node2)
         {
             if (node1.Value.arc == null && node2.Value.arc == null)
             {

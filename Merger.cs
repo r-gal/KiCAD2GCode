@@ -190,7 +190,7 @@ namespace KiCad2Gcode
                         }
                     }
 
-                    Point2D[] points = crossUnit.GetCrosssingPoints(n1, n2);
+                    List<Point2D> points = crossUnit.GetCrosssingPoints(n1, n2);
 
                     
                     if (points != null)
@@ -200,7 +200,7 @@ namespace KiCad2Gcode
                         lastFoundPoint = points[0];
                         lastIdx1 = n1Idx;
                         lastIdx2 = n2Idx;
-                        if (points.Length == 2)
+                        if (points.Count == 2)
                         {
                             mainForm.PrintText("Find Point 2 at " + points[1].x.ToString() + "," + points[1].y.ToString() + " type is " + points[1].type.ToString() + "\n");
                             pointCnt++;
@@ -220,7 +220,7 @@ namespace KiCad2Gcode
                         Figure.SplitChunk(n2, points);
 
 
-                        if (points.Length == 1)
+                        if (points.Count == 1)
                         {
                             /* easy case */
                             n1.Value.oppNode = n2.Next ?? n2.List.First;

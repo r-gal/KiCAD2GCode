@@ -64,6 +64,19 @@ namespace KiCad2Gcode
             }
         }
 
+        private void DrawCircleInt(Point2D position, int size, Bitmap bmp, System.Drawing.Color color)
+        {
+            using (Graphics g = Graphics.FromImage(bmp))
+            {
+
+                g.DrawEllipse(new Pen(color),
+                (float)((position.x) * scale + offX - size),
+                H - ((float)((position.y) * scale + offY + size)),
+                (float)(size * 2),
+                (float)(size * 2));
+            }
+        }
+
         public void DrawDot(Point2D position, int size, System.Drawing.Color color)
         {
             DrawDotInt(position, size, bmp, color);
@@ -411,30 +424,40 @@ namespace KiCad2Gcode
             {
 
                 LinkedListNode<Node> n = p.points.First;
-
+                bool first = true;
                 while (n != null)
                 {
                     LinkedListNode<Node> nPrev = n.Previous ?? p.points.Last;
                     DrawChunk(nPrev.Value.pt, n.Value.pt, n.Value.arc, bmp, Color.LightBlue);
 
-                    if(n.Value.pt.type == Point2D.PointType_et.CROSS_X)
+
+
+                    if (first)
                     {
-                        DrawDotInt(n.Value.pt, 3, bmp, Color.LightBlue);
+                        first = false;
+                        DrawCircleInt(n.Value.pt, 3, bmp, Color.DarkViolet);
+                    }
+
+                    if (n.Value.pt.type == Point2D.PointType_et.CROSS_X)
+                    {
+                        DrawDotInt(n.Value.pt, 2, bmp, Color.LightBlue);
                     }
                     else if (n.Value.pt.type == Point2D.PointType_et.BAD)
                     {
-                        DrawDotInt(n.Value.pt, 3, bmp, Color.OrangeRed);
+                        DrawDotInt(n.Value.pt, 2, bmp, Color.OrangeRed);
                     }
                     else
                     {
-                        DrawDotInt(n.Value.pt, 3, bmp, Color.Black);
+                        DrawDotInt(n.Value.pt, 2, bmp, Color.Black);
                     }
 
 
 
-                        
+
                     n = n.Next;
                 }
+                pBox.Image = bmp;
+                pBox.Refresh();
 
             }
 
