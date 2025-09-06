@@ -27,11 +27,19 @@ namespace KiCad2Gcode
             BRIDGE,
             CW,
             CCW,
-            USED,
-            BAD,
             ARC
         };
         public PointType_et type;
+
+        public enum STATE_et
+        {
+            FREE,
+            USED,
+            ALREADY_USED,
+            BAD
+        }
+
+        public STATE_et state = STATE_et.FREE;
 
         public Chunk[] chunk = new Chunk[2];
 
@@ -293,6 +301,8 @@ namespace KiCad2Gcode
         }
     }
 
+
+
     public class Node
     {
         public bool active = false;
@@ -314,6 +324,7 @@ namespace KiCad2Gcode
         {
             arc = null;
             pt = null;
+            
         }
 
     }
@@ -326,6 +337,8 @@ namespace KiCad2Gcode
 
         public Point2D[] extPoint = new Point2D[4];
         public Node[] extNode = new Node[4];
+
+        public int idx;
 
         public int selected = 0;
 
@@ -438,11 +451,13 @@ namespace KiCad2Gcode
 
         public List<Polygon> holes = new List<Polygon>();
 
-        
+        public bool touched = false;
 
         public string name;
 
         public int net = -1;
+
+        public int idx = 0;
 
         public void Rotate(double angle)
         {
@@ -977,6 +992,16 @@ namespace KiCad2Gcode
     {
         public List<Figure> figures = new List<Figure>();
         public int net;
+
+        public void Renumerate()
+        {
+            int cnt = 0;
+            foreach(Figure figure in figures)
+            {
+                figure.idx = cnt;
+                cnt++;
+            }
+        }
 
     }
 

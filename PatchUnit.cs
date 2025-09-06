@@ -82,7 +82,7 @@ namespace KiCad2Gcode
 
 
 
-                if ((next1.Value.pt.type != Point2D.PointType_et.BAD) && (next2.Value.pt.type != Point2D.PointType_et.BAD))
+                if ((next1.Value.pt.state == Point2D.STATE_et.FREE || next1.Value.pt.state == Point2D.STATE_et.ALREADY_USED)  && (next2.Value.pt.state == Point2D.STATE_et.FREE || next2.Value.pt.state == Point2D.STATE_et.ALREADY_USED))
                 {
                     /* one of lines probably have collision somewhere in middle oh them. additional checks is necessary */
 
@@ -104,7 +104,7 @@ namespace KiCad2Gcode
                         middlePoint = new Point2D(x, y);
                     }
 
-                    mainForm.drawer.DrawDot(middlePoint, 3, Color.Red);
+                    //mainForm.drawer.DrawDot(middlePoint, 3, Color.Red);
 
                     if( CheckPointCollision(middlePoint,orgPolygon, toolRadius) == false)
                     {
@@ -130,18 +130,18 @@ namespace KiCad2Gcode
                     }
 
                 }
-                else if (next1.Value.pt.type != Point2D.PointType_et.BAD)
+                else if (next1.Value.pt.state == Point2D.STATE_et.FREE || next1.Value.pt.state == Point2D.STATE_et.ALREADY_USED)
                 {
                     actNode = next1;
                 }
-                else if (next2.Value.pt.type != Point2D.PointType_et.BAD)
+                else if (next2.Value.pt.state == Point2D.STATE_et.FREE || next2.Value.pt.state == Point2D.STATE_et.ALREADY_USED)
                 {
                     actNode = next2;
                 }
                 else
                 {
                     /* fail*/
-                    actNode = next1; /* dummy */
+                    actNode = null;
                 }
 
 
@@ -157,29 +157,6 @@ namespace KiCad2Gcode
 
             Polygon newPolygon = new Polygon();
 
-            LinkedListNode<Node> prevNode = firstNode.Previous ?? firstNode.List.Last;
-            if (prevNode.Value.pt.type == Point2D.PointType_et.BAD)
-            {
-                if(firstNode.Value.oppNode != null)
-                {
-                    prevNode = firstNode.Value.oppNode.Previous ?? firstNode.List.Last;
-                    if (prevNode.Value.pt.type == Point2D.PointType_et.BAD)
-                    {
-                        return null;
-                    }
-                    else
-                    {
-                        firstNode = firstNode.Value.oppNode;
-                        actNode = firstNode;
-                    }
-
-                }
-                else
-                {
-                    return null;
-                }
-            }
-
             do
             {
                 Node n = actNode.Value;
@@ -191,12 +168,28 @@ namespace KiCad2Gcode
 
                 newPolygon.points.AddLast(copiedNode);
 
-                actNode.Value.pt.type = Point2D.PointType_et.USED; /* reset type */
+                if(actNode.Value.pt.state != Point2D.STATE_et.FREE)
+                {
+                    return null;
+                }
+
+                actNode.Value.pt.state = Point2D.STATE_et.ALREADY_USED;
+                //if(actNode.Value.oppNode != null ) { actNode.Value.oppNode.Value.state = Node.STATE_et.ALREADY_USED; }
 
                 actNode = SelectNextNode(actNode, orgPolygon, toolRadius);
+
+                if(actNode == null)
+                {
+                    return null;
+                }
                 
             }
             while (actNode.Value.pt != firstNode.Value.pt);
+
+            if(actNode != firstNode && firstNode.Value.oppNode != null && firstNode.Value.oppNode == actNode)
+            {
+                newPolygon.points.First.Value.arc = actNode.Value.arc;
+            }
  
             return newPolygon;
         }
@@ -512,14 +505,30 @@ namespace KiCad2Gcode
                                         
                     if (colission)
                     {
-                        n.pt.type = Point2D.PointType_et.BAD;
+                        n.pt.state = Point2D.STATE_et.BAD;
+                        //n.pt.type = Point2D.PointType_et.BAD;
                     }
                 }
 
                 path.Renumerate();
+                /*
+                foreach (Node n in path.points)
+                {
+                    mainForm.PrintText("Node " + n.idx.ToString() + "State " + n.pt.state.ToString() +  " Type " + n.pt.type.ToString() + " (" + n.pt.x.ToString() + " " + n.pt.y.ToString() + ")");
+                    if(n.oppNode!= null)
+                    {
+                        mainForm.PrintText(" OppIdx = " + n.oppNode.Value.idx.ToString() + " " + n.oppNode.Value.pt.type.ToString());
+                    }
+                    if(n.arc != null)
+                    {
+                        mainForm.PrintText(" Arc ");
+                    }
+                    mainForm.PrintText("\n ");
+                }
+                */
 
-                
-                bool cont = false;
+
+                    bool cont = false;
                 do
                 {
                     cont = false;
@@ -528,14 +537,16 @@ namespace KiCad2Gcode
 
                     while (node != null)
                     {
-                        if (node.Value.pt.type != Point2D.PointType_et.USED && node.Value.pt.type != Point2D.PointType_et.BAD)
+                        if (node.Value.pt.state == Point2D.STATE_et.FREE)
                         {
                             firstNode = node;
                             cont = true;
                             break;
                         }
+
                         node = node.Next;
                     }
+
 
                     if(firstNode != null)
                     {
@@ -543,9 +554,32 @@ namespace KiCad2Gcode
 
                         if(p != null)
                         {
+                            foreach(Node n in path.points)
+                            {
+                                if(n.pt.state == Point2D.STATE_et.ALREADY_USED)
+                                {
+                                    n.pt.state = Point2D.STATE_et.USED;
+                                }
+                            }
                             pathList.Add(p);
                         }
-                    }  
+                        else
+                        {
+                            mainForm.PrintText("Path aborted\n ");
+                            foreach (Node n in path.points)
+                            {
+                                if (n.pt.state == Point2D.STATE_et.ALREADY_USED)
+                                {
+                                    n.pt.state = Point2D.STATE_et.FREE;
+                                }
+                            }
+                            firstNode.Value.pt.state = Point2D.STATE_et.BAD;
+                        }
+                    }
+                    else if (pathList.Count == 0)
+                    {
+                        mainForm.PrintText("Start point not found\n ");
+                    }
 
 
                 } while (cont == true);

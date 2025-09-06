@@ -877,9 +877,9 @@ namespace KiCad2Gcode
                 foreach (Polygon hole in f1.holes)
                 {
 
-                    hole.selected = 1;
-                    f2.shape.selected = 2;
-                    mainForm.RedrawAll();
+                    //hole.selected = 1;
+                    //f2.shape.selected = 2;
+                    //mainForm.RedrawAll();
 
                     crossingPoints = SelectCrossingPoints(hole, f2.shape);
 
@@ -914,9 +914,9 @@ namespace KiCad2Gcode
                         }
                     }
 
-                    hole.selected = 0;
-                    f2.shape.selected = 0;
-                    mainForm.RedrawAll();
+                    //hole.selected = 0;
+                    //f2.shape.selected = 0;
+                    //mainForm.RedrawAll();
                 }
                 
                 foreach (Polygon hole in f2.holes)

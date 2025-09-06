@@ -49,11 +49,11 @@ namespace KiCad2Gcode
 
 
 
-            //textBox1.Text = pcbFileParser.Parse("manipulator.kicad_pcb").ToString();
+            textBox1.Text = pcbFileParser.Parse("manipulator.kicad_pcb").ToString();
             //textBox1.Text = pcbFileParser.Parse("test1.kicad_pcb").ToString();
             //textBox1.Text = pcbFileParser.Parse("error5.kicad_pcb").ToString();
             //textBox1.Text = pcbFileParser.Parse("error12.kicad_pcb").ToString();
-            textBox1.Text = pcbFileParser.Parse("testPath3.kicad_pcb").ToString();
+            //textBox1.Text = pcbFileParser.Parse("testPath3.kicad_pcb").ToString();
 
             //textBox1.Text = pcbFileParser.Parse("testZone5.kicad_pcb").ToString();
             //textBox1.Text = pcbFileParser.Parse("manipulator_no_islands.kicad_pcb").ToString();
@@ -136,19 +136,23 @@ namespace KiCad2Gcode
             if (listA != null && idxA < listA.Count && idxB < listB.Count && ((listA != listB)||(idxA != idxB)))
             {
 
-                if (idxA == 0 && idxB == 1 && listA.Count == 2)
-                {
-                    PrintText("trap\n");
-                }
-
                 merged = false;
 
                 listA[idxA].shape.selected = 1;
                 listB[idxB].shape.selected = 2;
 
+                Figure mergedFigure = null;
 
+               /* if (phase == 2 && listA[idxA].touched == false && listB[idxB].touched == false)
+                {
 
-                Figure mergedFigure = merger.Merge(listA[idxA], listB[idxB]);
+                }
+                else
+                {
+                    
+                }*/
+                mergedFigure = merger.Merge(listA[idxA], listB[idxB]);
+
 
                 if (mergedFigure != null)
                 {
@@ -162,6 +166,11 @@ namespace KiCad2Gcode
 
                     
                     merged = true;
+
+                    if(phase == 1)
+                    {
+                        mergedFigure.touched = true;
+                    }
                 }
                 else
                 {
@@ -232,7 +241,6 @@ namespace KiCad2Gcode
             do
             {
                 res = Step(0);
-                //drawer.Redraw(netList, zones, cuts, drills);
             } while (res == true);
             RedrawAll();
 
@@ -1007,8 +1015,12 @@ namespace KiCad2Gcode
 
             double millDiameter = 0.2;
 
-            foreach(Net n in netList)
+            millPath.Clear();
+
+
+            foreach (Net n in netList)
             {
+                n.Renumerate();
                 foreach(Figure f in n.figures)
                 {
                     List<Polygon> pathPolygons = path.CreatePatch(f.shape, millDiameter);
@@ -1020,28 +1032,42 @@ namespace KiCad2Gcode
   
                 }
             }
-
+            
             foreach (Net z in zones )
             {
+                z.Renumerate();
                 foreach (Figure f in z.figures)
                 {
-                    List<Polygon> pathPolygons = path.CreatePatch(f.shape, millDiameter);
+                    /*if (f.idx == 23)
+                    { */
+                        List<Polygon> pathPolygons = path.CreatePatch(f.shape, millDiameter);
 
-                    foreach (Polygon p in pathPolygons)
+                    if(pathPolygons.Count == 0)
                     {
-                        millPath.Add(p);
+                        PrintText("No path detected \n");
                     }
-
-                    foreach (Polygon h in f.holes)
-                    {
-                         pathPolygons = path.CreatePatch(h, millDiameter);
 
                         foreach (Polygon p in pathPolygons)
                         {
                             millPath.Add(p);
                         }
 
-                    }
+                        foreach (Polygon h in f.holes)
+                        {
+                            pathPolygons = path.CreatePatch(h, millDiameter);
+
+                        if (pathPolygons.Count == 0)
+                        {
+                            PrintText("No path for hole detected \n");
+                        }
+
+                        foreach (Polygon p in pathPolygons)
+                            {
+                                millPath.Add(p);
+                            }
+
+                        }
+                   // }
 
                 }
             }

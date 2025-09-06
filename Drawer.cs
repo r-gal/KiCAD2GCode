@@ -442,7 +442,7 @@ namespace KiCad2Gcode
                     {
                         DrawDotInt(n.Value.pt, 2, bmp, Color.LightBlue);
                     }
-                    else if (n.Value.pt.type == Point2D.PointType_et.BAD)
+                    else if (n.Value.pt.state == Point2D.STATE_et.BAD)
                     {
                         DrawDotInt(n.Value.pt, 2, bmp, Color.OrangeRed);
                     }
