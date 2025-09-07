@@ -51,7 +51,7 @@ namespace KiCad2Gcode
 
             textBox1.Text = pcbFileParser.Parse("manipulator.kicad_pcb").ToString();
             //textBox1.Text = pcbFileParser.Parse("test1.kicad_pcb").ToString();
-            //textBox1.Text = pcbFileParser.Parse("error5.kicad_pcb").ToString();
+            //textBox1.Text = pcbFileParser.Parse("errorPath1.kicad_pcb").ToString();
             //textBox1.Text = pcbFileParser.Parse("error12.kicad_pcb").ToString();
             //textBox1.Text = pcbFileParser.Parse("testPath3.kicad_pcb").ToString();
 

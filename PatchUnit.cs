@@ -155,6 +155,8 @@ namespace KiCad2Gcode
             LinkedListNode<Node> actNode = startNode;
             LinkedListNode<Node> firstNode = startNode;
 
+           // mainForm.PrintText("start at idx = " + firstNode.Value.idx.ToString() + "\n");
+
             Polygon newPolygon = new Polygon();
 
             do
@@ -176,12 +178,22 @@ namespace KiCad2Gcode
                 actNode.Value.pt.state = Point2D.STATE_et.ALREADY_USED;
                 //if(actNode.Value.oppNode != null ) { actNode.Value.oppNode.Value.state = Node.STATE_et.ALREADY_USED; }
 
-                actNode = SelectNextNode(actNode, orgPolygon, toolRadius);
+                if(actNode.Value.idx == 59)
+                {
+                    int trap = 0;
+                }
 
+                actNode = SelectNextNode(actNode, orgPolygon, toolRadius);
+                /*
                 if(actNode == null)
                 {
+                    mainForm.PrintText("found null \n");
                     return null;
                 }
+                else
+                {
+                    mainForm.PrintText("go to idx = " + actNode.Value.idx.ToString() + "\n");
+                }*/
                 
             }
             while (actNode.Value.pt != firstNode.Value.pt);
@@ -429,6 +441,16 @@ namespace KiCad2Gcode
                 while(node2 != null)
                 {
                     CrossUnit crossUnit = new CrossUnit();
+
+                    Point2D testPt1 = new Point2D(6.4, 44.7);
+                    Point2D testPt2 = new Point2D(6.4, 44.8);
+
+                    if (node1.Value.pt.IsSameAs(testPt1) && node2.Value.pt.IsSameAs(testPt2))
+                    {
+                        int trap = 0;
+                    }
+
+
                     List<Point2D> crossPoint = crossUnit.GetCrosssingPoints(node1, node2);
 
 
@@ -524,15 +546,15 @@ namespace KiCad2Gcode
                         mainForm.PrintText(" Arc ");
                     }
                     mainForm.PrintText("\n ");
-                }
-                */
+                }*/
+                
 
-
+                LinkedListNode<Node> startScanNode = path.points.First;
                     bool cont = false;
                 do
                 {
                     cont = false;
-                    LinkedListNode<Node> node = path.points.First;
+                    LinkedListNode<Node> node = startScanNode;
                     LinkedListNode<Node> firstNode = null;
 
                     while (node != null)
@@ -573,8 +595,10 @@ namespace KiCad2Gcode
                                     n.pt.state = Point2D.STATE_et.FREE;
                                 }
                             }
-                            firstNode.Value.pt.state = Point2D.STATE_et.BAD;
+                            //firstNode.Value.pt.state = Point2D.STATE_et.BAD;
+                            
                         }
+                        startScanNode = firstNode.Next;
                     }
                     else if (pathList.Count == 0)
                     {

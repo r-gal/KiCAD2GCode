@@ -82,8 +82,8 @@ namespace KiCad2Gcode
             else
             {
                 double k = a / b;
-                if (k > 0 && k <= 1)
-                {
+               /* if (k > 0 && k <= 1)
+                {*/
                     double t = 0;
                     if (Math.Abs(m0) > Math.Abs(n0))
                     {
@@ -145,7 +145,7 @@ namespace KiCad2Gcode
                         ptArr[0] = pt;
                         return ptArr;
                     }*/
-                }
+                /*}*/
             }
 
             return null;

@@ -217,6 +217,11 @@ namespace KiCad2Gcode
                 if (f.shape.extPoint[3].y < minY) { minY = f.shape.extPoint[3].y; }
             }
 
+            maxX += 10;
+            minX -= 10;
+            maxY += 10;
+            minY -= 10;
+
             double sizeXd = maxX - minX;
             double sizeYd = maxY - minY;
 
@@ -436,6 +441,12 @@ namespace KiCad2Gcode
                     {
                         first = false;
                         DrawCircleInt(n.Value.pt, 3, bmp, Color.DarkViolet);
+                    }
+
+                    if (n.Value.idx == 59)
+                    {
+                        first = false;
+                        DrawCircleInt(n.Value.pt, 3, bmp, Color.Red);
                     }
 
                     if (n.Value.pt.type == Point2D.PointType_et.CROSS_X)
