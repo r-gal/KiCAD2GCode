@@ -10,7 +10,7 @@ namespace KiCad2Gcode
 {
     internal class ZoneUnit
     {
-        Form1 mainForm;
+        MainUnit mainUnit;
 
 
         Double MAX_ERR = 0.01;
@@ -21,9 +21,9 @@ namespace KiCad2Gcode
         int MIN_POINTS2 = 3;
         Double MAX_LEN2 = 0.3;
 
-        public ZoneUnit(Form1 mainForm_)
+        public ZoneUnit(MainUnit mainUnit_)
         {
-            this.mainForm = mainForm_;
+            this.mainUnit = mainUnit_;
         }
         public void ConvertToValidFigure(Figure f)
         {
@@ -124,50 +124,48 @@ namespace KiCad2Gcode
             /* check polygon orientation */
 
 
-
+/*
             int pointsA, pointsB, pointsC, pointsD;
 
-            
-             mainForm.PrintText("No of points D = " + f.shape.points.Count.ToString() + "\n");
-             pointsD = f.shape.points.Count;
-            SearchUnnecessaryPoints(f.shape);
 
-            mainForm.PrintText("No of points A = " + f.shape.points.Count.ToString() + "\n");
-            pointsA = f.shape.points.Count;
+            mainUnit.PrintText("No of points D = " + f.shape.points.Count.ToString() + "\n");
+             pointsD = f.shape.points.Count;*/
+            SearchUnnecessaryPoints(f.shape);
+            /*
+            mainUnit.PrintText("No of points A = " + f.shape.points.Count.ToString() + "\n");
+            pointsA = f.shape.points.Count;*/
             SearchArcs(f.shape,MIN_POINTS,MAX_LEN);
-            mainForm.PrintText("No of points B = " + f.shape.points.Count.ToString() + "\n");
-            pointsB = f.shape.points.Count;
+            /*mainUnit.PrintText("No of points B = " + f.shape.points.Count.ToString() + "\n");
+            pointsB = f.shape.points.Count;*/
             SearchArcs(f.shape,MIN_POINTS2, MAX_LEN2);
-            mainForm.PrintText("No of points C = " + f.shape.points.Count.ToString() + "\n");
-            pointsC = f.shape.points.Count;
-           /* SearchUnnecessaryPoints(f.shape);
-            mainForm.PrintText("No of points D = " + f.shape.points.Count.ToString() + "\n");
-            pointsD = f.shape.points.Count;*/
+            /*mainUnit.PrintText("No of points C = " + f.shape.points.Count.ToString() + "\n");
+            pointsC = f.shape.points.Count;*/
+
 
             foreach (Polygon h in f.holes)
             {
-                 
-                 mainForm.PrintText("No of points D = " + h.points.Count.ToString() + "\n");
-                 pointsD += h.points.Count;
+/*
+                mainUnit.PrintText("No of points D = " + h.points.Count.ToString() + "\n");
+                 pointsD += h.points.Count;*/
                 SearchUnnecessaryPoints(h);
-
-                mainForm.PrintText("No of points A = " + h.points.Count.ToString() + "\n");
-                pointsA += h.points.Count;
+                /*
+                mainUnit.PrintText("No of points A = " + h.points.Count.ToString() + "\n");
+                pointsA += h.points.Count;*/
                 SearchArcs(h, MIN_POINTS, MAX_LEN);
-                mainForm.PrintText("No of points B= " + h.points.Count.ToString() + "\n");
-                pointsB += h.points.Count;
+                /*mainUnit.PrintText("No of points B= " + h.points.Count.ToString() + "\n");
+                pointsB += h.points.Count;*/
                 SearchArcs(h, MIN_POINTS2, MAX_LEN2);
-                mainForm.PrintText("No of points C = " + h.points.Count.ToString() + "\n");
-                pointsC += h.points.Count;
+                /*mainUnit.PrintText("No of points C = " + h.points.Count.ToString() + "\n");
+                pointsC += h.points.Count;*/
                /* SearchUnnecessaryPoints(h);
                 mainForm.PrintText("No of points D = " + h.points.Count.ToString() + "\n");
                 pointsD += h.points.Count;*/
             }
-            mainForm.PrintText("Total o of points D = " + pointsD.ToString() + "\n");
-            mainForm.PrintText("Total o of points A = " + pointsA.ToString() + "\n");
-            mainForm.PrintText("Total o of points B = " + pointsB.ToString() + "\n");
-            mainForm.PrintText("Total o of points C = " + pointsC.ToString() + "\n");
-            /*mainForm.PrintText("Total o of points D = " + pointsD.ToString() + "\n");*/
+           /* mainUnit.PrintText("Total o of points D = " + pointsD.ToString() + "\n");
+            mainUnit.PrintText("Total o of points A = " + pointsA.ToString() + "\n");
+            mainUnit.PrintText("Total o of points B = " + pointsB.ToString() + "\n");
+            mainUnit.PrintText("Total o of points C = " + pointsC.ToString() + "\n");*/
+       
 
 
 
@@ -561,14 +559,14 @@ namespace KiCad2Gcode
             LinkedListNode<Node> actNode = firstNode.Next;
 
             Polygon newShape = new Polygon();
-
+            /*
             string indent = "";
             for(int i=0;i< level; i++)
             {
                 indent += " ";
             }
-               
-            mainForm.PrintText(indent + "Start hole at point " + firstNode.Value.pt.x.ToString() + " " + firstNode.Value.pt.y.ToString() + "\n");
+
+            mainUnit.PrintText(indent + "Start hole at point " + firstNode.Value.pt.x.ToString() + " " + firstNode.Value.pt.y.ToString() + "\n");*/
 
 
             while (actNode != null ) 
@@ -579,13 +577,13 @@ namespace KiCad2Gcode
 
                 if (actNode.Value.pt.type != Point2D.PointType_et.NORMAL)
                 {
-                    mainForm.PrintText(indent + "Spec point at " + actNode.Value.pt.x.ToString() + " " + actNode.Value.pt.y.ToString() + "\n");
+                    //mainUnit.PrintText(indent + "Spec point at " + actNode.Value.pt.x.ToString() + " " + actNode.Value.pt.y.ToString() + "\n");
                     if (actNode.Value.oppNode == firstNode)
                     {
                         /* hole complete, return */
                         f.holes.Add(newShape);
 
-                        mainForm.PrintText(indent + "End hole at point " + actNode.Value.pt.x.ToString() + " " + actNode.Value.pt.y.ToString() + "\n");
+                        //mainUnit.PrintText(indent + "End hole at point " + actNode.Value.pt.x.ToString() + " " + actNode.Value.pt.y.ToString() + "\n");
                         return actNode.Next;
                     }
                     else
@@ -597,7 +595,7 @@ namespace KiCad2Gcode
 
                 if(actNode == null)
                 {
-                    mainForm.PrintText("Failed hole\n");
+                    mainUnit.PrintText("Failed hole\n");
                     return null;
                 }
                 actNode = actNode.Next;
@@ -605,7 +603,7 @@ namespace KiCad2Gcode
 
 
             }
-            mainForm.PrintText("Failed hole\n");
+            mainUnit.PrintText("Failed hole\n");
             return null;
 
 

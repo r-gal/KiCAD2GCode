@@ -380,6 +380,7 @@ namespace KiCad2Gcode
 
         public void GetExtPoints()
         {
+            if (points.Count == 0) { return; }
             Point2D prevPt = points.Last.Value.pt;
             LinkedListNode<Node> actNode = points.First;
 

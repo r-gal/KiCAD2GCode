@@ -15,11 +15,11 @@ namespace KiCad2Gcode
     internal class PatchUnit
     {
 
-        Form1 mainForm;
+        MainUnit mainUnit;
 
-        public PatchUnit(Form1 mainForm)
+        public PatchUnit(MainUnit mainUnit)
         {
-            this.mainForm = mainForm;
+            this.mainUnit = mainUnit;
         }
 
         private double GetMiddleAngle(double angle1, double angle2, bool ccw)
@@ -587,7 +587,7 @@ namespace KiCad2Gcode
                         }
                         else
                         {
-                            mainForm.PrintText("Path aborted\n ");
+                            mainUnit.PrintText("Path aborted\n ");
                             foreach (Node n in path.points)
                             {
                                 if (n.pt.state == Point2D.STATE_et.ALREADY_USED)
@@ -602,7 +602,7 @@ namespace KiCad2Gcode
                     }
                     else if (pathList.Count == 0)
                     {
-                        mainForm.PrintText("Start point not found\n ");
+                        mainUnit.PrintText("Start point not found\n ");
                     }
 
 

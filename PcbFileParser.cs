@@ -148,7 +148,7 @@ namespace KiCad2Gcode
     }
     internal class PcbFileParser
     {
-        Form1 mainForm;
+        MainUnit mainUnit;
 
         PcbFileElement mainElement;
         string fileText;
@@ -157,7 +157,7 @@ namespace KiCad2Gcode
         string cutLayer = "Edge.Cuts";
 
 
-        public PcbFileParser(Form1 mainForm_) { mainForm = mainForm_; }
+        public PcbFileParser(MainUnit mainUnit_) { mainUnit = mainUnit_; }
 
 
 
@@ -168,8 +168,8 @@ namespace KiCad2Gcode
             {
                 if(element.name == "footprint")
                 {
-                    mainForm.PrintText(element.name);
-                    mainForm.PrintText("\n");
+                    mainUnit.PrintText(element.name);
+                    mainUnit.PrintText("\n");
                 }
 
 
@@ -249,7 +249,7 @@ namespace KiCad2Gcode
                     Drill d = new Drill();
                     d.diameter = drill;
                     d.pos = posPt;
-                    mainForm.AddDrill(d);
+                    mainUnit.AddDrill(d);
                 }
 
                 if(pad.values.Contains("roundrect"))
@@ -356,9 +356,9 @@ namespace KiCad2Gcode
                     f.Rotate(posRot * Math.PI / 180);
                     f.Move(posPt.ToVector());
 
-                    mainForm.AddFigure(f);
+                    mainUnit.AddFigure(f);
 
-                    mainForm.PrintText("PAD TH ROUNDRECT " + "\n");
+                    //mainUnit.PrintText("PAD TH ROUNDRECT " + "\n");
 
                 }
                 else if(pad.values.Contains("rect"))
@@ -395,9 +395,9 @@ namespace KiCad2Gcode
                     f.Rotate(posRot * Math.PI / 180);
                     f.Move(posPt.ToVector());
 
-                    mainForm.AddFigure(f);
+                    mainUnit.AddFigure(f);
 
-                    mainForm.PrintText("PAD TH RECT " + "\n");
+                    //mainUnit.PrintText("PAD TH RECT " + "\n");
                 }
                 else if (pad.values.Contains("circle"))
                 {
@@ -425,9 +425,9 @@ namespace KiCad2Gcode
 
                     f.Move(posPt.ToVector());
 
-                    mainForm.AddFigure(f);
+                    mainUnit.AddFigure(f);
 
-                    mainForm.PrintText("PAD TH CIRCLE " + arc.centre.x.ToString() + " " + arc.centre.y.ToString() + " " + arc.radius.ToString() + "\n");
+                    //mainUnit.PrintText("PAD TH CIRCLE " + arc.centre.x.ToString() + " " + arc.centre.y.ToString() + " " + arc.radius.ToString() + "\n");
                 }
                 else if (pad.values.Contains("oval"))
                 {
@@ -537,9 +537,9 @@ namespace KiCad2Gcode
                     f.Rotate(posRot * Math.PI / 180 );
                     f.Move(posPt.ToVector());
 
-                    mainForm.AddFigure(f);
+                    mainUnit.AddFigure(f);
 
-                    mainForm.PrintText("PAD TH OVAL " + "\n");
+                    //mainUnit.PrintText("PAD TH OVAL " + "\n");
                 }
 
             }
@@ -550,8 +550,8 @@ namespace KiCad2Gcode
 
             if ((via.name != null) && (via.name == "via"))
             {
-                mainForm.PrintText("VIA");
-                mainForm.PrintText("\n");
+                //mainUnit.PrintText("VIA");
+                //mainUnit.PrintText("\n");
 
                 bool layerOk = via.CheckLayer(activeLayer);
 
@@ -591,12 +591,12 @@ namespace KiCad2Gcode
                 f.shape.points.AddLast(lln);
                 f.Move(new Vector(pos[0], -pos[1]));
 
-                mainForm.AddFigure(f);
+                mainUnit.AddFigure(f);
 
                 Drill d = new Drill();
                 d.diameter = drill ;
                 d.pos = new Point2D(pos[0], -pos[1]);
-                mainForm.AddDrill(d);
+                mainUnit.AddDrill(d);
 
 
 
@@ -608,8 +608,8 @@ namespace KiCad2Gcode
         {
             if ((seg.name != null) && (seg.name == "segment"))
             {
-                mainForm.PrintText("SEGMENT");
-                mainForm.PrintText("\n");
+                //mainUnit.PrintText("SEGMENT");
+                //mainUnit.PrintText("\n");
 
                 /* check layer */
 
@@ -698,7 +698,7 @@ namespace KiCad2Gcode
                 lln = new LinkedListNode<Node>(node);
                 f.shape.points.AddLast(lln);
 
-                mainForm.AddFigure(f);
+                mainUnit.AddFigure(f);
 
             }
         }
@@ -707,8 +707,8 @@ namespace KiCad2Gcode
         {
             if ((polygon.name != null) && (polygon.name == "filled_polygon"))
             {
-                mainForm.PrintText("POLYGON");
-                mainForm.PrintText("\n");
+                //mainUnit.PrintText("POLYGON");
+                //mainUnit.PrintText("\n");
 
                 bool layerOk = polygon.CheckLayer(activeLayer);
 
@@ -789,10 +789,10 @@ namespace KiCad2Gcode
                 line.end = new Point2D(firstX, firstY);
                 f.chunks.Add(line);*/
 
-                ZoneUnit zoneUnit = new ZoneUnit(mainForm);
+                ZoneUnit zoneUnit = new ZoneUnit(mainUnit);
                 zoneUnit.ConvertToValidFigure(f);
 
-                mainForm.AddZoneFigure(f);
+                mainUnit.AddZoneFigure(f);
 
             }
         }
@@ -813,14 +813,19 @@ namespace KiCad2Gcode
                 if (startArr == null) { return; }
                 double[] endArr = el.ParseParameterNumericArr("end", 2, 2);
                 if (endArr == null) { return; }
-                /*
+                
                 Figure f = new Figure();
-                Line line = new Line();
-                line.start = new Point2D(startArr[0], -startArr[1]);
-                line.end = new Point2D(endArr[0], -endArr[1]);
-                f.chunks.Add(line);
 
-                mainForm.AddCuts(f);*/
+                Node node;
+                LinkedListNode<Node> lln;
+
+                node = new Node();
+                node.startPt = new Point2D(startArr[0], -startArr[1]);
+                node.pt = new Point2D(endArr[0], -endArr[1]);
+                lln = new LinkedListNode<Node>(node);
+                f.shape.points.AddLast(lln);
+
+                mainUnit.AddCuts(f);
             }
         }
 
@@ -840,8 +845,16 @@ namespace KiCad2Gcode
                 if (centerArr == null) { return; }
                 double[] endArr = el.ParseParameterNumericArr("end", 2, 2);
                 if (endArr == null) { return; }
-                /*
+                
                 Figure f = new Figure();
+
+                Node node;
+                LinkedListNode<Node> lln;
+
+                node = new Node();
+                node.startPt = new Point2D(endArr[0], -endArr[1]);
+                node.pt = new Point2D(endArr[0], -endArr[1]);
+
                 Arc arc = new Arc();
                 arc.start = new Point2D(endArr[0], -endArr[1]);
                 arc.end = new Point2D(endArr[0], -endArr[1]);
@@ -849,9 +862,13 @@ namespace KiCad2Gcode
                 arc.startAngle = 0;
                 arc.endAngle = -2 * Math.PI;
                 arc.radius = Math.Sqrt(Math.Pow(centerArr[0] - endArr[0], 2) + Math.Pow(centerArr[1] - endArr[1], 2));
-                f.chunks.Add(arc);
 
-                mainForm.AddCuts(f);*/
+                node.arc = arc;
+
+                lln = new LinkedListNode<Node>(node);
+                f.shape.points.AddLast(lln);
+
+                mainUnit.AddCuts(f);
             }
         }
 
@@ -866,7 +883,7 @@ namespace KiCad2Gcode
                     netCnt++;
                 }
             }
-            mainForm.InitNetList(netCnt);
+            mainUnit.InitNetList(netCnt);
 
 
 
@@ -876,7 +893,7 @@ namespace KiCad2Gcode
         {
             int net = el.ParseNet();
 
-            mainForm.InitZone(net);
+            mainUnit.InitZone(net);
 
             foreach (PcbFileElement fp in el.children)
             {
@@ -908,11 +925,11 @@ namespace KiCad2Gcode
                 }
                 else if (top.name == "gr_line")
                 {
-                    //DecodeLine(top);
+                    DecodeLine(top);
                 }
                 else if (top.name == "gr_circle")
                 {
-                    //DecodeCircle(top);
+                    DecodeCircle(top);
                 }
                 else if (top.name == "kicad_pcb")
                 {
@@ -978,7 +995,7 @@ namespace KiCad2Gcode
             return element;
         }
 
-        public int Parse(string filename)
+        public void Parse(string filename)
         {
             fileText = File.ReadAllText(filename, Encoding.UTF8);
 
@@ -990,8 +1007,6 @@ namespace KiCad2Gcode
             Decode(mainElement);
 
 
-
-            return 0;
         }
     }
 }

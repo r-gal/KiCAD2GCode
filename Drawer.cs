@@ -211,10 +211,14 @@ namespace KiCad2Gcode
 
             foreach (Figure f in cuts)
             {
-                if (f.shape.extPoint[0].x < minX) { minX = f.shape.extPoint[0].x; }
-                if (f.shape.extPoint[1].y > maxY) { maxY = f.shape.extPoint[1].y; }
-                if (f.shape.extPoint[2].x > maxX) { maxX = f.shape.extPoint[2].x; }
-                if (f.shape.extPoint[3].y < minY) { minY = f.shape.extPoint[3].y; }
+                if (f.shape.points.Count > 0)
+                {
+                    if (f.shape.extPoint[0].x < minX) { minX = f.shape.extPoint[0].x; }
+                    if (f.shape.extPoint[1].y > maxY) { maxY = f.shape.extPoint[1].y; }
+                    if (f.shape.extPoint[2].x > maxX) { maxX = f.shape.extPoint[2].x; }
+                    if (f.shape.extPoint[3].y < minY) { minY = f.shape.extPoint[3].y; }
+                }
+
             }
 
             maxX += 10;
