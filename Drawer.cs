@@ -169,7 +169,7 @@ namespace KiCad2Gcode
 
         }
 
-        public void Redraw(Net[] netList, List<Net> zones,  List<Figure> cuts, List<Drill> drills, List<Polygon> millPath)
+        public void Redraw(Net[] netList, List<Net> zones,  Figure cuts, List<Drill> drills, List<Polygon> millPath, List<Polygon> boardMillPath)
         {
 
 
@@ -209,17 +209,15 @@ namespace KiCad2Gcode
                 }
             }
 
-            foreach (Figure f in cuts)
-            {
-                if (f.shape.points.Count > 0)
-                {
-                    if (f.shape.extPoint[0].x < minX) { minX = f.shape.extPoint[0].x; }
-                    if (f.shape.extPoint[1].y > maxY) { maxY = f.shape.extPoint[1].y; }
-                    if (f.shape.extPoint[2].x > maxX) { maxX = f.shape.extPoint[2].x; }
-                    if (f.shape.extPoint[3].y < minY) { minY = f.shape.extPoint[3].y; }
-                }
 
+            if (cuts.shape.points.Count > 0)
+            {
+                if (cuts.shape.extPoint[0].x < minX) { minX = cuts.shape.extPoint[0].x; }
+                if (cuts.shape.extPoint[1].y > maxY) { maxY = cuts.shape.extPoint[1].y; }
+                if (cuts.shape.extPoint[2].x > maxX) { maxX = cuts.shape.extPoint[2].x; }
+                if (cuts.shape.extPoint[3].y < minY) { minY = cuts.shape.extPoint[3].y; }
             }
+
 
             maxX += 10;
             minX -= 10;
@@ -393,43 +391,77 @@ namespace KiCad2Gcode
                 }
             }
 
-            foreach (Figure f in cuts)
+
+            LinkedListNode<Node> nc = cuts.shape.points.First;
+
+            while (nc != null)
             {
-                LinkedListNode<Node> n = f.shape.points.First;
-
-                while (n != null)
-                {
-                    LinkedListNode<Node> nPrev = n.Previous ?? f.shape.points.Last;
-                    DrawChunk(nPrev.Value.pt, n.Value.pt, n.Value.arc, bmp, Color.Black);
-                    n = n.Next;
-                }
+                LinkedListNode<Node> nPrev = nc.Previous ?? cuts.shape.points.Last;
+                DrawChunk(nPrev.Value.pt, nc.Value.pt, nc.Value.arc, bmp, Color.Black);
+                nc = nc.Next;
+            }
                 
-                foreach (Polygon p in f.holes)
-                {
-                    n = p.points.First;
+            foreach (Polygon p in cuts.holes)
+            {
+                nc = p.points.First;
 
-                    while (n != null)
-                    {
-                        LinkedListNode<Node> nPrev = n.Previous ?? p.points.Last;
-                        DrawChunk(nPrev.Value.pt, n.Value.pt, n.Value.arc, bmp, Color.Violet);
-                        n = n.Next;
-                    }
+                while (nc != null)
+                {
+                    LinkedListNode<Node> nPrev = nc.Previous ?? p.points.Last;
+                    DrawChunk(nPrev.Value.pt, nc.Value.pt, nc.Value.arc, bmp, Color.Violet);
+                    nc = nc.Next;
                 }
-                /*Polygon p = f.holes[1];
-                {
-                    n = p.points.First;
-
-                    while (n != null)
-                    {
-                        LinkedListNode<Node> nPrev = n.Previous ?? p.points.Last;
-                        DrawChunk(nPrev.Value.pt, n.Value.pt, n.Value.arc, bmp, Color.Violet);
-                        n = n.Next;
-                    }
-
-                }*/
             }
 
+
             foreach (Polygon p in millPath)
+            {
+
+                LinkedListNode<Node> n = p.points.First;
+                bool first = true;
+                while (n != null)
+                {
+                    LinkedListNode<Node> nPrev = n.Previous ?? p.points.Last;
+                    DrawChunk(nPrev.Value.pt, n.Value.pt, n.Value.arc, bmp, Color.LightBlue);
+
+
+
+                    if (first)
+                    {
+                        first = false;
+                        DrawCircleInt(n.Value.pt, 3, bmp, Color.DarkViolet);
+                    }
+
+                    if (n.Value.idx == 59)
+                    {
+                        first = false;
+                        DrawCircleInt(n.Value.pt, 3, bmp, Color.Red);
+                    }
+
+                    if (n.Value.pt.type == Point2D.PointType_et.CROSS_X)
+                    {
+                        DrawDotInt(n.Value.pt, 2, bmp, Color.LightBlue);
+                    }
+                    else if (n.Value.pt.state == Point2D.STATE_et.BAD)
+                    {
+                        DrawDotInt(n.Value.pt, 2, bmp, Color.OrangeRed);
+                    }
+                    else
+                    {
+                        DrawDotInt(n.Value.pt, 2, bmp, Color.Black);
+                    }
+
+
+
+
+                    n = n.Next;
+                }
+                pBox.Image = bmp;
+                pBox.Refresh();
+
+            }
+
+            foreach (Polygon p in boardMillPath)
             {
 
                 LinkedListNode<Node> n = p.points.First;

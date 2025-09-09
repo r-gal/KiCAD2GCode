@@ -24,130 +24,7 @@ namespace KiCad2Gcode
 
 
 
-        private enum POINT_LOC_et
-        {
-            IN,
-            OUT,
-            EDGE
-        };
-
-        private POINT_LOC_et CheckPointInPolygon(Point2D pt, Polygon pol)
-        {
-            int crosses = 0;
-
-            int state = 0; /* -1: DN, 0 : IDLE, 1 : UP */
-
-
-            LinkedListNode<Node> actNode = pol.points.First;
-
-            CrossUnit crossUnit = new CrossUnit();
-
-            do
-            {
-
-                CROSS_TYPE_et result = crossUnit.CheckFlatCross(pt, actNode);
-
-                switch(result)
-                {
-                    case CROSS_TYPE_et.NORMAL:
-                        state = 0;
-                        crosses++;
-                        break;
-                    case CROSS_TYPE_et.DOUBLE:
-                        state = 0;
-                        crosses+=2;
-                        break;
-                    case CROSS_TYPE_et.END_DN:
-                        if(state == 1)
-                        {
-                            state = 0;
-                            crosses++;
-                        }
-                        else if(state == -1)
-                        {
-                            state = 0;
-                        }
-                        else
-                        {
-                            state = -1;
-                        }
-                        break;
-
-                    case CROSS_TYPE_et.END_UP:
-                        if (state == -1)
-                        {
-                            state = 0;
-                            crosses++;
-                        }
-                        else if (state == 1)
-                        {
-                            state = 0;
-                        }
-                        else
-                        {
-                            state = 1;
-                        }
-                        break;
-
-                    case CROSS_TYPE_et.END2_DN:
-                        if (state == 1)
-                        {
-                            state = 0;
-                            crosses+=2;
-                        }
-                        else if (state == -1)
-                        {
-                            state = 0;
-                        }
-                        else
-                        {
-                            state = -1;
-                        }
-                        break;
-
-                    case CROSS_TYPE_et.END2_UP:
-                        if (state == -1)
-                        {
-                            state = 0;
-                            crosses += 2;
-                        }
-                        else if (state == 1)
-                        {
-                            state = 0;
-                        }
-                        else
-                        {
-                            state = 1;
-                        }
-                        break;
-                    case CROSS_TYPE_et.EDGE:
-                        return POINT_LOC_et.EDGE;
-                }
-
-
-
-                actNode = actNode.Next;
-            } while (actNode != null);
-
-
-            if (state == 0)
-            {
-                if (crosses % 2 == 0)
-                {
-                    return POINT_LOC_et.OUT;
-                }
-                else
-                {
-                    return POINT_LOC_et.IN;
-                }
-            }
-            else
-            {
-
-                /* probably point is on edge */
-                return POINT_LOC_et.EDGE;
-            }
-        }
+        
 
         private int SelectCrossingPoints(Polygon pol1, Polygon pol2)
         {
@@ -326,13 +203,13 @@ namespace KiCad2Gcode
             {
                 if (actNode.Value.pt.type == Point2D.PointType_et.NORMAL)
                 {
-                    POINT_LOC_et pointIsInFigure = CheckPointInPolygon(actNode.Value.pt, areaPol);
+                    Polygon.POINT_LOC_et pointIsInFigure = Polygon.CheckPointInPolygon(actNode.Value.pt, areaPol);
 
-                    if (pointIsInFigure == POINT_LOC_et.IN && inside == true)
+                    if (pointIsInFigure == Polygon.POINT_LOC_et.IN && inside == true)
                     {
                         return actNode;
                     }
-                    else if (pointIsInFigure == POINT_LOC_et.OUT && inside == false)
+                    else if (pointIsInFigure == Polygon.POINT_LOC_et.OUT && inside == false)
                     {
                         return actNode;
                     }
@@ -373,12 +250,12 @@ namespace KiCad2Gcode
                 }
 
                 bool pointOk = false;
-                POINT_LOC_et pointIsInFigure = CheckPointInPolygon(actNode.Value.pt, areaPol);
-                if (pointIsInFigure == POINT_LOC_et.IN && inside == true)
+                Polygon.POINT_LOC_et pointIsInFigure = Polygon.CheckPointInPolygon(actNode.Value.pt, areaPol);
+                if (pointIsInFigure == Polygon.POINT_LOC_et.IN && inside == true)
                 {
                     pointOk = true;
                 }
-                else if (pointIsInFigure == POINT_LOC_et.OUT && inside == false)
+                else if (pointIsInFigure == Polygon.POINT_LOC_et.OUT && inside == false)
                 {
                     pointOk = true;
                 }
@@ -666,54 +543,7 @@ namespace KiCad2Gcode
         {
 
         }
-
-
-
-        
-
-        enum POLYGONS_POS_et
-        {
-            P1_IN_P2,
-            P2_IN_P1,
-            NONE
-        };
-
-        private POLYGONS_POS_et CheckPolygonsPosition(Polygon pol1, Polygon pol2)
-        {
-            /* this function assume that polygons have not any crossing points*/
-
-            LinkedListNode<Node> actNode = pol1.points.First;
-            while(actNode != null)
-            {
-                POINT_LOC_et res = CheckPointInPolygon(actNode.Value.pt, pol2);
-                if (res == POINT_LOC_et.IN)
-                {
-                    return POLYGONS_POS_et.P1_IN_P2;
-                }
-                else if(res == POINT_LOC_et.OUT)
-                {
-                    break;
-                }
-                actNode = actNode.Next;
-            }
-
-            actNode = pol2.points.First;
-            while (actNode != null)
-            {
-                POINT_LOC_et res = CheckPointInPolygon(actNode.Value.pt, pol1);
-                if (res == POINT_LOC_et.IN)
-                {
-                    return POLYGONS_POS_et.P2_IN_P1;
-                }
-                else if (res == POINT_LOC_et.OUT)
-                {
-                    break;
-                }
-                actNode = actNode.Next;
-            }
-
-            return POLYGONS_POS_et.NONE;
-        }
+       
 
         public Figure Merge(Figure f1, Figure f2)
         {
@@ -803,15 +633,15 @@ namespace KiCad2Gcode
                 /* shape 1 and shape 2 have not any crossing points. It is necessary to check if one shape not includes another one.
                  * In this case outer polygon mut be returnd as result and origin holes must be proceeded. */
 
-                POLYGONS_POS_et pos = CheckPolygonsPosition(f1.shape, f2.shape);
+                Polygon.POLYGONS_POS_et pos = Polygon.CheckPolygonsPosition(f1.shape, f2.shape);
 
-                if(pos == POLYGONS_POS_et.P1_IN_P2)
+                if(pos == Polygon.POLYGONS_POS_et.P1_IN_P2)
                 {
                     newFigure = new Figure();
                     newFigure.shape = f2.shape;
                     cont = true;
                 }
-                else if(pos == POLYGONS_POS_et.P2_IN_P1)
+                else if(pos == Polygon.POLYGONS_POS_et.P2_IN_P1)
                 {
                     newFigure = new Figure();
                     newFigure.shape = f1.shape;
@@ -857,14 +687,14 @@ namespace KiCad2Gcode
                     else
                     {
                         /* this mean that hole is fully covered or fully uncovered or polygon is fully within hole, additional check is necessary */
-                        POLYGONS_POS_et pos = CheckPolygonsPosition(hole, f2.shape);
+                        Polygon.POLYGONS_POS_et pos = Polygon.CheckPolygonsPosition(hole, f2.shape);
 
-                        if(pos == POLYGONS_POS_et.NONE)
+                        if(pos == Polygon.POLYGONS_POS_et.NONE)
                         {
                             /* hole is fully uncovered */
                             newFigure.holes.Add(hole);
                         }
-                        else if(pos == POLYGONS_POS_et.P2_IN_P1)
+                        else if(pos == Polygon.POLYGONS_POS_et.P2_IN_P1)
                         {
                             /*polygon is fully within hole */
                             return null;
@@ -897,15 +727,15 @@ namespace KiCad2Gcode
                     else
                     {
                         /* this mean that hole is fully covered or fully uncovered or polygon is fully within hole, additional check is necessary */
-                        POLYGONS_POS_et pos = CheckPolygonsPosition(hole, f1.shape);
+                        Polygon.POLYGONS_POS_et pos = Polygon.CheckPolygonsPosition(hole, f1.shape);
 
 
-                        if (pos == POLYGONS_POS_et.NONE)
+                        if (pos == Polygon.POLYGONS_POS_et.NONE)
                         {
                             /* hole is fully uncovered */
                             newFigure.holes.Add(hole);
                         }
-                        else if (pos == POLYGONS_POS_et.P2_IN_P1)
+                        else if (pos == Polygon.POLYGONS_POS_et.P2_IN_P1)
                         {
                             /*polygon is fully within hole */
                             return null;
@@ -939,13 +769,13 @@ namespace KiCad2Gcode
                         }
                         else
                         {
-                            POLYGONS_POS_et pos = CheckPolygonsPosition(hole1, hole2);
+                            Polygon.POLYGONS_POS_et pos = Polygon.CheckPolygonsPosition(hole1, hole2);
 
-                            if(pos == POLYGONS_POS_et.P1_IN_P2)
+                            if(pos == Polygon.POLYGONS_POS_et.P1_IN_P2)
                             {
                                 newFigure.holes.Add(hole2);
                             }
-                            else if (pos == POLYGONS_POS_et.P2_IN_P1)
+                            else if (pos == Polygon.POLYGONS_POS_et.P2_IN_P1)
                             {
                                 newFigure.holes.Add(hole1);
                             }

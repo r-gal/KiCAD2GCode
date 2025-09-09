@@ -5,21 +5,22 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Xml.Linq;
+using static KiCad2Gcode.Polygon;
 
 namespace KiCad2Gcode
 {
     internal class BorderUnit
     {
-        private Node SearchNextNode(List<Figure> figures, Node actNode)
+        private Node SearchNextNode(List<Node> nodes, Node actNode)
         {
             /* retrun null if node has been not found or if is found more than once */
 
             Node foundNode = null;
-            Figure ff = null;
+            Node fn = null;
 
-            foreach (Figure f in figures)
+            foreach (Node n in nodes)
             {
-                if (actNode.pt.IsSameAs(f.shape.points.First().startPt))
+                if (actNode.pt.IsSameAs(n.startPt))
                 {
                     if(foundNode != null)
                     {
@@ -28,12 +29,12 @@ namespace KiCad2Gcode
                     }
                     else
                     {
-                        foundNode = f.shape.points.First();
-                        ff = f;
+                        foundNode = n;
+                        fn = n;
 
                     }
                 }
-                if (actNode.pt.IsSameAs(f.shape.points.First().pt))
+                if (actNode.pt.IsSameAs(n.pt))
                 {
                     if (foundNode != null)
                     {
@@ -42,7 +43,7 @@ namespace KiCad2Gcode
                     }
                     else
                     {
-                        foundNode = f.shape.points.First();
+                        foundNode = n;
 
                         Point2D pt = foundNode.pt;
                         foundNode.pt = foundNode.startPt;
@@ -55,7 +56,7 @@ namespace KiCad2Gcode
                             foundNode.arc.ccw = !foundNode.arc.ccw;
                         }
                         
-                        ff = f;
+                        fn = n;
 
                     }
                 }
@@ -63,29 +64,26 @@ namespace KiCad2Gcode
 
             if(foundNode != null)
             {
-                figures.Remove(ff);
+                nodes.Remove(fn);
             }
 
             return foundNode;
         }
 
-
-
-
-        public Figure SortNets(List<Figure> figures)
+        public Figure SortNets(List<Node> nodes)
         {
             Figure sorted = new Figure();
 
 
             /* get first node */
 
-            while(figures.Count > 0)
+            while(nodes.Count > 0)
             {
                 Polygon p = new Polygon();
-                Node firstNode = figures[0].shape.points.First();
+                Node firstNode = nodes[0];
                 p.points.AddLast(firstNode);
 
-                figures.RemoveAt(0);
+                nodes.RemoveAt(0);
 
 
                 Node n = firstNode;
@@ -101,7 +99,7 @@ namespace KiCad2Gcode
                         break;
                     }
 
-                    n = SearchNextNode(figures, n);
+                    n = SearchNextNode(nodes, n);
 
                     if(n != null)
                     {
@@ -117,7 +115,119 @@ namespace KiCad2Gcode
                 }
             }
 
+            SearchOuterPolygon(sorted);
+
             return sorted;
+        }
+
+        internal bool SearchOuterPolygon(Figure figure)
+        {
+            if(figure.holes.Count == 0)
+            {
+                /*ERROR: outer not found */
+                return false;
+            }
+            else if(figure.holes.Count == 1)
+            {
+                /* only one polygon, probably outer cut */
+                Polygon p = figure.holes[0];
+                figure.holes.RemoveAt(0);
+                figure.shape = p;
+                figure.shape.SetOrientation(Polygon.ORIENTATION_et.CW);
+                return true;
+            }
+
+            int idx1 = 0;
+            int idx2 = 1;
+
+
+
+            Polygon outer = null;
+
+            while(idx1 < figure.holes.Count)
+            {
+                while(idx2 < figure.holes.Count)
+                {
+
+                    Polygon p1 = figure.holes[idx1];
+                    Polygon p2 = figure.holes[idx2];
+
+                    Polygon.POLYGONS_POS_et pos = Polygon.CheckPolygonsPosition(p1, p2);
+
+                    if (pos == POLYGONS_POS_et.P1_IN_P2)
+                    {
+                        if(outer != null)
+                        {
+                            if(outer != p2)
+                            {
+                                /* ERROR: another outer polygon found */
+                                return false;
+                            }
+                        }
+                        else
+                        {
+                            outer = p2;
+                        }
+                        
+                    }
+                    else if(pos == POLYGONS_POS_et.P2_IN_P1)
+                    {
+                        if (outer != null)
+                        {
+                            if (outer != p1)
+                            {
+                                /* ERROR: another outer polygon found */
+                                return false;
+                            }
+                        }
+                        else
+                        {
+                            outer = p1;
+                        }
+                    }
+
+                    idx2++;
+                }
+
+                idx1++;
+                idx2 = idx1 + 1;
+            }
+
+            if(outer == null)
+            {
+                /*ERROR: outer not found */
+                return false;
+            }
+            else
+            {
+                foreach(Polygon p in figure.holes)
+                {
+                    if(p != outer)
+                    {
+                        Polygon.POLYGONS_POS_et pos = Polygon.CheckPolygonsPosition(outer, p);
+
+                        if(pos != POLYGONS_POS_et.P2_IN_P1)
+                        {
+                            /*ERROR: not all holes are located in outer */
+                            return false;
+                        }
+
+                    }
+                }
+            }
+
+            figure.shape = outer;
+
+            figure.holes.Remove(outer);
+
+            foreach (Polygon p in figure.holes)
+            {
+                p.SetOrientation(Polygon.ORIENTATION_et.CCW);
+            }
+            figure.shape.SetOrientation(Polygon.ORIENTATION_et.CW);
+
+            return true;
+
         }
     }
 }

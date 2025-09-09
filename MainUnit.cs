@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Security.Policy;
 using System.Text;
@@ -19,10 +20,12 @@ namespace KiCad2Gcode
         Merger merger;
 
         List<Net> zones = new List<Net>();
-        List<Figure> cuts = new List<Figure>();
+        List<Node> cuts = new List<Node>();
         List<Drill> drills = new List<Drill>();
+        Figure board;
 
         List<Polygon> millPath = new List<Polygon>();
+        List<Polygon> boardMillPath = new List<Polygon>();
 
         Net[] netList;
 
@@ -58,6 +61,7 @@ namespace KiCad2Gcode
             zones.Clear();
 
             millPath.Clear();
+            boardMillPath.Clear();
 
 
 
@@ -81,18 +85,12 @@ namespace KiCad2Gcode
             }
 
             BorderUnit borderUnit = new BorderUnit();
-            Figure sortedCuts = borderUnit.SortNets(cuts);
+            board = borderUnit.SortNets(cuts);
 
-            cuts.Clear();
-            cuts.Add(sortedCuts);
-
-            foreach (Figure f in cuts)
+            board.shape.GetExtPoints();
+            foreach (Polygon h in board.holes)
             {
-                f.shape.GetExtPoints();
-                foreach (Polygon h in f.holes)
-                {
-                    h.GetExtPoints();
-                }
+                h.GetExtPoints();
             }
 
             idxA = 0;
@@ -223,6 +221,37 @@ namespace KiCad2Gcode
             RedrawAll();
         }
 
+        internal void ProceedBoardMilling()
+        {
+
+            PatchUnit path = new PatchUnit(this);
+
+            double millDiameter = 1;
+
+            boardMillPath.Clear();            
+
+            if (board.shape.points.Count> 0)
+            {
+                List<Polygon> pathPolygons;
+                pathPolygons = path.CreatePatch(board.shape, millDiameter);
+                foreach (Polygon p in pathPolygons)
+                {
+                    boardMillPath.Add(p);
+                }
+            }
+
+            foreach(Polygon h in board.holes)
+            {
+                List<Polygon> pathPolygons;
+                pathPolygons = path.CreatePatch(h, millDiameter);
+                foreach (Polygon p in pathPolygons)
+                {
+                    boardMillPath.Add(p);
+                }
+            }  
+            RedrawAll();
+        }
+
 
 
         public void AddFigure(Figure f)
@@ -259,9 +288,9 @@ namespace KiCad2Gcode
             }
         }
 
-        public void AddCuts(Figure f)
+        public void AddCuts(Node n)
         {
-            cuts.Add(f);
+            cuts.Add(n);
         }
 
         public void AddDrill(Drill drill)
@@ -288,7 +317,7 @@ namespace KiCad2Gcode
 
         private void RedrawAll()
         {
-            drawer.Redraw(netList, zones, cuts, drills, millPath);
+            drawer.Redraw(netList, zones, board, drills, millPath, boardMillPath);
         }
 
         private bool Step(int phase)
@@ -326,7 +355,15 @@ namespace KiCad2Gcode
                     {
                         listA = z.figures;
                         listB = z.figures;
-                        PrintText("Run phase 2 for net " + idxNet.ToString() + "\n");
+                        /*PrintText("Run phase 2 for net " + idxNet.ToString() + "\n");
+
+                        foreach(Figure f in z.figures)
+                        {
+                            if(f.touched)
+                            {
+                                PrintText("Found touched\n");
+                            }
+                        }*/
                         break;
                     }
                 }
@@ -354,7 +391,11 @@ namespace KiCad2Gcode
 
                 Figure mergedFigure = null;
 
-                mergedFigure = merger.Merge(listA[idxA], listB[idxB]);
+                if(phase != 2 || listA[idxA].touched == true || listB[idxB].touched == true)
+                {
+                    mergedFigure = merger.Merge(listA[idxA], listB[idxB]);
+                }
+                
 
 
                 if (mergedFigure != null)
@@ -368,7 +409,7 @@ namespace KiCad2Gcode
 
                     merged = true;
 
-                    if (phase == 1)
+                    if (phase >= 1)
                     {
                         mergedFigure.touched = true;
                     }

@@ -814,18 +814,14 @@ namespace KiCad2Gcode
                 double[] endArr = el.ParseParameterNumericArr("end", 2, 2);
                 if (endArr == null) { return; }
                 
-                Figure f = new Figure();
-
                 Node node;
-                LinkedListNode<Node> lln;
 
                 node = new Node();
                 node.startPt = new Point2D(startArr[0], -startArr[1]);
                 node.pt = new Point2D(endArr[0], -endArr[1]);
-                lln = new LinkedListNode<Node>(node);
-                f.shape.points.AddLast(lln);
 
-                mainUnit.AddCuts(f);
+
+                mainUnit.AddCuts(node);
             }
         }
 
@@ -845,11 +841,9 @@ namespace KiCad2Gcode
                 if (centerArr == null) { return; }
                 double[] endArr = el.ParseParameterNumericArr("end", 2, 2);
                 if (endArr == null) { return; }
-                
-                Figure f = new Figure();
+
 
                 Node node;
-                LinkedListNode<Node> lln;
 
                 node = new Node();
                 node.startPt = new Point2D(endArr[0], -endArr[1]);
@@ -865,10 +859,7 @@ namespace KiCad2Gcode
 
                 node.arc = arc;
 
-                lln = new LinkedListNode<Node>(node);
-                f.shape.points.AddLast(lln);
-
-                mainUnit.AddCuts(f);
+                mainUnit.AddCuts(node);
             }
         }
 

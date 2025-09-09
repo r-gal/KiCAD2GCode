@@ -128,6 +128,7 @@ namespace KiCad2Gcode
         {
 
             unit.ProceedTracesMilling();
+            unit.ProceedBoardMilling();
             
         }
     }

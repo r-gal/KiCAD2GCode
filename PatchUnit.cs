@@ -587,7 +587,7 @@ namespace KiCad2Gcode
                         }
                         else
                         {
-                            mainUnit.PrintText("Path aborted\n ");
+                            //mainUnit.PrintText("Path aborted\n ");
                             foreach (Node n in path.points)
                             {
                                 if (n.pt.state == Point2D.STATE_et.ALREADY_USED)
@@ -675,6 +675,8 @@ namespace KiCad2Gcode
             }
             return false;
         }
+
+
     }
 
 

@@ -8,6 +8,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
+using static KiCad2Gcode.CrossUnit;
 
 namespace KiCad2Gcode
 {
@@ -329,7 +330,7 @@ namespace KiCad2Gcode
 
     }
 
-    public class Polygon
+    public class Polygon : Graph2D
     {
         public LinkedList<Node> points = new LinkedList<Node>();
 
@@ -440,6 +441,301 @@ namespace KiCad2Gcode
                 }
                 actNode = actNode.Next;
             } while (actNode != null);
+        }
+
+        public enum POLYGONS_POS_et
+        {
+            P1_IN_P2,
+            P2_IN_P1,
+            NONE
+        };
+
+        public static POLYGONS_POS_et CheckPolygonsPosition(Polygon pol1, Polygon pol2)
+        {
+            /* this function assume that polygons have not any crossing points*/
+
+            LinkedListNode<Node> actNode = pol1.points.First;
+            while (actNode != null)
+            {
+                POINT_LOC_et res = CheckPointInPolygon(actNode.Value.pt, pol2);
+                if (res == POINT_LOC_et.IN)
+                {
+                    return POLYGONS_POS_et.P1_IN_P2;
+                }
+                else if (res == POINT_LOC_et.OUT)
+                {
+                    break;
+                }
+                actNode = actNode.Next;
+            }
+
+            actNode = pol2.points.First;
+            while (actNode != null)
+            {
+                POINT_LOC_et res = CheckPointInPolygon(actNode.Value.pt, pol1);
+                if (res == POINT_LOC_et.IN)
+                {
+                    return POLYGONS_POS_et.P2_IN_P1;
+                }
+                else if (res == POINT_LOC_et.OUT)
+                {
+                    break;
+                }
+                actNode = actNode.Next;
+            }
+
+            return POLYGONS_POS_et.NONE;
+        }
+
+        public enum POINT_LOC_et
+        {
+            IN,
+            OUT,
+            EDGE
+        };
+
+        public static POINT_LOC_et CheckPointInPolygon(Point2D pt, Polygon pol)
+        {
+            int crosses = 0;
+
+            int state = 0; /* -1: DN, 0 : IDLE, 1 : UP */
+
+
+            LinkedListNode<Node> actNode = pol.points.First;
+
+            CrossUnit crossUnit = new CrossUnit();
+
+            do
+            {
+
+                CROSS_TYPE_et result = crossUnit.CheckFlatCross(pt, actNode);
+
+                switch (result)
+                {
+                    case CROSS_TYPE_et.NORMAL:
+                        state = 0;
+                        crosses++;
+                        break;
+                    case CROSS_TYPE_et.DOUBLE:
+                        state = 0;
+                        crosses += 2;
+                        break;
+                    case CROSS_TYPE_et.END_DN:
+                        if (state == 1)
+                        {
+                            state = 0;
+                            crosses++;
+                        }
+                        else if (state == -1)
+                        {
+                            state = 0;
+                        }
+                        else
+                        {
+                            state = -1;
+                        }
+                        break;
+
+                    case CROSS_TYPE_et.END_UP:
+                        if (state == -1)
+                        {
+                            state = 0;
+                            crosses++;
+                        }
+                        else if (state == 1)
+                        {
+                            state = 0;
+                        }
+                        else
+                        {
+                            state = 1;
+                        }
+                        break;
+
+                    case CROSS_TYPE_et.END2_DN:
+                        if (state == 1)
+                        {
+                            state = 0;
+                            crosses += 2;
+                        }
+                        else if (state == -1)
+                        {
+                            state = 0;
+                        }
+                        else
+                        {
+                            state = -1;
+                        }
+                        break;
+
+                    case CROSS_TYPE_et.END2_UP:
+                        if (state == -1)
+                        {
+                            state = 0;
+                            crosses += 2;
+                        }
+                        else if (state == 1)
+                        {
+                            state = 0;
+                        }
+                        else
+                        {
+                            state = 1;
+                        }
+                        break;
+                    case CROSS_TYPE_et.EDGE:
+                        return POINT_LOC_et.EDGE;
+                }
+
+
+
+                actNode = actNode.Next;
+            } while (actNode != null);
+
+
+            if (state == 0)
+            {
+                if (crosses % 2 == 0)
+                {
+                    return POINT_LOC_et.OUT;
+                }
+                else
+                {
+                    return POINT_LOC_et.IN;
+                }
+            }
+            else
+            {
+
+                /* probably point is on edge */
+                return POINT_LOC_et.EDGE;
+            }
+        }
+
+
+
+        public ORIENTATION_et CheckOrientation()
+        {
+            if (points.Count == 0)
+            {
+                return ORIENTATION_et.UNKNOWN;
+            }
+            else if (points.Count == 1)
+            {
+                if (points.First.Value.arc != null)
+                {
+                    if (points.First.Value.arc.ccw)
+                    {
+                        return ORIENTATION_et.CCW;
+                    }
+                    else
+                    {
+                        return ORIENTATION_et.CW;
+                    }
+                }
+                else
+                {
+                    return ORIENTATION_et.UNKNOWN;
+                }
+            }
+            else if (points.Count == 2)
+            {
+                double w1 = 0;
+                double w2 = 0;
+
+                if (points.First.Value.arc != null)
+                {
+                    double r1 = points.First.Value.arc.radius;
+                    if (points.First.Value.arc.ccw) r1 = -r1;
+                    w1 = 1 / r1;
+                }
+                if (points.Last.Value.arc != null)
+                {
+                    double r2 = points.Last.Value.arc.radius;
+                    if (points.Last.Value.arc.ccw) r2 = -r2;
+                    w2 = 1 / r2;
+                }
+                if(w1 + w2 < 0)
+                {
+                    return ORIENTATION_et.CCW;
+                }
+                else if(w1 + w2 > 0 )
+                {
+                    return ORIENTATION_et.CW;
+                }
+                else
+                {
+                    return ORIENTATION_et.UNKNOWN;
+                }
+            }
+            else
+            {
+                /* regular case */
+
+                /*find point located  most down - right */
+
+                LinkedListNode<Node> selNode = points.First;
+
+                LinkedListNode<Node> actNode = points.First;
+
+                while(actNode != null)
+                {
+                    if(actNode.Value.pt.y < selNode.Value.pt.y)
+                    {
+                        selNode = actNode;
+                    }
+                    else if(actNode.Value.pt.y == selNode.Value.pt.y)
+                    {
+                        if (actNode.Value.pt.x > selNode.Value.pt.x)
+                        {
+                            selNode = actNode;
+                        }
+                    }
+                    actNode = actNode.Next;
+                }
+
+                LinkedListNode<Node> prevNode = selNode.Previous ?? points.Last;
+                LinkedListNode<Node> nextNode = selNode.Next ?? points.First;
+
+                return Graph2D.CheckTriangleOrientation(prevNode.Value.pt, selNode.Value.pt, nextNode.Value.pt);
+            }
+        }
+
+        public void SetOrientation(ORIENTATION_et orientation)
+        {
+            ORIENTATION_et actOrientation = CheckOrientation();
+            if (actOrientation == orientation)
+            {
+                return;
+            }
+            else if (actOrientation != ORIENTATION_et.UNKNOWN && orientation != ORIENTATION_et.UNKNOWN)
+            {
+                /* change orientation */
+
+
+                Node prevNode = points.Last.Value;
+
+                foreach (Node n in points)
+                {
+                    n.startPt = prevNode.pt;
+                    prevNode = n;
+                }                
+
+                foreach (Node n in points)
+                {
+                    n.pt = n.startPt;
+
+                    if (n.arc != null)
+                    {
+                        Double tmpAngle = n.arc.startAngle;
+                        n.arc.startAngle = n.arc.endAngle;
+                        n.arc.endAngle = tmpAngle;
+
+                        n.arc.ccw = !n.arc.ccw;
+                    }
+                }
+                points.Reverse();
+            }
         }
     }
 
@@ -1013,9 +1309,14 @@ namespace KiCad2Gcode
     }
 
 
-    internal class Graph2D
+    public class Graph2D
     {
-        
+        public enum ORIENTATION_et
+        {
+            UNKNOWN,
+            CW,
+            CCW
+        }
 
         public static bool IsAngleBetween(double a_, double v1_, double v2_, bool ccw)
         {
@@ -1121,6 +1422,31 @@ namespace KiCad2Gcode
 
             double angle = Math.Atan2(pt.y - arc.centre.y, pt.x - arc.centre.x);      
             return Graph2D.IsAngleBetween(angle, arc.startAngle, arc.endAngle,arc.ccw);
+        }
+
+        public static ORIENTATION_et CheckTriangleOrientation(Point2D pt1, Point2D pt2, Point2D pt3)
+        {
+            double xA = pt2.x - pt1.x;
+            double yA = pt2.y - pt1.y;
+            double xB = pt3.x - pt1.x;
+            double yB = pt3.y - pt1.y;
+
+            double i = xA*yB - xB*yA;
+
+
+
+            if (i < 0)
+            {
+                return ORIENTATION_et.CCW;
+            }
+            else if(i > 0 )
+            {
+                return ORIENTATION_et.CW;
+            }    
+            else
+            {
+                return ORIENTATION_et.UNKNOWN;
+            }
         }
     }
 }
