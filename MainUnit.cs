@@ -12,6 +12,20 @@ namespace KiCad2Gcode
 {
     internal class MainUnit
     {
+        public enum STATE_et
+        {
+            IDLE,
+            FILE_LOADED,
+            PATHES_MERGED,
+            ZONES_JOINED,
+            ZONES_MERGED,
+            TRACE_MILLING_GENERATED,
+            BOARD_MILLING_GENERATED,
+            HOLES_PREPARED,
+            GCODE_GENERATED
+        }
+
+        public STATE_et state = STATE_et.IDLE;
 
         Form1 mainForm;
 
@@ -40,11 +54,18 @@ namespace KiCad2Gcode
 
             pcbFileParser = new PcbFileParser(this);
             merger = new Merger(this);
+
+            SetState(STATE_et.IDLE);
         }
 
         public void PrintText(string text)
         {
             mainForm.PrintText(text);
+        }
+
+        public void SetState(STATE_et newState)
+        {
+            state = newState;
         }
 
         internal void SetScale(int newScale)
@@ -53,7 +74,7 @@ namespace KiCad2Gcode
             RedrawAll();
         }
 
-        internal void LoadFile(string filePath)
+        internal bool LoadFile(string filePath)
         {
             netList = null;
             cuts.Clear();
@@ -65,40 +86,129 @@ namespace KiCad2Gcode
 
 
 
-            pcbFileParser.Parse(filePath);
+            bool result = pcbFileParser.Parse(filePath);
 
-
-            foreach (Net n in netList)
-            {
-                foreach (Figure f in n.figures)
+            if (result)
+            { 
+                foreach (Net n in netList)
                 {
-                    f.shape.GetExtPoints();
+                    foreach (Figure f in n.figures)
+                    {
+                        f.shape.GetExtPoints();
+                    }
                 }
-            }
 
-            foreach (Net n in zones)
-            {
-                foreach (Figure f in n.figures)
+                foreach (Net n in zones)
                 {
-                    f.shape.GetExtPoints();
+                    foreach (Figure f in n.figures)
+                    {
+                        f.shape.GetExtPoints();
+                    }
                 }
+
+                BorderUnit borderUnit = new BorderUnit();
+                board = borderUnit.SortNets(cuts);
+
+                board.shape.GetExtPoints();
+                foreach (Polygon h in board.holes)
+                {
+                    h.GetExtPoints();
+                }
+
+                RedrawAll();
+
+                SetState(STATE_et.FILE_LOADED);
+
+                List<Double[]> drillsStatistics = new List<Double[]>();
+                foreach(Drill drill in drills)
+                {
+                    double diameter = drill.diameter;
+                    bool found = false;
+                    foreach (Double[] arr in drillsStatistics)
+                    {
+                        if(arr[0] == diameter)
+                        {
+                            arr[1]++;
+                            found = true;
+                        }
+                    }
+                    if(found ==false)
+                    {
+                        Double[] arr = new double[2];
+                        arr[0] = diameter;
+                        arr[1] = 1;
+                        drillsStatistics.Add(arr);
+                    }
+                }
+
+                foreach (Double[] arr in drillsStatistics)
+                {
+                    PrintText("Found " + arr[1].ToString() + " holes with diameter " + arr[0].ToString().ToString() + "\n");
+                }
+
+
+                PrintText("File loaded \n");
+
+                idxA = 0;
+                idxB = 1;
             }
-
-            BorderUnit borderUnit = new BorderUnit();
-            board = borderUnit.SortNets(cuts);
-
-            board.shape.GetExtPoints();
-            foreach (Polygon h in board.holes)
-            {
-                h.GetExtPoints();
-            }
-
-            idxA = 0;
-            idxB = 1;
+            return result;
         }
 
-        internal void MergePolygons()
+        internal void Run(int idx)
         {
+            switch(idx)
+            {
+                case 0:/*ALL*/
+                    MergePolygons();
+                    MergePolygonsToZones();
+                    MergeZones();
+                    ProceedTracesMilling();
+                    ProceedBoardMilling();
+                    ProceedHoles();
+                    GenerateGCode();
+                    break;
+                case 1:/*MERGE POLYGONS*/
+                    MergePolygons();
+                    break;
+                case 2: /*JOIN ZONES*/
+                    MergePolygonsToZones();
+                    break;
+                case 3:/*MERGE ZONES*/
+                    MergeZones();
+                    break;
+                case 4:/*TRACE PATH MILLING*/
+                    ProceedTracesMilling();
+                    break;
+                case 5:/*TRACE BOARD MILLING*/
+                    ProceedBoardMilling();
+                    break;
+                case 6: /*PROCEED HOLES*/
+                    ProceedHoles();
+                    break;
+                case 7: /*GENERATE G - CODE*/
+                    GenerateGCode();
+                    break;
+
+            }
+
+
+        }
+
+        private void MergePolygons()
+        {
+
+            if(state != STATE_et.FILE_LOADED)
+            {
+                PrintText("File not loaded or invalid state\n");
+                return;
+            }
+            else
+            {
+                PrintText("Run merge polygons\n");
+            }
+
+
             bool res = false;
 
             idxA = 0;
@@ -114,10 +224,23 @@ namespace KiCad2Gcode
             idxA = 0;
             idxB = 0;
             idxNet = 0;
+
+            SetState(STATE_et.PATHES_MERGED);
+            PrintText("Done\n");
         }
 
-        internal void MergePolygonsToZones()
+        private void MergePolygonsToZones()
         {
+            if (state != STATE_et.PATHES_MERGED)
+            {
+                PrintText("File not loaded or invalid state\n");
+                return;
+            }
+            else
+            {
+                PrintText("Run join zones\n");
+            }
+
             bool res = false;
 
             idxA = 0;
@@ -133,10 +256,22 @@ namespace KiCad2Gcode
             idxA = 0;
             idxB = 0;
             idxNet = 0;
+
+            SetState(STATE_et.ZONES_JOINED);
+            PrintText("Done\n");
         }
 
-        internal void MergeZones()
+        private void MergeZones()
         {
+            if (state != STATE_et.ZONES_JOINED)
+            {
+                PrintText("File not loaded or invalid state\n");
+                return;
+            }
+            else
+            {
+                PrintText("Run merge zones\n");
+            }
             bool res = false;
 
             idxA = 0;
@@ -152,10 +287,21 @@ namespace KiCad2Gcode
             idxA = 0;
             idxB = 0;
             idxNet = 0;
+            SetState(STATE_et.ZONES_MERGED);
+            PrintText("Done\n");
         }
 
-        internal void ProceedTracesMilling()
+        private void ProceedTracesMilling()
         {
+            if (state != STATE_et.ZONES_MERGED)
+            {
+                PrintText("File not loaded or invalid state\n");
+                return;
+            }
+            else
+            {
+                PrintText("Run generate traces nilling\n");
+            }
             PatchUnit path = new PatchUnit(this);
 
             double millDiameter = 0.2;
@@ -217,12 +363,22 @@ namespace KiCad2Gcode
                 }
             }
 
-
+            SetState(STATE_et.TRACE_MILLING_GENERATED);
             RedrawAll();
+            PrintText("Done\n");
         }
 
-        internal void ProceedBoardMilling()
+        private void ProceedBoardMilling()
         {
+            if (state != STATE_et.TRACE_MILLING_GENERATED)
+            {
+                PrintText("File not loaded or invalid state\n");
+                return;
+            }
+            else
+            {
+                PrintText("Run generate board milling\n");
+            }
 
             PatchUnit path = new PatchUnit(this);
 
@@ -250,9 +406,46 @@ namespace KiCad2Gcode
                 }
             }  
             RedrawAll();
+            SetState(STATE_et.BOARD_MILLING_GENERATED);
+            PrintText("Done\n");
         }
 
+        private void ProceedHoles()
+        {
+            if (state != STATE_et.BOARD_MILLING_GENERATED)
+            {
+                PrintText("File not loaded or invalid state\n");
+                return;
+            }
+            else
+            {
+                PrintText("Run proceed holes\n");
+            }
 
+
+
+            PrintText("Done\n");
+            SetState(STATE_et.HOLES_PREPARED);
+            
+        }
+
+        private void GenerateGCode()
+        {
+            if (state != STATE_et.HOLES_PREPARED)
+            {
+                PrintText("File not loaded or invalid state\n");
+                return;
+            }
+            else
+            {
+                PrintText("Run generate G-Code\n");
+            }
+
+
+
+            PrintText("Done\n");
+            SetState(STATE_et.GCODE_GENERATED);
+        }
 
         public void AddFigure(Figure f)
         {
@@ -355,15 +548,7 @@ namespace KiCad2Gcode
                     {
                         listA = z.figures;
                         listB = z.figures;
-                        /*PrintText("Run phase 2 for net " + idxNet.ToString() + "\n");
 
-                        foreach(Figure f in z.figures)
-                        {
-                            if(f.touched)
-                            {
-                                PrintText("Found touched\n");
-                            }
-                        }*/
                         break;
                     }
                 }
@@ -465,7 +650,7 @@ namespace KiCad2Gcode
                 }
                 else
                 {
-                    PrintText("Nothing to do ! \n");
+                    //PrintText("Nothing to do ! \n");
                     result = false;
                 }
             }

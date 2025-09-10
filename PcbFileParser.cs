@@ -986,16 +986,26 @@ namespace KiCad2Gcode
             return element;
         }
 
-        public void Parse(string filename)
+        public bool Parse(string filename)
         {
             fileText = File.ReadAllText(filename, Encoding.UTF8);
 
             fileText = fileText.Replace("\r", "");
             fileText = fileText.Replace("\n", "");
 
-            mainElement = ParseElement(0);
+            mainElement = null;
 
-            Decode(mainElement);
+            mainElement = ParseElement(0);
+            if(mainElement != null)
+            {
+                Decode(mainElement);
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+            
 
 
         }
