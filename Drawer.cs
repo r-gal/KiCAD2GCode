@@ -213,7 +213,7 @@ namespace KiCad2Gcode
             }
 
 
-            if (cuts != null && cuts.shape.points.Count > 0)
+            if (cuts != null && cuts.shape != null && cuts.shape.points.Count > 0)
             {
                 if (cuts.shape.extPoint[0].x < minX) { minX = cuts.shape.extPoint[0].x; }
                 if (cuts.shape.extPoint[1].y > maxY) { maxY = cuts.shape.extPoint[1].y; }
@@ -399,19 +399,22 @@ namespace KiCad2Gcode
 
             if (cuts != null)
             {
-                LinkedListNode<Node> nc = cuts.shape.points.First;
+                if (cuts.shape != null)
+                { 
+                    LinkedListNode<Node> nc = cuts.shape.points.First;
 
-                while (nc != null)
-                {
-                    LinkedListNode<Node> nPrev = nc.Previous ?? cuts.shape.points.Last;
-                    DrawChunk(nPrev.Value.pt, nc.Value.pt, nc.Value.arc, bmp, Color.Black);
-                    nc = nc.Next;
+                    while (nc != null)
+                    {
+                        LinkedListNode<Node> nPrev = nc.Previous ?? cuts.shape.points.Last;
+                        DrawChunk(nPrev.Value.pt, nc.Value.pt, nc.Value.arc, bmp, Color.Black);
+                        nc = nc.Next;
+                    }
                 }
 
 
                 foreach (Polygon p in cuts.holes)
                 {
-                    nc = p.points.First;
+                    LinkedListNode<Node>  nc = p.points.First;
 
                     while (nc != null)
                     {

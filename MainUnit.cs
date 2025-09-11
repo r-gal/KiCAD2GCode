@@ -32,6 +32,7 @@ namespace KiCad2Gcode
         PcbFileParser pcbFileParser;
         internal Drawer drawer;
         Merger merger;
+        Configuration config;
 
         List<Net> zones = new List<Net>();
         List<Node> cuts = new List<Node>();
@@ -40,6 +41,7 @@ namespace KiCad2Gcode
 
         List<Polygon> millPath = new List<Polygon>();
         List<Polygon> boardMillPath = new List<Polygon>();
+        List<DrillList> sortedDrills = new List<DrillList>();
 
         Net[] netList;
 
@@ -56,6 +58,11 @@ namespace KiCad2Gcode
             merger = new Merger(this);
 
             SetState(STATE_et.IDLE);
+        }
+
+        public void SetConfig(Configuration config_)
+        {
+            this.config = config_;
         }
 
         public static void PrintText(string text)
@@ -310,7 +317,7 @@ namespace KiCad2Gcode
             }
             PatchUnit path = new PatchUnit(this);
 
-            double millDiameter = 0.2;
+            double millDiameter = config.traceMillDiameter;
 
             millPath.Clear();
 
@@ -388,7 +395,7 @@ namespace KiCad2Gcode
 
             PatchUnit path = new PatchUnit(this);
 
-            double millDiameter = 1;
+            double millDiameter = config.boardMillDiameter;
 
             boardMillPath.Clear();            
 
@@ -428,8 +435,69 @@ namespace KiCad2Gcode
                 PrintText("Run proceed holes\n");
             }
 
+            sortedDrills.Clear();
+
+            foreach(Drill d in drills)
+            {
+                if(config.boardDrillsActive && d.diameter >= config.boardMillDiameter)
+                {
+                    if(board == null)
+                    {
+                        board = new Figure();
+                        board.shape = null;
+                    }
+
+                    Polygon p = new Polygon();
+
+                    Node n = new Node();
+                    Arc arc = new Arc();
+                    arc.startAngle = -Math.PI;
+                    arc.endAngle = Math.PI;
+                    arc.radius = (d.diameter - config.boardMillDiameter)/2;
+                    arc.centre = d.pos;
+                    arc.ccw = true;
+                    n.pt = new Point2D(arc.centre);
+                    n.pt.x -= arc.radius;
+                    n.arc = arc;
+                    p.points.AddLast(n);
+                    board.holes.Add(p);
+
+                }
+                else
+                {
+                    /*search the best drill size for given hole*/
+                    DrillData drill = config.GetBestDrill(d.diameter);
+                    if(drill != null)
+                    {
+                        DrillList dList = sortedDrills.Find(dl => dl.drillData == drill);
+                        if(dList == null)
+                        {
+                            dList = new DrillList();
+                            dList.drillData = drill;
+                            dList.pts = new List<Point2D>();
+                            sortedDrills.Add(dList);
+                        }
+
+                        dList.pts.Add(d.pos);
+
+                        foreach (DrillList dl in sortedDrills)
+                        {
 
 
+                            if(dl.drillData == drill)
+                            {
+
+                            }
+                        }
+                    }
+                    else
+                    {
+                        PrintText("WARNING: Drill not found for hole " + d.diameter.ToString() + "\n");
+                    }
+                }
+            }
+
+            RedrawAll();
             PrintText("Done\n");
             SetState(STATE_et.HOLES_PREPARED);
             

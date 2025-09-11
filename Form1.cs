@@ -30,7 +30,7 @@ namespace KiCad2Gcode
 
             drawer = new Drawer(pictureBox1, panel1);
             unit = new MainUnit(this,drawer);
-
+            unit.SetConfig(config);
 
             comboBox1.SelectedIndex = 0;
             comboBox2.SelectedIndex = 2;

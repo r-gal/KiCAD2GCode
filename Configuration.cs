@@ -114,6 +114,31 @@ namespace KiCad2Gcode
             }
         }
 
+        internal DrillData GetBestDrill(double d)
+        {
+            DrillData result = null;
+
+            foreach(DrillData drill in drillList)
+            {
+                if(drill.diameter >= d)
+                {
+                    if(result == null)
+                    {
+                        result = drill;
+                    }
+                    else if(result.diameter > drill.diameter)
+                    {
+                        result = drill;
+                    }
+                }
+            }
+            /* found the smallest drill but not smaller than hole */
+
+
+
+            return result;
+        }
+
         internal void LoadFromFile(string fileName)
         {
             XmlDocument config = new XmlDocument();

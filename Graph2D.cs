@@ -1310,6 +1310,12 @@ namespace KiCad2Gcode
         public double diameter;
     }
 
+    public class DrillList
+    {
+        public DrillData drillData;
+        public List<Point2D> pts;
+    }
+
 
     public class Graph2D
     {
