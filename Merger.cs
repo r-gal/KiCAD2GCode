@@ -75,18 +75,18 @@ namespace KiCad2Gcode
 
                         /* cut f1 */
 
-                        Figure.SplitChunk(n1, points);
+                        n1 = Figure.SplitChunk2(n1, points);
 
                         /* cut f2 */
 
-                        Figure.SplitChunk(n2, points);
+                        n2 = Figure.SplitChunk2(n2, points);
 
 
                         if (points.Count == 1)
                         {
                             /* easy case */
-                            n1.Value.oppNode = n2.Next ?? n2.List.First;
-                            n2.Value.oppNode = n1.Next ?? n1.List.First;
+                            n1.Value.oppNode = n2;
+                            n2.Value.oppNode = n1;
 /*
                             mainUnit.PrintText("Set oppNode for f1: " + n1.Value.oppNode.Value.pt.x.ToString() + "," + n1.Value.oppNode.Value.pt.y.ToString() + "\n");
                             mainUnit.PrintText("Set oppNode for f2: " + n2.Value.oppNode.Value.pt.x.ToString() + "," + n2.Value.oppNode.Value.pt.y.ToString() + "\n");
@@ -96,19 +96,19 @@ namespace KiCad2Gcode
                         {
                             if (n1.Value.pt == n2.Value.pt)
                             {
-                                n1.Value.oppNode = n2.Next;
-                                n2.Value.oppNode = n1.Next;
+                                n1.Value.oppNode = n2;
+                                n2.Value.oppNode = n1;
 
-                                n1.Next.Value.oppNode = n2.Next.Next ?? n2.List.First;
-                                n2.Next.Value.oppNode = n1.Next.Next ?? n1.List.First;
+                                n1.Next.Value.oppNode = n2.Next ?? n2.List.First;
+                                n2.Next.Value.oppNode = n1.Next ?? n1.List.First;
                             }
                             else
                             {
-                                n1.Value.oppNode = n2.Next.Next ?? n2.List.First;
-                                n2.Value.oppNode = n1.Next.Next ?? n1.List.First;
+                                n1.Value.oppNode = n2.Next ?? n2.List.First;
+                                n2.Value.oppNode = n1.Next ?? n1.List.First;
 
-                                n1.Next.Value.oppNode = n2.Next;
-                                n2.Next.Value.oppNode = n1.Next;
+                                n1.Next.Value.oppNode = n2;
+                                n2.Next.Value.oppNode = n1;
 
                             }
 /*
@@ -366,7 +366,7 @@ namespace KiCad2Gcode
                 {
                     actNode.Value.pt.type = Point2D.PointType_et.NORMAL; /* reset type */
                     LinkedListNode<Node> nodeA = actNode.Next ?? actNode.List.First;
-                    LinkedListNode<Node> nodeB = actNode.Value.oppNode;
+                    LinkedListNode<Node> nodeB = actNode.Value.oppNode.Next ?? actNode.Value.oppNode.List.First;
 
                     /* choose correct node */
 
@@ -514,7 +514,7 @@ namespace KiCad2Gcode
                 {
                     actNode.Value.pt.type = Point2D.PointType_et.NORMAL; /* reset type */
                     prevPoint = actNode.Value.pt;
-                    actNode = actNode.Value.oppNode;
+                    actNode = actNode.Value.oppNode.Next ?? actNode.Value.oppNode.List.First;
 
 
 
@@ -543,6 +543,26 @@ namespace KiCad2Gcode
         {
 
         }
+
+        private void PrintPolygonData(Polygon p)
+        {
+            MainUnit.PrintText(" Polygon data: \n ");
+            foreach (Node n in p.points)
+            {
+                MainUnit.PrintText("Node " + n.idx.ToString() + "State " + n.pt.state.ToString() + " Type " + n.pt.type.ToString() + " (" + n.pt.x.ToString() + " " + n.pt.y.ToString() + ")");
+                if (n.oppNode != null)
+                {
+                    MainUnit.PrintText(" OppIdx = " + n.oppNode.Value.idx.ToString() + " " + n.oppNode.Value.pt.type.ToString());
+                }
+                if (n.arc != null)
+                {
+                    MainUnit.PrintText(" Arc " + (n.arc.ccw ? "CCW" : "CW"));
+                }
+                MainUnit.PrintText("\n ");
+            }
+
+
+        }
        
 
         public Figure Merge(Figure f1, Figure f2)
@@ -559,9 +579,15 @@ namespace KiCad2Gcode
             if (f1.shape.extPoint[3].y > f2.shape.extPoint[1].y) { return null; }
             if (f2.shape.extPoint[3].y > f1.shape.extPoint[1].y) { return null; }
 
+            /*
+            f1.shape.Renumerate();
+            f2.shape.Renumerate();
 
-
-
+            mainUnit.PrintText(f1.name + "\n");
+            PrintPolygonData(f1.shape);
+            mainUnit.PrintText(f2.name + "\n");
+            PrintPolygonData(f2.shape);
+            */
 
 
             /* find crossing points */
@@ -573,6 +599,15 @@ namespace KiCad2Gcode
 
             if (crossingPoints > 0)
             {
+                /*
+                f1.shape.Renumerate();
+                f2.shape.Renumerate();
+
+                mainUnit.PrintText(f1.name + "\n");
+                PrintPolygonData(f1.shape);
+                mainUnit.PrintText(f2.name + "\n");
+                PrintPolygonData(f2.shape);
+                */
 
                 /*choose start point */
                 f1.shape.GetExtPoints();
@@ -593,7 +628,7 @@ namespace KiCad2Gcode
                 {
                     if(n.pt.type != Point2D.PointType_et.NORMAL && n.oppNode == null)
                     {
-                        mainUnit.PrintText("Error\n");
+                        MainUnit.PrintText("Error\n");
                     }
                 }
 
@@ -601,7 +636,7 @@ namespace KiCad2Gcode
                 {
                     if (n.pt.type != Point2D.PointType_et.NORMAL && n.oppNode == null)
                     {
-                        mainUnit.PrintText("Error\n");
+                        MainUnit.PrintText("Error\n");
                     }
                 }
 
@@ -618,7 +653,7 @@ namespace KiCad2Gcode
 
                     if (actNode != null)
                     {
-                        mainUnit.PrintText("Hole start at  " + actNode.Value.pt.x.ToString() + "," + actNode.Value.pt.y.ToString() + "\n");
+                        MainUnit.PrintText("Hole start at  " + actNode.Value.pt.x.ToString() + "," + actNode.Value.pt.y.ToString() + "\n");
                         newPol = CreatePolygon(f1.shape, f2.shape, actNode, true,false);
 
                         newFigure.holes.Add(newPol);
@@ -666,9 +701,12 @@ namespace KiCad2Gcode
 
                     //hole.selected = 1;
                     //f2.shape.selected = 2;
-                    //mainForm.RedrawAll();
+                    //mainUnit.RedrawAll();
 
                     crossingPoints = SelectCrossingPoints(hole, f2.shape);
+
+                    hole.Renumerate();
+                    f2.shape.Renumerate();
 
                     if (crossingPoints > 1)
                     {
@@ -697,13 +735,22 @@ namespace KiCad2Gcode
                         else if(pos == Polygon.POLYGONS_POS_et.P2_IN_P1)
                         {
                             /*polygon is fully within hole */
+
+                            hole.Renumerate();
+                            f2.shape.Renumerate();
+
+                            //mainUnit.PrintText(hole.name + "\n");
+                            //PrintPolygonData(hole);
+                            //mainUnit.PrintText(f2.name + "\n");
+                            //PrintPolygonData(f2.shape);
+
                             return null;
                         }
                     }
 
                     //hole.selected = 0;
                     //f2.shape.selected = 0;
-                    //mainForm.RedrawAll();
+                    //mainUnit.RedrawAll();
                 }
                 
                 foreach (Polygon hole in f2.holes)

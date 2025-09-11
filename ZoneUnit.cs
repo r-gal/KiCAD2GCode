@@ -595,7 +595,7 @@ namespace KiCad2Gcode
 
                 if(actNode == null)
                 {
-                    mainUnit.PrintText("Failed hole\n");
+                    MainUnit.PrintText("Failed hole\n");
                     return null;
                 }
                 actNode = actNode.Next;
@@ -603,7 +603,7 @@ namespace KiCad2Gcode
 
 
             }
-            mainUnit.PrintText("Failed hole\n");
+            MainUnit.PrintText("Failed hole\n");
             return null;
 
 

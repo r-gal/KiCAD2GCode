@@ -168,8 +168,8 @@ namespace KiCad2Gcode
             {
                 if(element.name == "footprint")
                 {
-                    mainUnit.PrintText(element.name);
-                    mainUnit.PrintText("\n");
+                    MainUnit.PrintText(element.name);
+                    MainUnit.PrintText("\n");
                 }
 
 
@@ -441,7 +441,37 @@ namespace KiCad2Gcode
                     Node node;
                     LinkedListNode<Node> lln;
 
-                    if (size[0] >= size[1])
+                    if(size[0] == size[1])
+                    {
+                        double r = size[0] / 2;
+                        Point2D p1 = new Point2D(- r,0);
+                        Point2D p2 = new Point2D(r, 0);
+
+                        arc = new Arc();
+                        arc.centre = new Point2D(0, 0);
+                        arc.startAngle = 0;
+                        arc.endAngle = -Math.PI;
+                        arc.radius = r;
+
+                        node = new Node();
+                        node.pt = p1;
+                        node.arc = arc;
+                        lln = new LinkedListNode<Node>(node);
+                        f.shape.points.AddLast(lln);
+
+                        arc = new Arc();
+                        arc.centre = new Point2D(0, 0);
+                        arc.startAngle = Math.PI;
+                        arc.endAngle = 0;
+                        arc.radius = r;
+
+                        node = new Node();
+                        node.pt = p2;
+                        node.arc = arc;
+                        lln = new LinkedListNode<Node>(node);
+                        f.shape.points.AddLast(lln);
+                    }
+                    else if (size[0] > size[1])
                     {
                         /*horizontal */
                         double r = size[1] / 2;
@@ -531,8 +561,6 @@ namespace KiCad2Gcode
                         lln = new LinkedListNode<Node>(node);
                         f.shape.points.AddLast(lln);
                     }
-
-
 
                     f.Rotate(posRot * Math.PI / 180 );
                     f.Move(posPt.ToVector());

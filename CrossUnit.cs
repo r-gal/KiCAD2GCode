@@ -709,11 +709,11 @@ namespace KiCad2Gcode
 
                 if (rightx < pt.x)
                 {
-                    if (leftPt.IsSameAs(sP))
+                    if (rightPt.IsSameAs(sP))
                     {
                         rightCr = CR_PT_TYPE_et.CR_DN;
                     }
-                    else if (leftPt.IsSameAs(eP))
+                    else if (rightPt.IsSameAs(eP))
                     {
                         rightCr = CR_PT_TYPE_et.CR_UP;
                     }

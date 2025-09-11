@@ -510,6 +510,8 @@ namespace KiCad2Gcode
 
                 CROSS_TYPE_et result = crossUnit.CheckFlatCross(pt, actNode);
 
+                //MainUnit.PrintText("Test pt = (" + pt.x.ToString() + " " + pt.y.ToString() + ") vs node " + actNode.Value.idx.ToString() + " result = " + result.ToString() + "\n");
+
                 switch (result)
                 {
                     case CROSS_TYPE_et.NORMAL:

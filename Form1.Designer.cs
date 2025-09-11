@@ -86,6 +86,7 @@
             this.button5 = new System.Windows.Forms.Button();
             this.button6 = new System.Windows.Forms.Button();
             this.comboBox2 = new System.Windows.Forms.ComboBox();
+            this.button7 = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.panel1.SuspendLayout();
             this.groupBox1.SuspendLayout();
@@ -703,11 +704,22 @@
             this.comboBox2.TabIndex = 32;
             this.comboBox2.SelectedIndexChanged += new System.EventHandler(this.comboBox2_SelectedIndexChanged);
             // 
+            // button7
+            // 
+            this.button7.Location = new System.Drawing.Point(325, 72);
+            this.button7.Name = "button7";
+            this.button7.Size = new System.Drawing.Size(65, 46);
+            this.button7.TabIndex = 33;
+            this.button7.Text = "RUN";
+            this.button7.UseVisualStyleBackColor = true;
+            this.button7.Click += new System.EventHandler(this.button7_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(2781, 1345);
+            this.Controls.Add(this.button7);
             this.Controls.Add(this.comboBox2);
             this.Controls.Add(this.button6);
             this.Controls.Add(this.button5);
@@ -799,6 +811,7 @@
         private System.Windows.Forms.Button button5;
         private System.Windows.Forms.Button button6;
         private System.Windows.Forms.ComboBox comboBox2;
+        private System.Windows.Forms.Button button7;
     }
 }
 

@@ -27,7 +27,7 @@ namespace KiCad2Gcode
 
         public STATE_et state = STATE_et.IDLE;
 
-        Form1 mainForm;
+        static Form1 mainForm;
 
         PcbFileParser pcbFileParser;
         internal Drawer drawer;
@@ -49,7 +49,7 @@ namespace KiCad2Gcode
 
         public MainUnit(Form1 mainForm_, Drawer drawer_) 
         {
-            this.mainForm = mainForm_;
+            MainUnit.mainForm = mainForm_;
             drawer = drawer_;
 
             pcbFileParser = new PcbFileParser(this);
@@ -58,7 +58,7 @@ namespace KiCad2Gcode
             SetState(STATE_et.IDLE);
         }
 
-        public void PrintText(string text)
+        public static void PrintText(string text)
         {
             mainForm.PrintText(text);
         }
@@ -194,6 +194,12 @@ namespace KiCad2Gcode
 
 
         }
+
+        internal void TestStep()
+        {
+            Step(1);
+            RedrawAll();
+    }
 
         private void MergePolygons()
         {
@@ -508,7 +514,7 @@ namespace KiCad2Gcode
 
 
 
-        private void RedrawAll()
+        internal void RedrawAll()
         {
             drawer.Redraw(netList, zones, board, drills, millPath, boardMillPath);
         }

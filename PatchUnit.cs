@@ -178,22 +178,18 @@ namespace KiCad2Gcode
                 actNode.Value.pt.state = Point2D.STATE_et.ALREADY_USED;
                 //if(actNode.Value.oppNode != null ) { actNode.Value.oppNode.Value.state = Node.STATE_et.ALREADY_USED; }
 
-                if(actNode.Value.idx == 59)
-                {
-                    int trap = 0;
-                }
 
                 actNode = SelectNextNode(actNode, orgPolygon, toolRadius);
-                /*
+                
                 if(actNode == null)
                 {
-                    mainForm.PrintText("found null \n");
+                    //MainUnit.PrintText("found null \n");
                     return null;
                 }
                 else
                 {
-                    mainForm.PrintText("go to idx = " + actNode.Value.idx.ToString() + "\n");
-                }*/
+                    //MainUnit.PrintText("go to idx = " + actNode.Value.idx.ToString() + "\n");
+                }
                 
             }
             while (actNode.Value.pt != firstNode.Value.pt);
@@ -602,7 +598,7 @@ namespace KiCad2Gcode
                     }
                     else if (pathList.Count == 0)
                     {
-                        mainUnit.PrintText("Start point not found\n ");
+                        MainUnit.PrintText("Start point not found\n ");
                     }
 
 
