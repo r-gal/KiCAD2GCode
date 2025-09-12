@@ -86,7 +86,11 @@
             this.button5 = new System.Windows.Forms.Button();
             this.button6 = new System.Windows.Forms.Button();
             this.comboBox2 = new System.Windows.Forms.ComboBox();
-            this.button7 = new System.Windows.Forms.Button();
+            this.button8 = new System.Windows.Forms.Button();
+            this.comboBox3 = new System.Windows.Forms.ComboBox();
+            this.label18 = new System.Windows.Forms.Label();
+            this.label19 = new System.Windows.Forms.Label();
+            this.m3DwelTextBox = new System.Windows.Forms.TextBox();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.panel1.SuspendLayout();
             this.groupBox1.SuspendLayout();
@@ -100,7 +104,7 @@
             // 
             this.button1.Location = new System.Drawing.Point(12, 12);
             this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(306, 46);
+            this.button1.Size = new System.Drawing.Size(198, 46);
             this.button1.TabIndex = 0;
             this.button1.Text = "Open PCB File";
             this.button1.UseVisualStyleBackColor = true;
@@ -127,11 +131,11 @@
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(403, 93);
+            this.label1.Location = new System.Drawing.Point(428, 75);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(46, 20);
+            this.label1.Size = new System.Drawing.Size(50, 20);
             this.label1.TabIndex = 13;
-            this.label1.Text = "scale";
+            this.label1.Text = "Zoom";
             // 
             // panel1
             // 
@@ -171,6 +175,8 @@
             // 
             // groupBox1
             // 
+            this.groupBox1.Controls.Add(this.label19);
+            this.groupBox1.Controls.Add(this.m3DwelTextBox);
             this.groupBox1.Controls.Add(this.safeLevelTextBox);
             this.groupBox1.Controls.Add(this.label12);
             this.groupBox1.Controls.Add(this.label7);
@@ -669,7 +675,7 @@
             // 
             // button5
             // 
-            this.button5.Location = new System.Drawing.Point(325, 12);
+            this.button5.Location = new System.Drawing.Point(353, 12);
             this.button5.Name = "button5";
             this.button5.Size = new System.Drawing.Size(121, 46);
             this.button5.TabIndex = 30;
@@ -679,7 +685,7 @@
             // 
             // button6
             // 
-            this.button6.Location = new System.Drawing.Point(452, 12);
+            this.button6.Location = new System.Drawing.Point(480, 12);
             this.button6.Name = "button6";
             this.button6.Size = new System.Drawing.Size(114, 46);
             this.button6.TabIndex = 31;
@@ -698,28 +704,69 @@
             "30",
             "40",
             "50"});
-            this.comboBox2.Location = new System.Drawing.Point(465, 90);
+            this.comboBox2.Location = new System.Drawing.Point(503, 72);
             this.comboBox2.Name = "comboBox2";
             this.comboBox2.Size = new System.Drawing.Size(129, 28);
             this.comboBox2.TabIndex = 32;
             this.comboBox2.SelectedIndexChanged += new System.EventHandler(this.comboBox2_SelectedIndexChanged);
             // 
-            // button7
+            // button8
             // 
-            this.button7.Location = new System.Drawing.Point(325, 72);
-            this.button7.Name = "button7";
-            this.button7.Size = new System.Drawing.Size(65, 46);
-            this.button7.TabIndex = 33;
-            this.button7.Text = "RUN";
-            this.button7.UseVisualStyleBackColor = true;
-            this.button7.Click += new System.EventHandler(this.button7_Click);
+            this.button8.Location = new System.Drawing.Point(216, 12);
+            this.button8.Name = "button8";
+            this.button8.Size = new System.Drawing.Size(114, 46);
+            this.button8.TabIndex = 34;
+            this.button8.Text = "Reload file";
+            this.button8.UseVisualStyleBackColor = true;
+            this.button8.Click += new System.EventHandler(this.button8_Click);
+            // 
+            // comboBox3
+            // 
+            this.comboBox3.FormattingEnabled = true;
+            this.comboBox3.Items.AddRange(new object[] {
+            "TOP",
+            "BOTTOM"});
+            this.comboBox3.Location = new System.Drawing.Point(503, 106);
+            this.comboBox3.Name = "comboBox3";
+            this.comboBox3.Size = new System.Drawing.Size(129, 28);
+            this.comboBox3.TabIndex = 36;
+            this.comboBox3.SelectedIndexChanged += new System.EventHandler(this.comboBox3_SelectedIndexChanged);
+            // 
+            // label18
+            // 
+            this.label18.AutoSize = true;
+            this.label18.Location = new System.Drawing.Point(428, 109);
+            this.label18.Name = "label18";
+            this.label18.Size = new System.Drawing.Size(48, 20);
+            this.label18.TabIndex = 35;
+            this.label18.Text = "Layer";
+            // 
+            // label19
+            // 
+            this.label19.AutoSize = true;
+            this.label19.Location = new System.Drawing.Point(318, 52);
+            this.label19.Name = "label19";
+            this.label19.Size = new System.Drawing.Size(70, 20);
+            this.label19.TabIndex = 33;
+            this.label19.Text = "M3 Dwel";
+            // 
+            // m3DwelTextBox
+            // 
+            this.m3DwelTextBox.Location = new System.Drawing.Point(440, 49);
+            this.m3DwelTextBox.Name = "m3DwelTextBox";
+            this.m3DwelTextBox.Size = new System.Drawing.Size(100, 26);
+            this.m3DwelTextBox.TabIndex = 32;
+            this.m3DwelTextBox.Text = "20";
+            this.m3DwelTextBox.TextChanged += new System.EventHandler(this.m3DwelTextBox_TextChanged);
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(2781, 1345);
-            this.Controls.Add(this.button7);
+            this.Controls.Add(this.comboBox3);
+            this.Controls.Add(this.label18);
+            this.Controls.Add(this.button8);
             this.Controls.Add(this.comboBox2);
             this.Controls.Add(this.button6);
             this.Controls.Add(this.button5);
@@ -811,7 +858,11 @@
         private System.Windows.Forms.Button button5;
         private System.Windows.Forms.Button button6;
         private System.Windows.Forms.ComboBox comboBox2;
-        private System.Windows.Forms.Button button7;
+        private System.Windows.Forms.Button button8;
+        private System.Windows.Forms.ComboBox comboBox3;
+        private System.Windows.Forms.Label label18;
+        private System.Windows.Forms.Label label19;
+        private System.Windows.Forms.TextBox m3DwelTextBox;
     }
 }
 

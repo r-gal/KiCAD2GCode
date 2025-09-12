@@ -169,7 +169,7 @@ namespace KiCad2Gcode
 
         }
 
-        public void Redraw(Net[] netList, List<Net> zones, Figure cuts, List<Drill> drills, List<Polygon> millPath, List<Polygon> boardMillPath)
+        public void Redraw(Net[] netList, List<Net> zones, Figure cuts, List<Drill> drills, List<Polygon> millPath, Polygon boardMillPath, List<Polygon> boardHolesMillPath)
         {
 
 
@@ -400,7 +400,7 @@ namespace KiCad2Gcode
             if (cuts != null)
             {
                 if (cuts.shape != null)
-                { 
+                {
                     LinkedListNode<Node> nc = cuts.shape.points.First;
 
                     while (nc != null)
@@ -414,7 +414,7 @@ namespace KiCad2Gcode
 
                 foreach (Polygon p in cuts.holes)
                 {
-                    LinkedListNode<Node>  nc = p.points.First;
+                    LinkedListNode<Node> nc = p.points.First;
 
                     while (nc != null)
                     {
@@ -473,7 +473,7 @@ namespace KiCad2Gcode
 
             }
 
-            foreach (Polygon p in boardMillPath)
+            foreach (Polygon p in boardHolesMillPath)
             {
 
                 LinkedListNode<Node> n = p.points.First;
@@ -515,10 +515,55 @@ namespace KiCad2Gcode
 
                     n = n.Next;
                 }
-                pBox.Image = bmp;
-                pBox.Refresh();
+
 
             }
+
+            if(boardMillPath!= null)
+            { 
+                LinkedListNode<Node> n = boardMillPath.points.First;
+                bool first = true;
+                while (n != null)
+                {
+                    LinkedListNode<Node> nPrev = n.Previous ?? boardMillPath.points.Last;
+                    DrawChunk(nPrev.Value.pt, n.Value.pt, n.Value.arc, bmp, Color.LightBlue);
+
+
+
+                    if (first)
+                    {
+                        first = false;
+                        DrawCircleInt(n.Value.pt, 3, bmp, Color.DarkViolet);
+                    }
+
+                    if (n.Value.idx == 59)
+                    {
+                        first = false;
+                        DrawCircleInt(n.Value.pt, 3, bmp, Color.Red);
+                    }
+
+                    if (n.Value.pt.type == Point2D.PointType_et.CROSS_X)
+                    {
+                        DrawDotInt(n.Value.pt, 2, bmp, Color.LightBlue);
+                    }
+                    else if (n.Value.pt.state == Point2D.STATE_et.BAD)
+                    {
+                        DrawDotInt(n.Value.pt, 2, bmp, Color.OrangeRed);
+                    }
+                    else
+                    {
+                        DrawDotInt(n.Value.pt, 2, bmp, Color.Black);
+                    }
+
+
+
+
+                    n = n.Next;
+                }
+            }
+
+            pBox.Image = bmp;
+            pBox.Refresh();
 
             foreach (Drill drill in drills)
             {

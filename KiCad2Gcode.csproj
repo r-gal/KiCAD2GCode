@@ -56,6 +56,7 @@
     <Compile Include="Form1.Designer.cs">
       <DependentUpon>Form1.cs</DependentUpon>
     </Compile>
+    <Compile Include="GCodeGenerator.cs" />
     <Compile Include="Graph2D.cs" />
     <Compile Include="MainUnit.cs" />
     <Compile Include="Merger.cs" />

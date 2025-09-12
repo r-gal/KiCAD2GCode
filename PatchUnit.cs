@@ -468,11 +468,11 @@ namespace KiCad2Gcode
 
                         /* cut f1 */
 
-                        node1 = Figure.SplitChunk2(node1, crossPoint);
+                        node1 = Figure.SplitChunk(node1, crossPoint);
 
                         /* cut f2 */
 
-                        node2 = Figure.SplitChunk2(node2, crossPoint);
+                        node2 = Figure.SplitChunk(node2, crossPoint);
 
                         if (crossPoint.Count == 1)
                         {

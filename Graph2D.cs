@@ -726,6 +726,7 @@ namespace KiCad2Gcode
                 foreach (Node n in points)
                 {
                     n.pt = n.startPt;
+                    n.startPt = null;
 
                     if (n.arc != null)
                     {
@@ -736,7 +737,18 @@ namespace KiCad2Gcode
                         n.arc.ccw = !n.arc.ccw;
                     }
                 }
-                points.Reverse();
+                LinkedList<Node> newList = new LinkedList<Node>();
+
+                while(points.Count> 0)
+                {
+                    Node nn = points.Last();
+                    points.RemoveLast();
+                    newList.AddLast(nn);
+
+
+                };
+
+                points = newList;
             }
         }
     }
@@ -775,258 +787,7 @@ namespace KiCad2Gcode
             }
         }
 
-        public static void SplitChunk(LinkedListNode<Node> node, List<Point2D> pointArr)
-        {
-            LinkedListNode < Node > prevNode = node.Previous ?? node.List.Last;
-
-            Point2D sPt = prevNode.Value.pt;
-            Point2D ePt = node.Value.pt;
-
-            int fail = 0;
-
-            if(pointArr.Count < 1)
-            {
-                return;
-            }
-
-            if (pointArr[0].type == Point2D.PointType_et.NORMAL)
-            {
-                fail++;
-            }
-            if (pointArr.Count == 2 && pointArr[1].type == Point2D.PointType_et.NORMAL)
-            {
-                fail++;
-            }
-
-            if (pointArr.Count == 1)
-            {
-                /*easy case */
-                if (sPt.IsSameAs(pointArr[0]))
-                {
-                    prevNode.Value.pt = pointArr[0];
-
-                }
-                else if (ePt.IsSameAs(pointArr[0]))
-                {
-                    node.Value.pt = pointArr[0];
-
-                }
-                else
-                {
-                    /* regular split */
-
-                    Node newNode = new Node();
-                    newNode.pt = node.Value.pt;
-                    newNode.oppNode = node.Value.oppNode;
-                    node.Value.pt = pointArr[0];
-                    node.Value.oppNode = null;
-                    if(node.Value.arc != null)
-                    {
-                        double angle = Math.Atan2(pointArr[0].y - node.Value.arc.centre.y, pointArr[0].x - node.Value.arc.centre.x);
-                        newNode.arc = new Arc();
-                        newNode.arc.startAngle = angle;
-                        newNode.arc.endAngle = node.Value.arc.endAngle;
-                        node.Value.arc.endAngle = angle;
-                        newNode.arc.radius = node.Value.arc.radius;
-                        newNode.arc.centre = node.Value.arc.centre;
-                        newNode.arc.ccw = node.Value.arc.ccw;
-                    }
-                    LinkedListNode<Node> newElement = new LinkedListNode<Node>(newNode);
-                    node.List.AddAfter(node, newElement);
-                }
-            }
-            else if (pointArr.Count == 2)
-            {
-                /* phase 1 - sort merging points */
-
-                Point2D pt1 = null;
-                Point2D pt2 = null;
-
-                if (node.Value.arc == null)
-                {
-                    if( Math.Abs(ePt.x - sPt.x)  > Math.Abs(ePt.y - sPt.y))
-                    {
-                        if(ePt.x > sPt.x)
-                        {
-                            if (pointArr[0].x < pointArr[1].x)
-                            {
-                                /* point 0 is first */
-                                pt1 = pointArr[0];
-                                pt2 = pointArr[1];
-                            }
-                            else
-                            {
-                                /* point 1 is first */
-                                pt1 = pointArr[1];
-                                pt2 = pointArr[0];
-                            }
-                        }
-                        else
-                        {
-                            if (pointArr[0].x < pointArr[1].x)
-                            {
-                                /* point 1 is first */
-                                pt1 = pointArr[1];
-                                pt2 = pointArr[0];
-                            }
-                            else
-                            {
-                                /* point 0 is first */
-                                pt1 = pointArr[0];
-                                pt2 = pointArr[1];
-                            }
-                        }
-                    }
-                    else
-                    {
-                        if (ePt.y > sPt.y)
-                        {
-                            if (pointArr[0].y < pointArr[1].y)
-                            {
-                                /* point 0 is first */
-                                pt1 = pointArr[0];
-                                pt2 = pointArr[1];
-                            }
-                            else
-                            {
-                                /* point 1 is first */
-                                pt1 = pointArr[1];
-                                pt2 = pointArr[0];
-                            }
-                        }
-                        else
-                        {
-                            if (pointArr[0].y < pointArr[1].y)
-                            {
-                                /* point 1 is first */
-                                pt1 = pointArr[1];
-                                pt2 = pointArr[0];
-                            }
-                            else
-                            {
-                                /* point 0 is first */
-                                pt1 = pointArr[0];
-                                pt2 = pointArr[1];
-                            }
-                        }
-                    }
-
-                    if (ePt.IsSameAs(pt2))
-                    {
-                        node.Value.pt = pt2;
-
-                    }
-                    else
-                    {
-                        /* regular split */
-
-                        Node newNode = new Node();
-                        newNode.pt = node.Value.pt;
-                        newNode.oppNode = node.Value.oppNode;
-                        node.Value.pt = pt2;
-                        LinkedListNode<Node> newElement = new LinkedListNode<Node>(newNode);
-                        node.List.AddAfter(node, newElement);
-                    }
-
-                    if (sPt.IsSameAs(pt1))
-                    {
-                        prevNode.Value.pt = pt1;
-                    }
-                    else
-                    {
-                        /* regular split */
-
-                        Node newNode = new Node();
-                        newNode.pt = node.Value.pt;
-                        newNode.oppNode = null;
-                        node.Value.pt = pt1;
-                        LinkedListNode<Node> newElement = new LinkedListNode<Node>(newNode);
-                        node.List.AddAfter(node, newElement);
-                    }
-
-
-                }
-                else
-                {
-                    double angleA = Math.Atan2(pointArr[0].y - node.Value.arc.centre.y, pointArr[0].x - node.Value.arc.centre.x);
-                    double angleB = Math.Atan2(pointArr[1].y - node.Value.arc.centre.y, pointArr[1].x - node.Value.arc.centre.x);
-                    double angle1 = 0;
-                    double angle2 = 0;
-
-                    if (Graph2D.IsAngleBetween(angleA, node.Value.arc.startAngle, angleB, node.Value.arc.ccw) == true)
-                    {
-                        /* point 1 is first */
-                        pt1 = pointArr[0];
-                        pt2 = pointArr[1];
-                        angle1 = angleA;
-                        angle2 = angleB;
-                    }
-                    else if (Graph2D.IsAngleBetween(angleB, node.Value.arc.startAngle, angleA, node.Value.arc.ccw) == true)
-                    {
-                        /* point 0 is first */
-                        pt1 = pointArr[1];
-                        pt2 = pointArr[0];
-                        angle1 = angleB;
-                        angle2 = angleA;
-                    }
-
-                    if (ePt.IsSameAs(pt2))
-                    {
-                        node.Value.pt = pt2;
-
-                    }
-                    else
-                    {
-                        /* regular split */
-
-                        Node newNode = new Node();
-                        newNode.pt = node.Value.pt;
-                        newNode.oppNode = node.Value.oppNode;
-                        newNode.arc = new Arc();
-                        newNode.arc.startAngle = angle2;
-                        newNode.arc.endAngle = node.Value.arc.endAngle;
-                        node.Value.arc.endAngle = angle2;
-                        newNode.arc.radius = node.Value.arc.radius;
-                        newNode.arc.centre = node.Value.arc.centre;
-                        newNode.arc.ccw = node.Value.arc.ccw;
-                        node.Value.pt = pt2;
-                        LinkedListNode<Node> newElement = new LinkedListNode<Node>(newNode);
-                        node.List.AddAfter(node, newElement);
-                    }
-
-                    if (sPt.IsSameAs(pt1))
-                    {
-                        prevNode.Value.pt = pt1;
-                    }
-                    else
-                    {
-                        /* regular split */
-
-                        Node newNode = new Node();
-                        newNode.pt = node.Value.pt;
-                        newNode.oppNode = null;
-                        newNode.arc = new Arc();
-                        newNode.arc.startAngle = angle1;
-                        newNode.arc.endAngle = node.Value.arc.endAngle;
-                        node.Value.arc.endAngle = angle1;
-                        newNode.arc.radius = node.Value.arc.radius;
-                        newNode.arc.centre = node.Value.arc.centre;
-                        newNode.arc.ccw = node.Value.arc.ccw;
-                        node.Value.pt = pt1;
-                        LinkedListNode<Node> newElement = new LinkedListNode<Node>(newNode);
-                        node.List.AddAfter(node, newElement);
-                    }
-
-                }
-
-
-
-
-
-            }
-        }
-
-        public static LinkedListNode<Node> SplitChunk2(LinkedListNode<Node> node, List<Point2D> pointArr)
+        public static LinkedListNode<Node> SplitChunk(LinkedListNode<Node> node, List<Point2D> pointArr)
         {
             LinkedListNode<Node> prevNode = node.Previous ?? node.List.Last;
 
@@ -1209,7 +970,7 @@ namespace KiCad2Gcode
                     double angle1 = 0;
                     double angle2 = 0;
 
-                    if (Graph2D.IsAngleBetween(angleA, node.Value.arc.startAngle, angleB, node.Value.arc.ccw) == true)
+                    if (Graph2D.IsAngleBetween(angleA, node.Value.arc.startAngle, angleB, node.Value.arc.ccw) == true || ePt.IsSameAs(pointArr[1]))
                     {
                         /* point 1 is first */
                         pt1 = pointArr[0];
@@ -1217,7 +978,7 @@ namespace KiCad2Gcode
                         angle1 = angleA;
                         angle2 = angleB;
                     }
-                    else if (Graph2D.IsAngleBetween(angleB, node.Value.arc.startAngle, angleA, node.Value.arc.ccw) == true)
+                    else if (Graph2D.IsAngleBetween(angleB, node.Value.arc.startAngle, angleA, node.Value.arc.ccw) == true || ePt.IsSameAs(pointArr[0]))
                     {
                         /* point 0 is first */
                         pt1 = pointArr[1];
@@ -1225,6 +986,7 @@ namespace KiCad2Gcode
                         angle1 = angleB;
                         angle2 = angleA;
                     }
+                    
 
                     if (ePt.IsSameAs(pt2))
                     {
@@ -1443,11 +1205,11 @@ namespace KiCad2Gcode
 
 
 
-            if (i < 0)
+            if (i > 0)
             {
                 return ORIENTATION_et.CCW;
             }
-            else if(i > 0 )
+            else if(i < 0 )
             {
                 return ORIENTATION_et.CW;
             }    

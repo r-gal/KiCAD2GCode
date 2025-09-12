@@ -113,12 +113,15 @@ namespace KiCad2Gcode
                 n.pt.type = Point2D.PointType_et.NORMAL;
             }
 
-            foreach(Polygon h in f.holes)
+            f.shape.SetOrientation(Graph2D.ORIENTATION_et.CW);
+
+            foreach (Polygon h in f.holes)
             {
                 foreach (Node n in h.points)
                 {
                     n.pt.type = Point2D.PointType_et.NORMAL;
                 }
+                h.SetOrientation(Graph2D.ORIENTATION_et.CCW);
             }
 
             /* check polygon orientation */

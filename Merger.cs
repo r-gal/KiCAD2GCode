@@ -75,11 +75,11 @@ namespace KiCad2Gcode
 
                         /* cut f1 */
 
-                        n1 = Figure.SplitChunk2(n1, points);
+                        n1 = Figure.SplitChunk(n1, points);
 
                         /* cut f2 */
 
-                        n2 = Figure.SplitChunk2(n2, points);
+                        n2 = Figure.SplitChunk(n2, points);
 
 
                         if (points.Count == 1)

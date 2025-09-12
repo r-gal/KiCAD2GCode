@@ -6,6 +6,7 @@ using System.Security.Policy;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using static KiCad2Gcode.PcbFileParser;
 using static System.Windows.Forms.AxHost;
 
 namespace KiCad2Gcode
@@ -25,6 +26,8 @@ namespace KiCad2Gcode
             GCODE_GENERATED
         }
 
+        
+
         public STATE_et state = STATE_et.IDLE;
 
         static Form1 mainForm;
@@ -40,8 +43,9 @@ namespace KiCad2Gcode
         Figure board;
 
         List<Polygon> millPath = new List<Polygon>();
-        List<Polygon> boardMillPath = new List<Polygon>();
+        List<Polygon> boardHolesMillPath = new List<Polygon>();
         List<DrillList> sortedDrills = new List<DrillList>();
+        Polygon boardMillPath;
 
         Net[] netList;
 
@@ -81,7 +85,7 @@ namespace KiCad2Gcode
             RedrawAll();
         }
 
-        internal bool LoadFile(string filePath)
+        internal bool LoadFile(string filePath, ACTIVE_LAYER_et activeLayer_)
         {
             netList = null;
             cuts.Clear();
@@ -89,11 +93,11 @@ namespace KiCad2Gcode
             zones.Clear();
 
             millPath.Clear();
-            boardMillPath.Clear();
+            boardHolesMillPath.Clear();
 
 
 
-            bool result = pcbFileParser.Parse(filePath);
+            bool result = pcbFileParser.Parse(filePath, activeLayer_);
 
             if (result)
             { 
@@ -121,6 +125,34 @@ namespace KiCad2Gcode
                 {
                     h.GetExtPoints();
                 }
+
+                Point2D offset = FindCornerPoint();
+                Vector moveVector = new Vector(-offset.x, -offset.y);
+
+
+                foreach(Net n in zones)
+                {
+                    foreach(Figure f in n.figures)
+                    {
+                        f.Move(moveVector);
+                    }
+                }
+
+                foreach (Net n in netList)
+                {
+                    foreach (Figure f in n.figures)
+                    {
+                        f.Move(moveVector);
+                    }
+                }
+
+                board.Move(moveVector);
+
+                foreach(Drill d in drills)
+                {
+                    d.pos += moveVector;
+                }
+
 
                 RedrawAll();
 
@@ -397,15 +429,15 @@ namespace KiCad2Gcode
 
             double millDiameter = config.boardMillDiameter;
 
-            boardMillPath.Clear();            
+            boardHolesMillPath.Clear();            
 
             if (board.shape.points.Count> 0)
             {
                 List<Polygon> pathPolygons;
                 pathPolygons = path.CreatePatch(board.shape, millDiameter);
-                foreach (Polygon p in pathPolygons)
+                if(pathPolygons != null && pathPolygons.Count > 0)
                 {
-                    boardMillPath.Add(p);
+                    boardMillPath = pathPolygons[0];
                 }
             }
 
@@ -415,7 +447,7 @@ namespace KiCad2Gcode
                 pathPolygons = path.CreatePatch(h, millDiameter);
                 foreach (Polygon p in pathPolygons)
                 {
-                    boardMillPath.Add(p);
+                    boardHolesMillPath.Add(p);
                 }
             }  
             RedrawAll();
@@ -515,7 +547,17 @@ namespace KiCad2Gcode
                 PrintText("Run generate G-Code\n");
             }
 
+            SaveFileDialog saveFileDialog = new SaveFileDialog();
 
+            saveFileDialog.FilterIndex = 1;
+            saveFileDialog.RestoreDirectory = true;
+            saveFileDialog.Title = "GCODE file";
+
+            if (saveFileDialog.ShowDialog() == DialogResult.OK)
+            {
+                GCodeGenerator generator = new GCodeGenerator(config);
+                generator.Generate(saveFileDialog.FileName, sortedDrills, millPath, boardHolesMillPath, boardMillPath);
+            }
 
             PrintText("Done\n");
             SetState(STATE_et.GCODE_GENERATED);
@@ -584,7 +626,7 @@ namespace KiCad2Gcode
 
         internal void RedrawAll()
         {
-            drawer.Redraw(netList, zones, board, drills, millPath, boardMillPath);
+            drawer.Redraw(netList, zones, board, drills, millPath,  boardMillPath, boardHolesMillPath);
         }
 
         private bool Step(int phase)
@@ -731,6 +773,46 @@ namespace KiCad2Gcode
             return result;
         }
 
+        private Point2D FindCornerPoint()
+        {
+            Point2D corner = null;
+
+            if (board != null && board.shape != null && board.shape.points.Count > 0)
+            {
+                board.shape.GetExtPoints();
+
+                corner = new Point2D(board.shape.extPoint[0].x, board.shape.extPoint[3].y);
+
+            }
+            else if (zones.Count > 0)
+            {
+                foreach(Net nz in zones)
+                {
+                    if(nz.figures != null && nz.figures.Count > 0)
+                    {
+                        foreach(Figure f in  nz.figures)
+                        {
+                            f.shape.GetExtPoints();
+
+                            if(corner == null)
+                            {
+                                corner = new Point2D(f.shape.extPoint[0].x, f.shape.extPoint[3].y);
+                            }
+                            else
+                            {
+                                if (corner.x > f.shape.extPoint[0].x) { corner.x = f.shape.extPoint[0].x; }
+                                if (corner.y > f.shape.extPoint[3].y) { corner.y = f.shape.extPoint[3].y; }
+                            }
+
+
+                        }
+                    }
+                }
+
+            }
+            return corner;
+
+        }
 
 
     }

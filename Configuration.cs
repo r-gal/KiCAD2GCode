@@ -24,6 +24,7 @@ namespace KiCad2Gcode
 
         public double clearLevel = 20;
         public double safeLevel = 1;
+        public double m3dwel = 0;
 
         /* traces milling */
         public int traceMillToolNumber = 1;
@@ -177,6 +178,13 @@ namespace KiCad2Gcode
 
                 try
                 {
+                    node = config.SelectSingleNode("ROOT/GENERAL/m3Dwel");
+                    m3dwel = Double.Parse(node.InnerText);
+                }
+                catch { ok = false; }
+
+                try
+                {
                     node = config.SelectSingleNode("ROOT/TRACE/active");
                     traceActive = Boolean.Parse(node.InnerText);
                 }
@@ -324,11 +332,11 @@ namespace KiCad2Gcode
                         node = config.SelectSingleNode("ROOT/DRILLS/DRILL_"+ i.ToString()+"/toolNumber");
                         data.toolNumber = int.Parse(node.InnerText);
                         node = config.SelectSingleNode("ROOT/DRILLS/DRILL_" + i.ToString() + "/diameter");
-                        data.diameter = int.Parse(node.InnerText);
+                        data.diameter = double.Parse(node.InnerText);
                         node = config.SelectSingleNode("ROOT/DRILLS/DRILL_" + i.ToString() + "/FeedRate");
-                        data.feedRate = int.Parse(node.InnerText);
+                        data.feedRate = double.Parse(node.InnerText);
                         node = config.SelectSingleNode("ROOT/DRILLS/DRILL_" + i.ToString() + "/SpindleSpeed");
-                        data.spindleSpeed = int.Parse(node.InnerText);
+                        data.spindleSpeed = double.Parse(node.InnerText);
                         drillList.Add(data);
                     }
 
@@ -353,6 +361,7 @@ namespace KiCad2Gcode
 
             generalConfig.AppendChild(config.CreateElement("safeLevel")).InnerText = safeLevel.ToString();
             generalConfig.AppendChild(config.CreateElement("clearLevel")).InnerText = clearLevel.ToString();
+            generalConfig.AppendChild(config.CreateElement("m3Dwel")).InnerText = m3dwel.ToString();
 
             XmlElement traceConfig = (XmlElement)rootElement.AppendChild(config.CreateElement("TRACE"));
 

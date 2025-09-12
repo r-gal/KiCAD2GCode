@@ -21,6 +21,8 @@ namespace KiCad2Gcode
         internal string values;
         internal List<PcbFileElement> children;
 
+
+
         internal PcbFileElement()
         {
             this.children = new List<PcbFileElement>();
@@ -153,13 +155,36 @@ namespace KiCad2Gcode
         PcbFileElement mainElement;
         string fileText;
 
-        string activeLayer = "F.Cu";
-        string cutLayer = "Edge.Cuts";
+        public enum ACTIVE_LAYER_et
+        {
+            TOP,
+            BOTTOM
+        }
 
+
+        string[] activeLayerString = { "F.Cu", "B.Cu" };
+        string cutLayer = "Edge.Cuts";
+        ACTIVE_LAYER_et activeLayer = ACTIVE_LAYER_et.TOP;
+        double xFactor = 1;
 
         public PcbFileParser(MainUnit mainUnit_) { mainUnit = mainUnit_; }
 
-
+        private Double GetRotAngle(double angle)
+        {
+           /* if(xFactor == -1)
+            {
+                if(angle <= 180)
+                {
+                    angle = 180 - angle;
+                }
+                else
+                {
+                    angle = 540 - angle;
+                }
+            }*/
+            double resAngle = angle * Math.PI / 180;
+            return resAngle;
+        }
 
 
         private void DecodeElement(PcbFileElement element)
@@ -211,7 +236,7 @@ namespace KiCad2Gcode
 
                 /* check if correct layer */
 
-                bool layerOk = pad.CheckLayer(activeLayer);
+                bool layerOk = pad.CheckLayer(activeLayerString[((int)activeLayer)]);
                   
                 if(layerOk == false)
                 {
@@ -237,7 +262,7 @@ namespace KiCad2Gcode
                 posPt.x += offsetX;
                 posPt.y += offsetY;
 
-
+                posPt.x *= xFactor;
 
 
                 if (pad.values.Contains("thru_hole"))
@@ -353,7 +378,7 @@ namespace KiCad2Gcode
 
 
 
-                    f.Rotate(posRot * Math.PI / 180);
+                    f.Rotate(GetRotAngle(posRot) );
                     f.Move(posPt.ToVector());
 
                     mainUnit.AddFigure(f);
@@ -392,7 +417,7 @@ namespace KiCad2Gcode
                     lln = new LinkedListNode<Node>(node);
                     f.shape.points.AddLast(lln);
                     
-                    f.Rotate(posRot * Math.PI / 180);
+                    f.Rotate(GetRotAngle(posRot));
                     f.Move(posPt.ToVector());
 
                     mainUnit.AddFigure(f);
@@ -562,7 +587,7 @@ namespace KiCad2Gcode
                         f.shape.points.AddLast(lln);
                     }
 
-                    f.Rotate(posRot * Math.PI / 180 );
+                    f.Rotate(GetRotAngle(posRot));
                     f.Move(posPt.ToVector());
 
                     mainUnit.AddFigure(f);
@@ -581,7 +606,7 @@ namespace KiCad2Gcode
                 //mainUnit.PrintText("VIA");
                 //mainUnit.PrintText("\n");
 
-                bool layerOk = via.CheckLayer(activeLayer);
+                bool layerOk = via.CheckLayer(activeLayerString[(int)activeLayer]);
 
                 if (layerOk == false)
                 {
@@ -617,6 +642,7 @@ namespace KiCad2Gcode
                 node.arc = arc;
                 lln = new LinkedListNode<Node>(node);
                 f.shape.points.AddLast(lln);
+                pos[0] *= xFactor;
                 f.Move(new Vector(pos[0], -pos[1]));
 
                 mainUnit.AddFigure(f);
@@ -641,7 +667,7 @@ namespace KiCad2Gcode
 
                 /* check layer */
 
-                bool layerOk = seg.CheckLayer(activeLayer);
+                bool layerOk = seg.CheckLayer(activeLayerString[(int)activeLayer]);
 
                 if (layerOk == false)
                 {
@@ -655,6 +681,8 @@ namespace KiCad2Gcode
                 double width = seg.ParseParameterNumeric("width");
                 if (width == Double.NaN) { return; }
 
+                startArr[0] *= xFactor;
+                endArr[0] *= xFactor;
                 startArr[1] *= -1;
                 endArr[1] *= -1;
 
@@ -738,7 +766,7 @@ namespace KiCad2Gcode
                 //mainUnit.PrintText("POLYGON");
                 //mainUnit.PrintText("\n");
 
-                bool layerOk = polygon.CheckLayer(activeLayer);
+                bool layerOk = polygon.CheckLayer(activeLayerString[(int)activeLayer]);
 
                 if (layerOk == false)
                 {
@@ -749,14 +777,14 @@ namespace KiCad2Gcode
 
                 Figure f = new Figure();
                 f.net = net;
-
+                /*
                 bool firstFetched = false;
                 double firstX = 0;
                 double firstY = 0   ;
 
                 double prevX = 0;
                 double prevY = 0;
-
+                */
                 double x = 0;
                 double y = 0;
 
@@ -783,6 +811,7 @@ namespace KiCad2Gcode
                         Node node;
                         LinkedListNode<Node> lln;
 
+                        x *= xFactor;
                         node = new Node();
                         node.pt = new Point2D(x,y);
                         lln = new LinkedListNode<Node>(node);
@@ -845,8 +874,8 @@ namespace KiCad2Gcode
                 Node node;
 
                 node = new Node();
-                node.startPt = new Point2D(startArr[0], -startArr[1]);
-                node.pt = new Point2D(endArr[0], -endArr[1]);
+                node.startPt = new Point2D(startArr[0] * xFactor, -startArr[1]);
+                node.pt = new Point2D(endArr[0] * xFactor, -endArr[1]);
 
 
                 mainUnit.AddCuts(node);
@@ -874,13 +903,13 @@ namespace KiCad2Gcode
                 Node node;
 
                 node = new Node();
-                node.startPt = new Point2D(endArr[0], -endArr[1]);
-                node.pt = new Point2D(endArr[0], -endArr[1]);
+                node.startPt = new Point2D(endArr[0] * xFactor, -endArr[1]);
+                node.pt = new Point2D(endArr[0] * xFactor, -endArr[1]);
 
                 Arc arc = new Arc();
-                arc.start = new Point2D(endArr[0], -endArr[1]);
-                arc.end = new Point2D(endArr[0], -endArr[1]);
-                arc.centre = new Point2D(centerArr[0], -centerArr[1]);
+                //arc.start = new Point2D(endArr[0], -endArr[1]);
+                //arc.end = new Point2D(endArr[0], -endArr[1]);
+                arc.centre = new Point2D(centerArr[0] * xFactor, -centerArr[1]);
                 arc.startAngle = 0;
                 arc.endAngle = -2 * Math.PI;
                 arc.radius = Math.Sqrt(Math.Pow(centerArr[0] - endArr[0], 2) + Math.Pow(centerArr[1] - endArr[1], 2));
@@ -1014,8 +1043,19 @@ namespace KiCad2Gcode
             return element;
         }
 
-        public bool Parse(string filename)
+        public bool Parse(string filename, ACTIVE_LAYER_et actLayer)
         {
+            activeLayer = actLayer;
+            if(actLayer == ACTIVE_LAYER_et.BOTTOM)
+            {
+                xFactor = -1;
+            }
+            else
+            {
+                xFactor = 1;
+            }
+
+
             fileText = File.ReadAllText(filename, Encoding.UTF8);
 
             fileText = fileText.Replace("\r", "");

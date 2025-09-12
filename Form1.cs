@@ -9,6 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using static KiCad2Gcode.PcbFileParser;
 
 namespace KiCad2Gcode
 {
@@ -19,12 +20,13 @@ namespace KiCad2Gcode
 
         Configuration config;
 
-
+        String filePath = "";
 
 
         public Form1()
         {
             InitializeComponent();
+
 
             config = new Configuration();
 
@@ -34,6 +36,7 @@ namespace KiCad2Gcode
 
             comboBox1.SelectedIndex = 0;
             comboBox2.SelectedIndex = 2;
+            comboBox3.SelectedIndex = 0;
 
             Config2Gui();
             
@@ -43,7 +46,7 @@ namespace KiCad2Gcode
 
         private void button1_Click(object sender, EventArgs e)
         {
-            String filePath;
+            
             OpenFileDialog openFileDialog = new OpenFileDialog();
 
             openFileDialog.Filter = "KiCAD PCB Files |*.kicad_pcb";
@@ -55,12 +58,9 @@ namespace KiCad2Gcode
                 //Get the path of specified file
                 filePath = openFileDialog.FileName;
 
-               bool loadResult =  unit.LoadFile(filePath);
+                ReloadFile();
 
-                if(loadResult == true)
-                {
-                    this.Text = "KiCAD2Gcode " + filePath;
-                }
+
             }
 
             //filePath = "manipulator.kicad_pcb";
@@ -126,6 +126,41 @@ namespace KiCad2Gcode
                 config.DeleteDrill(toolNumber);
                 RedrawDrillList();
             }
+        }
+
+        internal void ReloadFile()
+        {
+            if(filePath != "")
+            {
+                ACTIVE_LAYER_et activeLayer;
+
+                if(comboBox3.SelectedIndex == 0)
+                {
+                    activeLayer = ACTIVE_LAYER_et.TOP;
+                }
+                else
+                {
+                    activeLayer = ACTIVE_LAYER_et.BOTTOM;
+                }
+
+                bool loadResult = unit.LoadFile(filePath,activeLayer);
+
+                if (loadResult == true)
+                {
+                    this.Text = "KiCAD2Gcode " + filePath;
+                }
+            }
+
+        }
+
+        private void comboBox3_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            ReloadFile();
+        }
+
+        private void button8_Click(object sender, EventArgs e)
+        {
+            ReloadFile();
         }
 
         private void button5_Click(object sender, EventArgs e)
@@ -251,6 +286,29 @@ namespace KiCad2Gcode
             if (ok == false)
             {
                 safeLevelTextBox.Text = config.safeLevel.ToString();
+            }
+        }
+
+        private void m3DwelTextBox_TextChanged(object sender, EventArgs e)
+        {
+            bool ok = false;
+            try
+            {
+                double m3dwel = double.Parse(m3DwelTextBox.Text);
+                if (m3dwel >= 0)
+                {
+                    config.m3dwel = m3dwel;
+                    ok = true;
+                }
+            }
+            catch
+            {
+
+            }
+
+            if (ok == false)
+            {
+                m3DwelTextBox.Text = config.m3dwel.ToString();
             }
         }
 
@@ -605,5 +663,7 @@ namespace KiCad2Gcode
         {
             unit.TestStep();
         }
+
+
     }
 }
