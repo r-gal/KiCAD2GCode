@@ -143,16 +143,27 @@ namespace KiCad2Gcode
                 AddToolChange(file, config.traceMillToolNumber, config.traceMillSpindleSpeed, "mill tool");
                 file.WriteLine("(start holes milling)");
 
-                foreach (Polygon polygon in cuts)
+                double actLevel = config.safeLevel;                
+
+                do
                 {
-                    file.WriteLine("G0 X" + polygon.points.Last.Value.pt.x.ToString(F,I) + " Y" + polygon.points.Last.Value.pt.y.ToString(F,I));
-                    file.WriteLine("G0 Z" + config.safeLevel.ToString(F,I));
-                    file.WriteLine("G1 Z" + config.boardMillLevel.ToString(F,I) + " F" + config.boardMillVFeedRate.ToString(F,I));
+                    actLevel -= config.boardVStep;
 
-                    GeneratePath(file, polygon, config.boardMillHFeedRate);
+                    if(actLevel < config.boardMillLevel)
+                    {
+                        actLevel = config.boardMillLevel;
+                    }
+                    foreach (Polygon polygon in cuts)
+                    {
+                        file.WriteLine("G0 X" + polygon.points.Last.Value.pt.x.ToString(F, I) + " Y" + polygon.points.Last.Value.pt.y.ToString(F, I));
+                        file.WriteLine("G0 Z" + config.safeLevel.ToString(F, I));
+                        file.WriteLine("G1 Z" + actLevel.ToString(F, I) + " F" + config.boardMillVFeedRate.ToString(F, I));
 
-                    file.WriteLine("G0 Z" + config.clearLevel.ToString(F,I));
-                }
+                        GeneratePath(file, polygon, config.boardMillHFeedRate);
+
+                        file.WriteLine("G0 Z" + config.clearLevel.ToString(F, I));
+                    }
+                } while (actLevel > config.boardMillLevel);
 
                 file.WriteLine("(stop holes milling)");
                 AddStopTool(file);
@@ -169,15 +180,25 @@ namespace KiCad2Gcode
                 file.WriteLine("(start board milling)");
 
                 Polygon polygon = outerCut;
-                
-                file.WriteLine("G0 X" + polygon.points.Last.Value.pt.x.ToString(F,I) + " Y" + polygon.points.Last.Value.pt.y.ToString(F,I));
-                file.WriteLine("G0 Z" + config.safeLevel.ToString(F,I));
-                file.WriteLine("G1 Z" + config.boardMillLevel.ToString(F,I) + " F" + config.boardMillVFeedRate.ToString(F,I));
 
-                GeneratePath(file, polygon, config.boardMillHFeedRate);
+                double actLevel = config.safeLevel;
+                do
+                {
+                    actLevel -= config.boardVStep;
 
-                file.WriteLine("G0 Z" + config.clearLevel.ToString(F,I));                
+                    if (actLevel < config.boardMillLevel)
+                    {
+                        actLevel = config.boardMillLevel;
+                    }
 
+                    file.WriteLine("G0 X" + polygon.points.Last.Value.pt.x.ToString(F,I) + " Y" + polygon.points.Last.Value.pt.y.ToString(F,I));
+                    file.WriteLine("G0 Z" + config.safeLevel.ToString(F,I));
+                    file.WriteLine("G1 Z" + actLevel.ToString(F,I) + " F" + config.boardMillVFeedRate.ToString(F,I));
+
+                    GeneratePath(file, polygon, config.boardMillHFeedRate);
+
+                    file.WriteLine("G0 Z" + config.clearLevel.ToString(F,I));
+                } while (actLevel > config.boardMillLevel);
                 file.WriteLine("(stop board milling)");
                 AddStopTool(file);
 

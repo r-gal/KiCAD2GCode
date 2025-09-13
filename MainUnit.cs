@@ -94,7 +94,7 @@ namespace KiCad2Gcode
 
             millPath.Clear();
             boardHolesMillPath.Clear();
-
+            boardMillPath = null;
 
 
             bool result = pcbFileParser.Parse(filePath, activeLayer_);
