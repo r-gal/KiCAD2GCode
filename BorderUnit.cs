@@ -70,7 +70,7 @@ namespace KiCad2Gcode
             return foundNode;
         }
 
-        public Figure SortNets(List<Node> nodes)
+        public Figure SortNets(List<Node> nodes, List<Polygon> polygons)
         {
             Figure sorted = new Figure();
 
@@ -113,6 +113,11 @@ namespace KiCad2Gcode
                         break;
                     }
                 }
+            }
+
+            foreach(Polygon p in polygons)
+            {
+                sorted.holes.Add(p);
             }
 
             SearchOuterPolygon(sorted);

@@ -37,8 +37,11 @@ namespace KiCad2Gcode
         Merger merger;
         Configuration config;
 
+        FieldMillingUnit fieldMillingUnit;
+
         List<Net> zones = new List<Net>();
         List<Node> cuts = new List<Node>();
+        List<Polygon> cutPolygons = new List<Polygon>();
         List<Drill> drills = new List<Drill>();
         Figure board;
 
@@ -46,6 +49,7 @@ namespace KiCad2Gcode
         List<Polygon> boardHolesMillPath = new List<Polygon>();
         List<DrillList> sortedDrills = new List<DrillList>();
         Polygon boardMillPath;
+        public  List<Polygon> millFieldsPath = new List<Polygon>();
 
         Net[] netList;
 
@@ -60,6 +64,7 @@ namespace KiCad2Gcode
 
             pcbFileParser = new PcbFileParser(this);
             merger = new Merger(this);
+            fieldMillingUnit = new FieldMillingUnit(this);
 
             SetState(STATE_et.IDLE);
         }
@@ -89,12 +94,14 @@ namespace KiCad2Gcode
         {
             netList = null;
             cuts.Clear();
+            cutPolygons.Clear();
             drills.Clear();
             zones.Clear();
 
             millPath.Clear();
             boardHolesMillPath.Clear();
             boardMillPath = null;
+            millFieldsPath.Clear();
 
 
             bool result = pcbFileParser.Parse(filePath, activeLayer_);
@@ -118,7 +125,7 @@ namespace KiCad2Gcode
                 }
 
                 BorderUnit borderUnit = new BorderUnit();
-                board = borderUnit.SortNets(cuts);
+                board = borderUnit.SortNets(cuts, cutPolygons);
 
                 board.shape.GetExtPoints();
                 foreach (Polygon h in board.holes)
@@ -127,32 +134,34 @@ namespace KiCad2Gcode
                 }
 
                 Point2D offset = FindCornerPoint();
-                Vector moveVector = new Vector(-offset.x, -offset.y);
-
-
-                foreach(Net n in zones)
+                if(offset != null)
                 {
-                    foreach(Figure f in n.figures)
+                    Vector moveVector = new Vector(-offset.x, -offset.y);
+
+
+                    foreach (Net n in zones)
                     {
-                        f.Move(moveVector);
+                        foreach (Figure f in n.figures)
+                        {
+                            f.Move(moveVector);
+                        }
                     }
-                }
 
-                foreach (Net n in netList)
-                {
-                    foreach (Figure f in n.figures)
+                    foreach (Net n in netList)
                     {
-                        f.Move(moveVector);
+                        foreach (Figure f in n.figures)
+                        {
+                            f.Move(moveVector);
+                        }
                     }
-                }
 
-                board.Move(moveVector);
+                    board.Move(moveVector);
 
-                foreach(Drill d in drills)
-                {
-                    d.pos += moveVector;
-                }
-
+                    foreach (Drill d in drills)
+                    {
+                        d.pos += moveVector;
+                    }
+                }      
 
                 RedrawAll();
 
@@ -229,6 +238,11 @@ namespace KiCad2Gcode
                     GenerateGCode();
                     break;
 
+                case 10:
+                    fieldMillingUnit.CreateFields(board, zones, netList,0.5);
+                    RedrawAll();
+                    break;
+
             }
 
 
@@ -236,7 +250,7 @@ namespace KiCad2Gcode
 
         internal void TestStep()
         {
-            Step(1);
+            Step(0);
             RedrawAll();
     }
 
@@ -602,6 +616,11 @@ namespace KiCad2Gcode
             cuts.Add(n);
         }
 
+        public void AddCutsPolygon(Polygon p)
+        {
+            cutPolygons.Add(p);
+        }
+
         public void AddDrill(Drill drill)
         {
             drills.Add(drill);
@@ -626,7 +645,7 @@ namespace KiCad2Gcode
 
         internal void RedrawAll()
         {
-            drawer.Redraw(netList, zones, board, drills, millPath,  boardMillPath, boardHolesMillPath);
+            drawer.Redraw(netList, zones, board, drills, millPath,  boardMillPath, boardHolesMillPath, millFieldsPath);
         }
 
         private bool Step(int phase)
@@ -696,7 +715,6 @@ namespace KiCad2Gcode
                 {
                     mergedFigure = merger.Merge(listA[idxA], listB[idxB]);
                 }
-                
 
 
                 if (mergedFigure != null)

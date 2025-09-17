@@ -36,6 +36,8 @@
             this.comboBox1 = new System.Windows.Forms.ComboBox();
             this.button2 = new System.Windows.Forms.Button();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.label19 = new System.Windows.Forms.Label();
+            this.m3DwelTextBox = new System.Windows.Forms.TextBox();
             this.safeLevelTextBox = new System.Windows.Forms.TextBox();
             this.label12 = new System.Windows.Forms.Label();
             this.label7 = new System.Windows.Forms.Label();
@@ -89,8 +91,7 @@
             this.button8 = new System.Windows.Forms.Button();
             this.comboBox3 = new System.Windows.Forms.ComboBox();
             this.label18 = new System.Windows.Forms.Label();
-            this.label19 = new System.Windows.Forms.Label();
-            this.m3DwelTextBox = new System.Windows.Forms.TextBox();
+            this.button7 = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.panel1.SuspendLayout();
             this.groupBox1.SuspendLayout();
@@ -187,6 +188,24 @@
             this.groupBox1.TabIndex = 26;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "General";
+            // 
+            // label19
+            // 
+            this.label19.AutoSize = true;
+            this.label19.Location = new System.Drawing.Point(318, 52);
+            this.label19.Name = "label19";
+            this.label19.Size = new System.Drawing.Size(70, 20);
+            this.label19.TabIndex = 33;
+            this.label19.Text = "M3 Dwel";
+            // 
+            // m3DwelTextBox
+            // 
+            this.m3DwelTextBox.Location = new System.Drawing.Point(440, 49);
+            this.m3DwelTextBox.Name = "m3DwelTextBox";
+            this.m3DwelTextBox.Size = new System.Drawing.Size(100, 26);
+            this.m3DwelTextBox.TabIndex = 32;
+            this.m3DwelTextBox.Text = "20";
+            this.m3DwelTextBox.TextChanged += new System.EventHandler(this.m3DwelTextBox_TextChanged);
             // 
             // safeLevelTextBox
             // 
@@ -741,29 +760,23 @@
             this.label18.TabIndex = 35;
             this.label18.Text = "Layer";
             // 
-            // label19
+            // button7
             // 
-            this.label19.AutoSize = true;
-            this.label19.Location = new System.Drawing.Point(318, 52);
-            this.label19.Name = "label19";
-            this.label19.Size = new System.Drawing.Size(70, 20);
-            this.label19.TabIndex = 33;
-            this.label19.Text = "M3 Dwel";
-            // 
-            // m3DwelTextBox
-            // 
-            this.m3DwelTextBox.Location = new System.Drawing.Point(440, 49);
-            this.m3DwelTextBox.Name = "m3DwelTextBox";
-            this.m3DwelTextBox.Size = new System.Drawing.Size(100, 26);
-            this.m3DwelTextBox.TabIndex = 32;
-            this.m3DwelTextBox.Text = "20";
-            this.m3DwelTextBox.TextChanged += new System.EventHandler(this.m3DwelTextBox_TextChanged);
+            this.button7.Location = new System.Drawing.Point(336, 74);
+            this.button7.Name = "button7";
+            this.button7.Size = new System.Drawing.Size(75, 23);
+            this.button7.TabIndex = 37;
+            this.button7.Text = "field1";
+            this.button7.UseVisualStyleBackColor = true;
+            this.button7.Visible = false;
+            this.button7.Click += new System.EventHandler(this.button7_Click_1);
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(2781, 1345);
+            this.Controls.Add(this.button7);
             this.Controls.Add(this.comboBox3);
             this.Controls.Add(this.label18);
             this.Controls.Add(this.button8);
@@ -863,6 +876,7 @@
         private System.Windows.Forms.Label label18;
         private System.Windows.Forms.Label label19;
         private System.Windows.Forms.TextBox m3DwelTextBox;
+        private System.Windows.Forms.Button button7;
     }
 }
 

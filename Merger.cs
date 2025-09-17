@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using static KiCad2Gcode.CrossUnit;
+using static KiCad2Gcode.Polygon;
 
 namespace KiCad2Gcode
 {
@@ -51,7 +52,16 @@ namespace KiCad2Gcode
                 while (n2 != null)
                 {
                     CrossUnit crossUnit = new CrossUnit();
-
+/*
+                    if(n1Idx == 6 && n2Idx == 7)
+                    {
+                        int trap = 0; 
+                    }
+                    if (n1Idx == 7 && n2Idx == 6)
+                    {
+                        int trap = 0;
+                    }
+*/
                     List<Point2D> points = crossUnit.GetCrosssingPoints(n1, n2);
 
                     
@@ -158,6 +168,38 @@ namespace KiCad2Gcode
             if (pol2.extNode[2].pt.x == pol1.extPoint[2].x) { return pol2.points.Find(pol2.extNode[2]); }
             if (pol1.extNode[3].pt.y == pol2.extPoint[3].y) { return pol1.points.Find(pol1.extNode[3]); }
             if (pol2.extNode[3].pt.y == pol1.extPoint[3].y) { return pol2.points.Find(pol2.extNode[3]); }
+
+            LinkedListNode<Node> n = pol1.points.First;
+            while(n != null)
+            {
+                POINT_LOC_et result = CheckPointInPolygon(n.Value.pt, pol2);
+                if(result == POINT_LOC_et.OUT) { return n; }
+                n = n.Next;
+            }
+
+            n = pol2.points.First;
+            while (n != null)
+            {
+                POINT_LOC_et result = CheckPointInPolygon(n.Value.pt, pol1);
+                if (result == POINT_LOC_et.OUT) { return n; }
+                n = n.Next;
+            }
+
+            n = pol1.points.First;
+            while (n != null)
+            {
+                POINT_LOC_et result = CheckPointInPolygon(n.Value.pt, pol2);
+                if (result != POINT_LOC_et.IN) { return n; }
+                n = n.Next;
+            }
+
+            n = pol2.points.First;
+            while (n != null)
+            {
+                POINT_LOC_et result = CheckPointInPolygon(n.Value.pt, pol1);
+                if (result != POINT_LOC_et.IN) { return n; }
+                n = n.Next;
+            }
 
             return null;
         }
@@ -349,6 +391,14 @@ namespace KiCad2Gcode
                 LinkedListNode<Node> copiedNode = new LinkedListNode<Node>(newNode);
 
                 newPolygon.points.AddLast(copiedNode);
+
+                if (newPolygon.points.Count > 200000)
+                {
+                    /*infinite loop*/
+                    //newPolygon.GetExtPoints();
+                    //return newPolygon;
+                    return null;
+                }
                 if(redraw)
                 {
                     mainUnit.drawer.SetCentre(n.pt);
@@ -443,7 +493,7 @@ namespace KiCad2Gcode
                     */
                     prevPoint = actNode.Value.pt;
 
-                    if (Math.Abs(out1Angle - out2Angle) < 0.00000001)
+                    if (Math.Abs(out1Angle - out2Angle) < 0.000001)
                     {
 
                         if (wgt1 < wgt2)
@@ -583,12 +633,12 @@ namespace KiCad2Gcode
             f1.shape.Renumerate();
             f2.shape.Renumerate();
 
-            mainUnit.PrintText(f1.name + "\n");
+            MainUnit.PrintText(f1.name + "\n");
             PrintPolygonData(f1.shape);
-            mainUnit.PrintText(f2.name + "\n");
-            PrintPolygonData(f2.shape);
-            */
-
+            MainUnit.PrintText(f2.name + "\n");
+            PrintPolygonData(f2.shape);*/
+            
+            
 
             /* find crossing points */
 
@@ -599,13 +649,13 @@ namespace KiCad2Gcode
 
             if (crossingPoints > 0)
             {
-                /*
+               /*
                 f1.shape.Renumerate();
                 f2.shape.Renumerate();
 
-                mainUnit.PrintText(f1.name + "\n");
+                MainUnit.PrintText(f1.name + "\n");
                 PrintPolygonData(f1.shape);
-                mainUnit.PrintText(f2.name + "\n");
+                MainUnit.PrintText(f2.name + "\n");
                 PrintPolygonData(f2.shape);
                 */
 
@@ -619,12 +669,16 @@ namespace KiCad2Gcode
                 if (actNode == null)
                 {
                     /*something weird */
+                    MainUnit.PrintText("Start point not found\n");
                     return null;
                 }
+                //MainUnit.PrintText("Start point at idx " + actNode.Value.idx.ToString() + " pt = " + actNode.Value.pt.x.ToString() + " " + actNode.Value.pt.y.ToString());
+
+
 
                 /* sanity check */
 
-                foreach(Node n in f1.shape.points)
+                foreach (Node n in f1.shape.points)
                 {
                     if(n.pt.type != Point2D.PointType_et.NORMAL && n.oppNode == null)
                     {
@@ -641,6 +695,7 @@ namespace KiCad2Gcode
                 }
 
                 Polygon newPol = CreatePolygon(f1.shape, f2.shape, actNode, true,false);
+                if(newPol == null) { return null; }
 
                 newFigure = new Figure();
                 newFigure.shape = newPol;
@@ -702,11 +757,26 @@ namespace KiCad2Gcode
                     //hole.selected = 1;
                     //f2.shape.selected = 2;
                     //mainUnit.RedrawAll();
-
-                    crossingPoints = SelectCrossingPoints(hole, f2.shape);
-
+                    /*
                     hole.Renumerate();
                     f2.shape.Renumerate();
+
+                    
+                    PrintPolygonData(hole);
+                    MainUnit.PrintText(f2.name + "\n");
+                    PrintPolygonData(f2.shape);*/
+
+                    crossingPoints = SelectCrossingPoints(hole, f2.shape);
+                    /*
+                    hole.Renumerate();
+                    f2.shape.Renumerate();
+
+                    
+                    PrintPolygonData(hole);
+                    MainUnit.PrintText(f2.name + "\n");
+                    PrintPolygonData(f2.shape);
+
+                    mainUnit.RedrawAll();*/
 
                     if (crossingPoints > 1)
                     {

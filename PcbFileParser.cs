@@ -309,17 +309,19 @@ namespace KiCad2Gcode
 
 
                     double[] chamferSize = { 0, 0, 0, 0 };
-                    bool[] chamferRounded = {false,false,false,false}; 
+                    bool[] chamferRounded = {false,false,false,false};
+
+                    double lowest = Math.Min(size[0], size[1]);
 
                     for(int i=0;i<4;i++)
                     {
-                        if (chamfer[i] && (chamferRatio > roundRatio))
+                        if (chamfer[i])
                         {
-                            chamferSize[i] = chamferRatio;
+                            chamferSize[i] = chamferRatio * lowest;
                         }
                         else if(roundRatio > 0)
                         {
-                            chamferSize[i] = roundRatio;
+                            chamferSize[i] = roundRatio * lowest;
                             chamferRounded[i] = true;
                         }
 
@@ -352,10 +354,13 @@ namespace KiCad2Gcode
 
                     for (int i=0;i< 4;i++)
                     {
-                        node = new Node();
-                        node.pt = pts[2*i];
-                        lln = new LinkedListNode<Node>(node);
-                        f.shape.points.AddLast(lln);
+                        if (pts[2 * i].IsSameAs(pts[(2*i+7)%8]) == false)
+                        {
+                            node = new Node();
+                            node.pt = pts[2 * i];
+                            lln = new LinkedListNode<Node>(node);
+                            f.shape.points.AddLast(lln);
+                        }   
 
                         if (chamferSize[i] > 0)
                         {
@@ -759,6 +764,51 @@ namespace KiCad2Gcode
             }
         }
 
+        private Polygon FetchPolygon(PcbFileElement parent)
+        {
+            Polygon p = new Polygon();
+
+            PcbFileElement pts = parent.FindElement("pts");
+
+            double x = 0;
+            double y = 0;
+
+            Line line;
+
+            foreach (PcbFileElement e in pts.children)
+            {
+
+                if (e.name == "xy")
+                {
+                    e.values = e.values.Replace('.', ',');
+                    string[] valStr = e.values.Split(' ');
+                    if (valStr.Length == 2)
+                    {
+                        try
+                        {
+                            x = double.Parse(valStr[0]);
+                            y = -double.Parse(valStr[1]);
+                        }
+                        catch { return null; }
+                    }
+                    else { return null; }
+
+                    Node node;
+                    LinkedListNode<Node> lln;
+
+                    x *= xFactor;
+                    node = new Node();
+                    node.pt = new Point2D(x, y);
+                    lln = new LinkedListNode<Node>(node);
+                    p.points.AddLast(lln);
+
+
+                }
+            }
+
+            return p;
+        }
+
         private void DecodePolygon(PcbFileElement polygon, int net)
         {
             if ((polygon.name != null) && (polygon.name == "filled_polygon"))
@@ -773,78 +823,10 @@ namespace KiCad2Gcode
                     return;
                 }
 
-                PcbFileElement pts = polygon.FindElement("pts");
-
                 Figure f = new Figure();
                 f.net = net;
-                /*
-                bool firstFetched = false;
-                double firstX = 0;
-                double firstY = 0   ;
 
-                double prevX = 0;
-                double prevY = 0;
-                */
-                double x = 0;
-                double y = 0;
-
-                Line line;
-
-                foreach (PcbFileElement e in pts.children) 
-                {
-                    
-                    if(e.name == "xy")
-                    {
-                        e.values = e.values.Replace('.', ',');
-                        string[] valStr = e.values.Split(' ');
-                        if (valStr.Length== 2)
-                        {                            
-                            try
-                            { 
-                                x = double.Parse(valStr[0]);
-                                y = -double.Parse(valStr[1]);
-                            }
-                            catch { return ; }
-                        }
-                        else { return ; }
-
-                        Node node;
-                        LinkedListNode<Node> lln;
-
-                        x *= xFactor;
-                        node = new Node();
-                        node.pt = new Point2D(x,y);
-                        lln = new LinkedListNode<Node>(node);
-                        f.shape.points.AddLast(lln);
-
-                        
-
-                        /*
-                        if (firstFetched == false)
-                        {
-                            firstFetched = true;
-                            firstX = x;
-                            firstY = y;
-                            prevX = x; prevY = y;
-                        }
-                        else
-                        {
-                            line = new Line();
-                            line.start = new Point2D(prevX, prevY);
-                            line.end = new Point2D(x,y);
-                            f.chunks.Add(line);
-                            prevX = x; prevY = y;
-                        }*/
-
-
-
-                    }
-                }
-                /*
-                line = new Line();
-                line.start = new Point2D(x, y);
-                line.end = new Point2D(firstX, firstY);
-                f.chunks.Add(line);*/
+                f.shape = FetchPolygon(polygon);
 
                 ZoneUnit zoneUnit = new ZoneUnit(mainUnit);
                 zoneUnit.ConvertToValidFigure(f);
@@ -915,8 +897,99 @@ namespace KiCad2Gcode
                 arc.radius = Math.Sqrt(Math.Pow(centerArr[0] - endArr[0], 2) + Math.Pow(centerArr[1] - endArr[1], 2));
 
                 node.arc = arc;
+                Polygon p = new Polygon();
+                p.points.AddLast(node);
+
+                mainUnit.AddCutsPolygon(p);
+            }
+        }
+
+        private void DecodeArc(PcbFileElement el)
+        {
+            if ((el.name != null) && (el.name == "gr_arc"))
+            {
+
+                bool layerOk = el.CheckLayer(cutLayer);
+
+                if (layerOk == false)
+                {
+                    return;
+                }
+
+                double[] startArr = el.ParseParameterNumericArr("start", 2, 2);
+                if (startArr == null) { return; }
+                double[] midArr = el.ParseParameterNumericArr("mid", 2, 2);
+                if (midArr == null) { return; }
+                double[] endArr = el.ParseParameterNumericArr("end", 2, 2);
+                if (endArr == null) { return; }
+
+                Point2D sPt = new Point2D(startArr[0], -startArr[1]);
+                Point2D mPt = new Point2D(midArr[0], -midArr[1]);
+                Point2D ePt = new Point2D(endArr[0], -endArr[1]);
+
+                Vector vA = mPt - sPt;
+                Vector vB = ePt - mPt;
+
+                vA *= 0.5;
+                vB *= 0.5;
+
+                Point2D A = sPt + vA;
+                Point2D B = mPt + vB;
+
+                vA.Normalize();
+                vB.Normalize();
+                vA = vA.GetOrtogonal(true);
+                vB = vB.GetOrtogonal(true);
+
+                double div = vA.y * vB.x - vB.y * vA.x;
+
+                double mA = A.y * vB.x - B.y * vB.x - A.x * vB.y + B.x * vB.y;
+                double mB = B.y * vA.x - A.y * vA.x - B.x * vA.y + A.x * vA.y;
+
+                mA /= -div;
+                mB /= div;
+
+                vA *= mA;
+                vB *= mB;
+
+                Point2D cPt = A + vA;
+                Point2D cPtB = B + vB;
+
+                Vector vR = sPt - cPt;
+
+                Arc arc = new Arc();
+                arc.ccw = mA < 0;
+                arc.centre = cPt;
+                arc.startAngle = Math.Atan2(sPt.y - cPt.y, sPt.x - cPt.x);
+                arc.endAngle = Math.Atan2(ePt.y - cPt.y, ePt.x - cPt.x);
+                arc.radius = vR.Length;
+
+                Node node;
+
+                node = new Node();
+                node.startPt = sPt;
+                node.pt = ePt;
+                node.arc = arc;
 
                 mainUnit.AddCuts(node);
+            }
+        }
+
+        private void DecodePoly(PcbFileElement el)
+        {
+            if ((el.name != null) && (el.name == "gr_poly"))
+            {
+
+                bool layerOk = el.CheckLayer(cutLayer);
+
+                if (layerOk == false)
+                {
+                    return;
+                }
+
+                Polygon p = FetchPolygon(el);
+                             
+                mainUnit.AddCutsPolygon(p);
             }
         }
 
@@ -979,6 +1052,14 @@ namespace KiCad2Gcode
                 {
                     DecodeCircle(top);
                 }
+                else if (top.name == "gr_arc")
+                {
+                    DecodeArc(top);
+                }
+                else if (top.name == "gr_poly")
+                {
+                    DecodePoly(top);
+                }
                 else if (top.name == "kicad_pcb")
                 {
                     DecodeMaster(top);
@@ -1018,8 +1099,12 @@ namespace KiCad2Gcode
 
                 if(ch == '(')
                 {
-                    element.values = fileText.Substring(startIdx, i - startIdx);
-                    valuesParsed = true;
+                    if(valuesParsed == false)
+                    {
+                        element.values = fileText.Substring(startIdx, i - startIdx);
+                        valuesParsed = true;
+                    }
+
 
                     PcbFileElement newElement = ParseElement(i + 1);
                     //DecodeElement(newElement);
@@ -1060,6 +1145,7 @@ namespace KiCad2Gcode
 
             fileText = fileText.Replace("\r", "");
             fileText = fileText.Replace("\n", "");
+            fileText = fileText.Replace("\t", " ");
 
             mainElement = null;
 

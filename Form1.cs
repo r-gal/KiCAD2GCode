@@ -22,6 +22,7 @@ namespace KiCad2Gcode
 
         String filePath = "";
 
+        String MainText = "KiCAD2Gcode v1.1 ";
 
         public Form1()
         {
@@ -39,8 +40,8 @@ namespace KiCad2Gcode
             comboBox3.SelectedIndex = 0;
 
             Config2Gui();
-            
 
+            this.Text = MainText;
 
         }
 
@@ -147,7 +148,7 @@ namespace KiCad2Gcode
 
                 if (loadResult == true)
                 {
-                    this.Text = "KiCAD2Gcode " + filePath;
+                    this.Text = MainText + filePath;
                 }
             }
 
@@ -664,6 +665,10 @@ namespace KiCad2Gcode
             unit.TestStep();
         }
 
-
+        private void button7_Click_1(object sender, EventArgs e)
+        {
+            //unit.Run(10);
+            unit.TestStep();
+        }
     }
 }

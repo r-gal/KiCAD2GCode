@@ -7,6 +7,193 @@ namespace KiCad2Gcode
     {
         public List<Point2D> GetCrossingLineLine(LinkedListNode<Node> node1, LinkedListNode<Node> node2)
         {
+            Point2D eP1 = node1.Value.pt;
+            Point2D eP2 = node2.Value.pt;
+
+            /* very early checks */
+
+            if (eP1.IsSameAs(eP2))
+            {
+                eP1.type = Point2D.PointType_et.CROSS_T;
+                List<Point2D> ptArr = new List<Point2D> { eP1 };
+                return ptArr;
+            }
+
+
+            LinkedListNode<Node> n1Prev = node1.Previous ?? node1.List.Last;
+            LinkedListNode<Node> n2Prev = node2.Previous ?? node2.List.Last;
+            Point2D sP1 = node1.Value.startPt ?? n1Prev.Value.pt;
+            Point2D sP2 = node2.Value.startPt ?? n2Prev.Value.pt;
+
+            if(sP1.IsSameAs(eP2) || sP2.IsSameAs(eP1))
+            {
+                return null;
+            }
+
+            Point2D pt1 = null;
+            Point2D pt2 = null;
+
+            Vector v1 = eP1 - sP1;
+            Vector v2 = eP2 - sP2;
+
+            if (v1.Length == 0 || v2.Length == 0)
+            {
+                return null;
+            }
+
+            Double length1 = v1.Length;
+            Double length2 = v2.Length;
+
+            v1.Normalize();
+            v2.Normalize();
+
+            Point2D t = eP1;
+            Point2D s = sP2;
+            Vector v = v2;
+
+            double a = t.x*v.x - s.x * v.x+  t.y*v.y - s.y * v.y;
+            Point2D tmpPt = s + a * v;
+
+            if (  tmpPt.IsSameAs(eP1))
+            {
+                if(a >= 0 && a <= length2)
+                {
+                    pt1 = eP1;
+                    pt1.type = Point2D.PointType_et.CROSS_T;
+                }
+
+            }
+
+             t = eP2;
+             s = sP1;
+             v = v1;
+
+             a = t.x * v.x - s.x * v.x + t.y * v.y - s.y * v.y;
+             tmpPt = s + a * v;
+
+            if ( tmpPt.IsSameAs(eP2))
+            {
+                if(a >= 0 && a <= length1)
+                {
+                    pt2 = eP2;
+                    pt2.type = Point2D.PointType_et.CROSS_T;
+                }
+
+            }
+
+            if (pt1 != null || pt2 != null)
+            {
+                List<Point2D> ptArr = new List<Point2D>();
+
+                if (pt1 != null)
+                {
+                    ptArr.Add(pt1);
+                }
+                if (pt2 != null)
+                {
+                    ptArr.Add(pt2);
+                }
+                return ptArr;
+            }
+
+
+
+
+            double div = v1.x * v2.y - v1.y * v2.x;
+
+            double m1 = sP1.y * v2.x - sP2.y * v2.x - sP1.x * v2.y + sP2.x * v2.y;
+            double m2 = sP2.y * v1.x - sP1.y * v1.x - sP2.x * v1.y + sP1.x * v1.y;
+
+            if(Math.Abs(div)  <  0.0000001)
+            {
+                if(Math.Abs(m1) < 0.0000001)
+                {
+                    /*Parallel, may overlap*/
+
+                    pt1 = null;
+                    pt2 = null;
+
+
+                    if(Graph2D.IsPointOnLine(eP1,sP2,eP2))
+                    {
+                        pt1 = eP1;
+                        pt1.type = Point2D.PointType_et.CROSS_T;
+                    }
+
+                    if (Graph2D.IsPointOnLine(eP2, sP1, eP1))
+                    {
+                        pt2 = eP2;
+                        pt2.type = Point2D.PointType_et.CROSS_T;
+                    }
+
+                    if(pt1 != null || pt2 != null)
+                    {
+                        List<Point2D> ptArr = new List<Point2D>();
+
+                        if(pt1!= null)
+                        {
+                            ptArr.Add(pt1);
+                        }
+                        if (pt2 != null)
+                        {
+                            ptArr.Add(pt2);
+                        }
+                        return ptArr;
+                    }
+
+                    return null;
+                }
+                else
+                {
+                    /* parallel not overlap */
+                    return null;
+                }
+            }
+            else
+            {
+
+                m1 = m1 / div;
+                m2 = m2 / -div;
+
+                Point2D cP = sP1 + m1 * v1;
+
+                if(cP.IsSameAs(eP1)  && Math.Abs(m2 - length2) < 0.000001)
+                {
+                    cP.type = Point2D.PointType_et.CROSS_T;
+                    List<Point2D> ptArr = new List<Point2D> { cP };
+                    return ptArr;
+                }
+
+                if ( cP.IsSameAs(eP2) && Math.Abs(m1 - length1) < 0.000001)
+                {
+                    cP.type = Point2D.PointType_et.CROSS_T;
+                    List<Point2D> ptArr = new List<Point2D> { cP };
+                    return ptArr;
+                }
+
+                if (cP.IsSameAs(sP1) || cP.IsSameAs(sP2))
+                {
+                    return null;
+                }
+
+
+                if (m1>= 0 && m1 <= length1 && m2 >= 0 && m2 <= length2)
+                {
+                    cP.type = Point2D.PointType_et.CROSS_X;
+                    List<Point2D> ptArr = new List<Point2D> { cP };
+                    return ptArr;
+                }
+
+            }
+
+
+            return null;
+
+
+        }
+
+        public List<Point2D> GetCrossingLineLineTmp(LinkedListNode<Node> node1, LinkedListNode<Node> node2)
+        {
 
             LinkedListNode<Node> n1Prev = node1.Previous ?? node1.List.Last;
             LinkedListNode<Node> n2Prev = node2.Previous ?? node2.List.Last;
@@ -179,7 +366,22 @@ namespace KiCad2Gcode
 
             double a = (vL.x * vC.y - vC.x * vL.y) / vL.Length * vL.Length;
 
-            if (Math.Abs(a) > arc.radius + 0.0000001) { return null; }
+            double cLen = Math.Pow(arc.radius, 2) - a * a;
+
+            if (cLen < 0) 
+            { 
+                if(cLen > -0.0000001)
+                {
+                    cLen = 0;
+                }
+                else
+                {
+                    return null;
+                }
+                
+            }
+
+
 
             double b;
             if (Math.Abs(vL.x) > Math.Abs(vL.y))
@@ -191,27 +393,26 @@ namespace KiCad2Gcode
                 b = (vC.y - a * vL.x) / vL.y;
             }
 
-            double c = Math.Sqrt(Math.Pow(arc.radius, 2) - a * a);
+            double c = Math.Sqrt(cLen);
 
             Point2D ptM = sP1 + b * vL;
-            ptM.type = Point2D.PointType_et.CROSS_T;
 
-            Point2D ptM2 = null;
+            Point2D ptM2 = ptM + c * vL;
+            ptM = ptM - c * vL;
+            ptM2.type = Point2D.PointType_et.CROSS_X;
+            ptM.type = Point2D.PointType_et.CROSS_X;
+            if (ptM.IsSameAs(ptM2))
+            {
+                ptM2 = null;
+                ptM.type = Point2D.PointType_et.CROSS_T;
 
-            if (c > 0.0000001)
-            {
-                ptM2 = ptM + c * vL;
-                ptM = ptM - c * vL;
-                ptM2.type = Point2D.PointType_et.CROSS_X;
-                ptM.type = Point2D.PointType_et.CROSS_X;
-            }
-            else
-            {
-                if(ptM.IsSameAs(eP1) == false)
+                if (ptM.IsSameAs(eP1) == false && ptM.IsSameAs(eP2) == false)
                 {
                     ptM = null;
                 }
             }
+
+
 
             /* check if points ane on line */
 
@@ -657,10 +858,15 @@ namespace KiCad2Gcode
                 Point2D cP = node.Value.arc.centre;
                 double r = node.Value.arc.radius;
 
-                if(cP.y + r <= pt.y || cP.y - r >= pt.y)
+                double h = pt.y - cP.y;
+
+                double l2 = r * r - h * h;
+
+                if (l2 < -0.0000001)
                 {
                     return CROSS_TYPE_et.NONE;
                 }
+                
 
                 if(cP.x - r > pt.x)
                 {
@@ -670,8 +876,37 @@ namespace KiCad2Gcode
                 /* calc arc - line crossing points */
 
                 /* close case */
-                double h = pt.y - cP.y;
-                double a = Math.Sqrt(r * r - h * h);
+
+                double a = 0;
+                if (l2>0) 
+                { 
+                    a = Math.Sqrt(l2);
+                }
+                else if(cP.x< pt.x)
+                {
+                    Point2D comPt = new Point2D(cP.x, pt.y);
+
+                    if(comPt.IsSameAs(sP)^comPt.IsSameAs(eP))
+                    {
+                        if(cP.y < pt.y)
+                        {
+                            return CROSS_TYPE_et.END_DN;
+                        }
+                        else
+                        {
+                            return CROSS_TYPE_et.END_UP;
+                        }
+
+                    }
+                    else
+                    {
+                        return CROSS_TYPE_et.NONE;
+                    }
+                }
+                else
+                {
+                    return CROSS_TYPE_et.NONE;
+                }
 
                 double leftx = cP.x - a;
                 double rightx = cP.x + a;

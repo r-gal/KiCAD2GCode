@@ -44,9 +44,9 @@ namespace KiCad2Gcode
         {
             if (position.type == Point2D.PointType_et.CROSS_X)
             {
-                color = Color.DarkGreen;
+                color = Color.Red;
             }
-            else if (position.type == Point2D.PointType_et.CROSS_X)
+            else if (position.type == Point2D.PointType_et.CROSS_T)
             {
                 color = Color.Purple;
             }
@@ -169,7 +169,7 @@ namespace KiCad2Gcode
 
         }
 
-        public void Redraw(Net[] netList, List<Net> zones, Figure cuts, List<Drill> drills, List<Polygon> millPath, Polygon boardMillPath, List<Polygon> boardHolesMillPath)
+        public void Redraw(Net[] netList, List<Net> zones, Figure cuts, List<Drill> drills, List<Polygon> millPath, Polygon boardMillPath, List<Polygon> boardHolesMillPath, List<Polygon> fieldsMillPath)
         {
 
 
@@ -294,6 +294,7 @@ namespace KiCad2Gcode
                         foreach (Polygon p in f.holes)
                         {
                             n = p.points.First;
+                            first = true;
 
                             while (n != null)
                             {
@@ -368,6 +369,7 @@ namespace KiCad2Gcode
                     foreach (Polygon p in f.holes)
                     {
                         n = p.points.First;
+                        first = true;
 
                         while (n != null)
                         {
@@ -385,7 +387,7 @@ namespace KiCad2Gcode
 
                             DrawChunk(nPrev.Value.pt, n.Value.pt, n.Value.arc, bmp, color);
 
-                            DrawDotInt(n.Value.pt, 2, bmp, first ? Color.DarkOrange : Color.Black);
+                            DrawDotInt(n.Value.pt, first? 4 : 2, bmp, first ? Color.DarkOrange : Color.Black);
                             if (first)
                             {
                                 first = false;
@@ -560,6 +562,52 @@ namespace KiCad2Gcode
 
                     n = n.Next;
                 }
+            }
+
+            foreach (Polygon p in fieldsMillPath)
+            {
+
+                LinkedListNode<Node> n = p.points.First;
+                bool first = true;
+                while (n != null)
+                {
+                    LinkedListNode<Node> nPrev = n.Previous ?? p.points.Last;
+                    DrawChunk(nPrev.Value.pt, n.Value.pt, n.Value.arc, bmp, Color.LightBlue);
+
+
+
+                    if (first)
+                    {
+                        first = false;
+                        DrawCircleInt(n.Value.pt, 3, bmp, Color.DarkViolet);
+                    }
+
+                    if (n.Value.idx == 59)
+                    {
+                        first = false;
+                        DrawCircleInt(n.Value.pt, 3, bmp, Color.Red);
+                    }
+
+                    if (n.Value.pt.type == Point2D.PointType_et.CROSS_X)
+                    {
+                        DrawDotInt(n.Value.pt, 2, bmp, Color.LightBlue);
+                    }
+                    else if (n.Value.pt.state == Point2D.STATE_et.BAD)
+                    {
+                        DrawDotInt(n.Value.pt, 2, bmp, Color.OrangeRed);
+                    }
+                    else
+                    {
+                        DrawDotInt(n.Value.pt, 2, bmp, Color.Black);
+                    }
+
+
+
+
+                    n = n.Next;
+                }
+
+
             }
 
             pBox.Image = bmp;

@@ -563,10 +563,12 @@ namespace KiCad2Gcode
                         else if (state == -1)
                         {
                             state = 0;
+                            crosses += 1;
                         }
                         else
                         {
                             state = -1;
+                            crosses += 1;
                         }
                         break;
 
@@ -579,10 +581,12 @@ namespace KiCad2Gcode
                         else if (state == 1)
                         {
                             state = 0;
+                            crosses += 1;
                         }
                         else
                         {
                             state = 1;
+                            crosses += 1;
                         }
                         break;
                     case CROSS_TYPE_et.EDGE:
