@@ -7,9 +7,8 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 using System.Xml.Linq;
-using static System.Windows.Forms.AxHost;
-
 namespace KiCad2Gcode
 {
 
@@ -121,7 +120,7 @@ namespace KiCad2Gcode
             return result;
         }
 
-        internal bool CheckLayer(string layer)
+        internal bool CheckCutLayer()
         {
 
             PcbFileElement element = FindElement("layers");
@@ -136,11 +135,40 @@ namespace KiCad2Gcode
             }
             else
             {
-                if (element.values.Contains(layer))
+                if (element.values.Contains("Edge.Cuts"))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        string[] activeLayerString = { "F.Cu", "B.Cu" };
+
+        internal bool CheckCopperLayer(int activeLayer)
+        {
+
+            PcbFileElement element = FindElement("layers");
+
+            if (element == null)
+            {
+                element = FindElement("layer");
+            }
+            if (element == null)
+            {
+                return false;
+            }
+            else
+            {
+                if (element.values.Contains(activeLayerString[activeLayer]))
                 {
                     return true;
                 }
                 else if (element.values.Contains("*.Cu"))
+                {
+                    return true;
+                }
+                else if (element.values.Contains("F&B.Cu"))
                 {
                     return true;
                 }
@@ -162,7 +190,7 @@ namespace KiCad2Gcode
         }
 
 
-        string[] activeLayerString = { "F.Cu", "B.Cu" };
+        
         string cutLayer = "Edge.Cuts";
         ACTIVE_LAYER_et activeLayer = ACTIVE_LAYER_et.TOP;
         double xFactor = 1;
@@ -236,7 +264,7 @@ namespace KiCad2Gcode
 
                 /* check if correct layer */
 
-                bool layerOk = pad.CheckLayer(activeLayerString[((int)activeLayer)]);
+                bool layerOk = pad.CheckCopperLayer((int)activeLayer);
                   
                 if(layerOk == false)
                 {
@@ -256,6 +284,8 @@ namespace KiCad2Gcode
                 double[] size = pad.ParseParameterNumericArr("size",2,2);
                 if (size == null) { return; }
 
+                
+
                 Point2D posPt = new Point2D(pos[0], -pos[1]);
                 posPt.Rotate(offsetRot * Math.PI / 180);                
 
@@ -271,10 +301,21 @@ namespace KiCad2Gcode
                     double drill = pad.ParseParameterNumeric("drill");
                     if (drill == Double.NaN) { return; }
 
+                    PcbFileElement drillEl = pad.FindElement("drill");
+                    double[] offsetArr = drillEl.ParseParameterNumericArr("offset", 2, 2);
+
+
+
                     Drill d = new Drill();
                     d.diameter = drill;
-                    d.pos = posPt;
+                    d.pos = new Point2D( posPt);
                     mainUnit.AddDrill(d);
+
+                    if (offsetArr != null)
+                    {
+                        posPt.x += offsetArr[0];
+                        posPt.y += -offsetArr[1];
+                    }
                 }
 
                 if(pad.values.Contains("roundrect"))
@@ -393,35 +434,10 @@ namespace KiCad2Gcode
                 }
                 else if(pad.values.Contains("rect"))
                 {
-                    Figure f = new Figure();
+                    Figure f = CreateRectangle(size, null);
                     f.name = "rect at " + offsetX.ToString(CultureInfo.InvariantCulture) + " -" + offsetY.ToString(CultureInfo.InvariantCulture);
                     f.net = pad.ParseNet();
-
-                    Node node;
-                    LinkedListNode<Node> lln;
-
-                    Point2D p1 = new Point2D(-size[0] / 2, size[1] / 2);
-                    Point2D p2 = new Point2D( size[0] / 2, size[1] / 2);
-                    Point2D p3 = new Point2D( size[0] / 2,-size[1] / 2);
-                    Point2D p4 = new Point2D(-size[0] / 2,-size[1] / 2);
-
-                    node = new Node();
-                    node.pt = p1;
-                    lln = new LinkedListNode<Node>(node);
-                    f.shape.points.AddLast(lln);
-                    node = new Node();
-                    node.pt = p2;
-                    lln = new LinkedListNode<Node>(node);
-                    f.shape.points.AddLast(lln);
-                    node = new Node();
-                    node.pt = p3;
-                    lln = new LinkedListNode<Node>(node);
-                    f.shape.points.AddLast(lln);
-                    node = new Node();
-                    node.pt = p4;
-                    lln = new LinkedListNode<Node>(node);
-                    f.shape.points.AddLast(lln);
-                    
+                                        
                     f.Rotate(GetRotAngle(posRot));
                     f.Move(posPt.ToVector());
 
@@ -431,29 +447,10 @@ namespace KiCad2Gcode
                 }
                 else if (pad.values.Contains("circle"))
                 {
-                    Figure f = new Figure();
-                    Arc arc = new Arc();
+                    Figure f = CreateCircle(posPt, size[0]/2,0,true);
 
                     f.name = "circle at " + offsetX.ToString(CultureInfo.InvariantCulture) + " -" + offsetY.ToString(CultureInfo.InvariantCulture);
-                    f.net = pad.ParseNet();
-
-                    Node node;
-                    LinkedListNode<Node> lln;
-
-                    Point2D p1 = new Point2D(-size[0] / 2,0);
-
-                    arc.centre = new Point2D(0, 0);
-                    arc.startAngle = Math.PI;
-                    arc.endAngle = -Math.PI;
-                    arc.radius = size[0] / 2;
-
-                    node = new Node();
-                    node.pt = p1;
-                    node.arc = arc;
-                    lln = new LinkedListNode<Node>(node);
-                    f.shape.points.AddLast(lln);
-
-                    f.Move(posPt.ToVector());
+                    f.net = pad.ParseNet();  
 
                     mainUnit.AddFigure(f);
 
@@ -461,136 +458,10 @@ namespace KiCad2Gcode
                 }
                 else if (pad.values.Contains("oval"))
                 {
-                    Figure f = new Figure();
+                    Figure f = CreateOval(size);
 
                     f.name = "oval at " + offsetX.ToString(CultureInfo.InvariantCulture) + " -" + offsetY.ToString(CultureInfo.InvariantCulture);
                     f.net = pad.ParseNet();
-
-                    Arc arc;
-
-                    Node node;
-                    LinkedListNode<Node> lln;
-
-                    if(size[0] == size[1])
-                    {
-                        double r = size[0] / 2;
-                        Point2D p1 = new Point2D(- r,0);
-                        Point2D p2 = new Point2D(r, 0);
-
-                        arc = new Arc();
-                        arc.centre = new Point2D(0, 0);
-                        arc.startAngle = 0;
-                        arc.endAngle = -Math.PI;
-                        arc.radius = r;
-
-                        node = new Node();
-                        node.pt = p1;
-                        node.arc = arc;
-                        lln = new LinkedListNode<Node>(node);
-                        f.shape.points.AddLast(lln);
-
-                        arc = new Arc();
-                        arc.centre = new Point2D(0, 0);
-                        arc.startAngle = Math.PI;
-                        arc.endAngle = 0;
-                        arc.radius = r;
-
-                        node = new Node();
-                        node.pt = p2;
-                        node.arc = arc;
-                        lln = new LinkedListNode<Node>(node);
-                        f.shape.points.AddLast(lln);
-                    }
-                    else if (size[0] > size[1])
-                    {
-                        /*horizontal */
-                        double r = size[1] / 2;
-                        double l = size[0] - size[1];
-
-                        Point2D p1 = new Point2D(-l / 2, size[1] / 2);
-                        Point2D p2 = new Point2D(l / 2, size[1] / 2);
-                        Point2D p3 = new Point2D(l / 2, -size[1] / 2);
-                        Point2D p4 = new Point2D(-l / 2, -size[1] / 2);
-                        Point2D pc1 = new Point2D(-l / 2, 0);
-                        Point2D pc2 = new Point2D(l / 2, 0);
-
-                        arc = new Arc();
-                        arc.centre = pc1;
-                        arc.startAngle = -Math.PI / 2;
-                        arc.endAngle = Math.PI / 2;
-                        arc.radius = r;
-                        node = new Node();
-                        node.pt = p1;
-                        node.arc = arc;
-                        lln = new LinkedListNode<Node>(node);
-                        f.shape.points.AddLast(lln);
-
-                        node = new Node();
-                        node.pt = p2;
-                        lln = new LinkedListNode<Node>(node);
-                        f.shape.points.AddLast(lln);
-
-                        arc = new Arc();
-                        arc.centre = pc2;
-                        arc.startAngle = Math.PI / 2;
-                        arc.endAngle = -Math.PI / 2;
-                        arc.radius = r;
-                        node = new Node();
-                        node.pt = p3;
-                        node.arc = arc;
-                        lln = new LinkedListNode<Node>(node);
-                        f.shape.points.AddLast(lln);
-
-                        node = new Node();
-                        node.pt = p4;
-                        lln = new LinkedListNode<Node>(node);
-                        f.shape.points.AddLast(lln);
-                    }
-                    else
-                    {
-                        /*vertical*/
-                        double r = size[0] / 2;
-                        double l = size[1] - size[0];
-
-                        Point2D p1 = new Point2D(r ,  l / 2 );
-                        Point2D p2 = new Point2D(r , -l / 2 );
-                        Point2D p3 = new Point2D(-r, -l / 2 );
-                        Point2D p4 = new Point2D(-r ,  l / 2 );
-                        Point2D pc1 = new Point2D( 0, l / 2);
-                        Point2D pc2 = new Point2D( 0, - l / 2);
-
-                        arc = new Arc();
-                        arc.centre = pc1;
-                        arc.startAngle = Math.PI ;
-                        arc.endAngle = 0;
-                        arc.radius = r;
-                        node = new Node();
-                        node.pt = p1;
-                        node.arc = arc;
-                        lln = new LinkedListNode<Node>(node);
-                        f.shape.points.AddLast(lln);
-
-                        node = new Node();
-                        node.pt = p2;
-                        lln = new LinkedListNode<Node>(node);
-                        f.shape.points.AddLast(lln);
-
-                        arc = new Arc();
-                        arc.centre = pc2;
-                        arc.startAngle = 0;
-                        arc.endAngle = -Math.PI;
-                        arc.radius = r;
-                        node = new Node();
-                        node.pt = p3;
-                        node.arc = arc;
-                        lln = new LinkedListNode<Node>(node);
-                        f.shape.points.AddLast(lln);
-
-                        node = new Node();
-                        node.pt = p4;
-                        lln = new LinkedListNode<Node>(node);
-                        f.shape.points.AddLast(lln);
-                    }
 
                     f.Rotate(GetRotAngle(posRot));
                     f.Move(posPt.ToVector());
@@ -599,9 +470,383 @@ namespace KiCad2Gcode
 
                     //mainUnit.PrintText("PAD TH OVAL " + "\n");
                 }
+                if (pad.values.Contains("trapezoid"))
+                {
+
+
+                    double[] r_delta = pad.ParseParameterNumericArr("rect_delta", 2, 2);
+                    if (r_delta == null) { return; }
+
+                    Figure f = CreateRectangle(size, r_delta);
+
+                    f.name = "trapezoid at " + offsetX.ToString(CultureInfo.InvariantCulture) + " " + (-offsetY).ToString(CultureInfo.InvariantCulture);
+                    f.net = pad.ParseNet();
+
+                    f.Rotate(GetRotAngle(posRot));
+                    f.Move(posPt.ToVector());
+
+                    mainUnit.AddFigure(f);
+
+                }
+                if (pad.values.Contains("custom"))
+                {
+                    /* add base shape */
+                    PcbFileElement optElement = pad.FindElement("options");
+                    if(optElement == null) { return; }
+                    PcbFileElement anchorElement = optElement.FindElement("anchor");
+                    if (anchorElement == null) { return; }
+                    Figure baseFigure = null;
+                    if (anchorElement.values.Contains("rect"))
+                    {
+                        baseFigure = CreateRectangle(size, null);
+                        baseFigure.Rotate(GetRotAngle(posRot));
+                        baseFigure.Move(posPt.ToVector());
+                    }
+                    else if(anchorElement.values.Contains("circle"))
+                    {
+                        baseFigure = CreateCircle(posPt, size[0]/2,0,true);
+                    }
+
+                    baseFigure.name = "custom at " + offsetX.ToString(CultureInfo.InvariantCulture) + " " + (-offsetY).ToString(CultureInfo.InvariantCulture);
+                    int net = pad.ParseNet();
+                    baseFigure.net = net;
+
+
+
+                    /* fetch primitives */
+                    PcbFileElement prElement = pad.FindElement("primitives");
+                    if(prElement != null)
+                    {
+                        foreach(PcbFileElement prim in prElement.children)
+                        {
+                            if(prim.name == "gr_poly")
+                            {
+
+                                double width = prim.ParseParameterNumeric("width");
+                                bool fill = false;
+                                PcbFileElement fEl = prim.FindElement("fill");
+                                fill = (fEl != null && fEl.values.Contains("yes"));
+
+                                Polygon p = FetchPolygon(prim);
+
+                                Figure f = CreatePolygon(p, width, fill);
+
+                                f.Rotate(GetRotAngle(posRot));
+                                f.Move(posPt.ToVector());
+                                f.net = net;
+
+                                mainUnit.AddFigure(f);
+                            }
+                            else if (prim.name == "gr_curve")
+                            {
+                                double width = prim.ParseParameterNumeric("width");
+                                Polygon p = FetchPolygon(prim);
+                                if(p.points.Count == 4)
+                                {
+                                    p = Graph2D.CreateBezier(p);
+
+                                    Point2D prevPt;
+
+                                    LinkedListNode<Node> actNode = p.points.First;
+                                    prevPt = actNode.Value.pt;
+                                    actNode = actNode.Next;
+
+                                    while(actNode != null)
+                                    {
+                                        Figure f = CreateSegment(prevPt, actNode.Value.pt, width);
+                                        f.net = net;
+                                        f.Rotate(GetRotAngle(posRot));
+                                        f.Move(posPt.ToVector());
+
+                                        mainUnit.AddFigure(f);
+
+                                        prevPt = actNode.Value.pt;
+                                        actNode = actNode.Next;
+                                    }
+                                }
+                            }
+                            else if (prim.name == "gr_line")
+                            {
+                                double width = prim.ParseParameterNumeric("width");
+                                double[] startArr = prim.ParseParameterNumericArr("start", 2, 2);
+                                double[] endArr = prim.ParseParameterNumericArr("end", 2, 2);
+                                Point2D startPt = new Point2D(startArr[0], startArr[1]);
+                                Point2D endPt = new Point2D(endArr[0], endArr[1]);
+
+                                Figure f = CreateSegment(startPt, endPt, width);
+
+                                f.net = net;
+                                f.Rotate(GetRotAngle(posRot));
+                                f.Move(posPt.ToVector());
+
+                                mainUnit.AddFigure(f);
+
+                            }
+                            else if(prim.name == "gr_circle")
+                            {
+                                double width = prim.ParseParameterNumeric("width");
+                                double[] center = prim.ParseParameterNumericArr("center", 2, 2);
+                                double[] end = prim.ParseParameterNumericArr("end", 2, 2);
+                                bool fill = false;
+                                PcbFileElement fEl = prim.FindElement("fill");
+                                fill = (fEl != null && fEl.values.Contains("yes"));
+
+                                Point2D cPt = new Point2D(center[0], center[1]);
+                                Point2D ePt = new Point2D(end[0], end[1]);
+                                Vector vr = cPt - ePt;
+
+                                Figure f = CreateCircle(cPt, vr.Length, width, fill);
+
+                                f.Move(posPt.ToVector());
+                                f.net = net;
+                                mainUnit.AddFigure(f);
+
+                            }
+                            else if(prim.name == "gr_arc")
+                            {
+                                Node arcNode = FetchArc(prim);
+                                double width = prim.ParseParameterNumeric("width");
+                                if (arcNode != null && width > 0)
+                                {
+                                    Figure f = CreateArc(arcNode, width);
+
+                                    f.net = net;
+                                    f.Rotate(GetRotAngle(posRot));
+                                    f.Move(posPt.ToVector());
+
+                                    mainUnit.AddFigure(f);
+                                }
+                            }
+                        }
+                    }
+
+                    mainUnit.AddFigure(baseFigure);
+                }
 
             }
         }
+
+        private Figure CreateRectangle(double[] size, double[] r_delta)
+        {
+            Figure f = new Figure();
+
+            Node node;
+            LinkedListNode<Node> lln;
+
+            if(r_delta == null)
+            {
+                r_delta = new double[] { 0,0};
+            }
+
+            Point2D p1 = new Point2D((-size[0] + r_delta[1]) / 2, (size[1] + r_delta[0]) / 2);
+            Point2D p2 = new Point2D((size[0] - r_delta[1]) / 2, (size[1] - r_delta[0]) / 2);
+            Point2D p3 = new Point2D((size[0] + r_delta[1]) / 2, (-size[1] + r_delta[0]) / 2);
+            Point2D p4 = new Point2D((-size[0] - r_delta[1]) / 2, (-size[1] - r_delta[0]) / 2);
+
+            node = new Node();
+            node.pt = p1;
+            lln = new LinkedListNode<Node>(node);
+            f.shape.points.AddLast(lln);
+            if (p1.x < p2.x)
+            {
+                node = new Node();
+                node.pt = p2;
+                lln = new LinkedListNode<Node>(node);
+                f.shape.points.AddLast(lln);
+            }
+            if (p2.y > p3.y)
+            {
+                node = new Node();
+                node.pt = p3;
+                lln = new LinkedListNode<Node>(node);
+                f.shape.points.AddLast(lln);
+            }
+            node = new Node();
+            node.pt = p4;
+            lln = new LinkedListNode<Node>(node);
+            f.shape.points.AddLast(lln);
+
+            return f;
+        }
+
+        private Figure CreateCircle(Point2D centre, double radius, double width, bool filled)
+        {
+            Figure f = new Figure();
+            Arc arc = new Arc();
+
+            Node node;
+            LinkedListNode<Node> lln;
+
+            Point2D p1 = new Point2D(radius, 0);
+
+            arc.centre = centre;
+            arc.startAngle = Math.PI;
+            arc.endAngle = -Math.PI;
+            arc.radius = radius + width/2;
+
+            node = new Node();
+            node.pt = new Point2D(centre);
+            node.pt.x -= radius + width/2;
+            node.arc = arc;
+
+            f.shape.points.AddLast(node);
+
+            if(filled == false)
+            {
+                Polygon hole = new Polygon();
+
+                arc = new Arc();
+                arc.centre = centre;
+                arc.startAngle = -Math.PI;
+                arc.endAngle = Math.PI;
+                arc.radius = radius - width/2;
+                arc.ccw = true;
+
+                node = new Node();
+                node.pt = new Point2D(centre);
+                node.pt.x -= radius - width/2;
+                node.arc = arc;
+
+                hole.points.AddLast(node);
+                f.holes.Add(hole);
+            }
+
+            return f;
+        }
+
+        private Figure CreateOval(double[] size)
+        {
+            Figure f = new Figure();
+
+            Arc arc;
+
+            Node node;
+            LinkedListNode<Node> lln;
+
+            if (size[0] == size[1])
+            {
+                double r = size[0] / 2;
+                Point2D p1 = new Point2D(-r, 0);
+                Point2D p2 = new Point2D(r, 0);
+
+                arc = new Arc();
+                arc.centre = new Point2D(0, 0);
+                arc.startAngle = 0;
+                arc.endAngle = -Math.PI;
+                arc.radius = r;
+
+                node = new Node();
+                node.pt = p1;
+                node.arc = arc;
+                lln = new LinkedListNode<Node>(node);
+                f.shape.points.AddLast(lln);
+
+                arc = new Arc();
+                arc.centre = new Point2D(0, 0);
+                arc.startAngle = Math.PI;
+                arc.endAngle = 0;
+                arc.radius = r;
+
+                node = new Node();
+                node.pt = p2;
+                node.arc = arc;
+                lln = new LinkedListNode<Node>(node);
+                f.shape.points.AddLast(lln);
+            }
+            else if (size[0] > size[1])
+            {
+                /*horizontal */
+                double r = size[1] / 2;
+                double l = size[0] - size[1];
+
+                Point2D p1 = new Point2D(-l / 2, size[1] / 2);
+                Point2D p2 = new Point2D(l / 2, size[1] / 2);
+                Point2D p3 = new Point2D(l / 2, -size[1] / 2);
+                Point2D p4 = new Point2D(-l / 2, -size[1] / 2);
+                Point2D pc1 = new Point2D(-l / 2, 0);
+                Point2D pc2 = new Point2D(l / 2, 0);
+
+                arc = new Arc();
+                arc.centre = pc1;
+                arc.startAngle = -Math.PI / 2;
+                arc.endAngle = Math.PI / 2;
+                arc.radius = r;
+                node = new Node();
+                node.pt = p1;
+                node.arc = arc;
+                lln = new LinkedListNode<Node>(node);
+                f.shape.points.AddLast(lln);
+
+                node = new Node();
+                node.pt = p2;
+                lln = new LinkedListNode<Node>(node);
+                f.shape.points.AddLast(lln);
+
+                arc = new Arc();
+                arc.centre = pc2;
+                arc.startAngle = Math.PI / 2;
+                arc.endAngle = -Math.PI / 2;
+                arc.radius = r;
+                node = new Node();
+                node.pt = p3;
+                node.arc = arc;
+                lln = new LinkedListNode<Node>(node);
+                f.shape.points.AddLast(lln);
+
+                node = new Node();
+                node.pt = p4;
+                lln = new LinkedListNode<Node>(node);
+                f.shape.points.AddLast(lln);
+            }
+            else
+            {
+                /*vertical*/
+                double r = size[0] / 2;
+                double l = size[1] - size[0];
+
+                Point2D p1 = new Point2D(r, l / 2);
+                Point2D p2 = new Point2D(r, -l / 2);
+                Point2D p3 = new Point2D(-r, -l / 2);
+                Point2D p4 = new Point2D(-r, l / 2);
+                Point2D pc1 = new Point2D(0, l / 2);
+                Point2D pc2 = new Point2D(0, -l / 2);
+
+                arc = new Arc();
+                arc.centre = pc1;
+                arc.startAngle = Math.PI;
+                arc.endAngle = 0;
+                arc.radius = r;
+                node = new Node();
+                node.pt = p1;
+                node.arc = arc;
+                lln = new LinkedListNode<Node>(node);
+                f.shape.points.AddLast(lln);
+
+                node = new Node();
+                node.pt = p2;
+                lln = new LinkedListNode<Node>(node);
+                f.shape.points.AddLast(lln);
+
+                arc = new Arc();
+                arc.centre = pc2;
+                arc.startAngle = 0;
+                arc.endAngle = -Math.PI;
+                arc.radius = r;
+                node = new Node();
+                node.pt = p3;
+                node.arc = arc;
+                lln = new LinkedListNode<Node>(node);
+                f.shape.points.AddLast(lln);
+
+                node = new Node();
+                node.pt = p4;
+                lln = new LinkedListNode<Node>(node);
+                f.shape.points.AddLast(lln);
+            }
+            return f;
+
+        }
+
 
         private void DecodeVia(PcbFileElement via)
         {
@@ -611,7 +856,7 @@ namespace KiCad2Gcode
                 //mainUnit.PrintText("VIA");
                 //mainUnit.PrintText("\n");
 
-                bool layerOk = via.CheckLayer(activeLayerString[(int)activeLayer]);
+                bool layerOk = via.CheckCopperLayer((int) activeLayer);
 
                 if (layerOk == false)
                 {
@@ -663,6 +908,77 @@ namespace KiCad2Gcode
             }
         }
 
+        private Figure CreateSegment(Point2D startPt, Point2D endPt, double width)
+        {
+            double dirX = endPt.x - startPt.x;
+            double dirY = endPt.y - startPt.y;
+
+            double angle = Math.Atan2(dirY, dirX);
+
+            Figure f = new Figure();
+
+
+            Node node;
+            LinkedListNode<Node> lln;
+
+            Point2D p1 = new Point2D(0, -width / 2);
+            Point2D p2 = new Point2D(0, width / 2);
+            Point2D p3 = new Point2D(0, -width / 2);
+            Point2D p4 = new Point2D(0, width / 2);
+
+            p1.Rotate(-angle);
+            p2.Rotate(-angle);
+            p3.Rotate(-angle);
+            p4.Rotate(-angle);
+
+            Vector v1 = startPt.ToVector();    
+            p1 += v1;
+            p2 += v1;
+            Vector v2 = endPt.ToVector();
+            p3 += v2;
+            p4 += v2;
+
+            Arc arc1 = new Arc();
+            arc1.centre = new Point2D(0, 0);
+            arc1.radius = width / 2;
+            arc1.startAngle = -Math.PI / 2;
+            arc1.endAngle = Math.PI / 2;
+            arc1.Rotate(-angle);
+            arc1.Move(v1);
+
+            Arc arc2 = new Arc();
+            arc2.centre = new Point2D(0, 0);
+            arc2.radius = width / 2;
+            arc2.startAngle = Math.PI / 2;
+            arc2.endAngle = -Math.PI / 2;
+            arc2.Rotate(-angle);
+            arc2.Move(v2);
+
+            node = new Node();
+            node.pt = p2;
+            node.arc = arc1;
+            lln = new LinkedListNode<Node>(node);
+            f.shape.points.AddLast(lln);
+
+            node = new Node();
+            node.pt = p4;
+            lln = new LinkedListNode<Node>(node);
+            f.shape.points.AddLast(lln);
+
+            node = new Node();
+            node.pt = p3;
+            node.arc = arc2;
+            lln = new LinkedListNode<Node>(node);
+            f.shape.points.AddLast(lln);
+
+            node = new Node();
+            node.pt = p1;
+            lln = new LinkedListNode<Node>(node);
+            f.shape.points.AddLast(lln);
+
+            return f;
+        }
+
         private void DecodeSegment(PcbFileElement seg)
         {
             if ((seg.name != null) && (seg.name == "segment"))
@@ -672,7 +988,7 @@ namespace KiCad2Gcode
 
                 /* check layer */
 
-                bool layerOk = seg.CheckLayer(activeLayerString[(int)activeLayer]);
+                bool layerOk = seg.CheckCopperLayer((int)activeLayer);
 
                 if (layerOk == false)
                 {
@@ -691,77 +1007,36 @@ namespace KiCad2Gcode
                 startArr[1] *= -1;
                 endArr[1] *= -1;
 
-                double dirX = endArr[0] - startArr[0];
-                double dirY = endArr[1] - startArr[1];
+                Point2D startPt = new Point2D(startArr[0], startArr[1]);
+                Point2D endPt = new Point2D(endArr[0], endArr[1]);
 
-                double angle = Math.Atan2(dirY, dirX);
+                Figure f = CreateSegment(startPt, endPt, width);
 
-                Figure f = new Figure();
-
-                f.name = "seg " + startArr[0].ToString(CultureInfo.InvariantCulture) + " -" + startArr[1].ToString(CultureInfo.InvariantCulture) + " <-> " + 
-                    endArr[0].ToString(CultureInfo.InvariantCulture) + " -" + endArr[1].ToString(CultureInfo.InvariantCulture);
+                f.name = "seg " + startArr[0].ToString(CultureInfo.InvariantCulture) + " " + (-startArr[1]).ToString(CultureInfo.InvariantCulture) + " <-> " +
+                                  endArr[0].ToString(CultureInfo.InvariantCulture) + " " + (-endArr[1]).ToString(CultureInfo.InvariantCulture);
                 f.net = seg.ParseNet();
-                Node node;
-                LinkedListNode<Node> lln;
-
-                Point2D p1 = new Point2D(0, -width / 2);
-                Point2D p2 = new Point2D(0, width / 2);
-                Point2D p3 = new Point2D(0, -width / 2);
-                Point2D p4 = new Point2D(0, width / 2);
-
-                p1.Rotate(-angle);
-                p2.Rotate(-angle);
-                p3.Rotate(-angle);
-                p4.Rotate(-angle);
-
-                Vector v1 = new Vector(startArr[0], startArr[1]);
-                p1 += v1;
-                p2 += v1;
-                Vector v2 = new Vector(endArr[0], endArr[1]);
-                p3 += v2;
-                p4 += v2;
-
-                Arc arc1 = new Arc();
-                arc1.centre = new Point2D(0,0);
-                arc1.radius = width / 2;
-                arc1.startAngle = -Math.PI / 2;
-                arc1.endAngle = Math.PI / 2;
-                arc1.Rotate(-angle);
-                arc1.Move(v1);
-
-                Arc arc2 = new Arc();
-                arc2.centre = new Point2D(0,0);
-                arc2.radius = width / 2;
-                arc2.startAngle = Math.PI / 2;
-                arc2.endAngle = -Math.PI / 2;
-                arc2.Rotate(-angle);
-                arc2.Move(v2);
-
-                node = new Node();
-                node.pt = p2;
-                node.arc = arc1;
-                lln = new LinkedListNode<Node>(node);
-                f.shape.points.AddLast(lln);
-
-                node = new Node();
-                node.pt = p4;
-                lln = new LinkedListNode<Node>(node);
-                f.shape.points.AddLast(lln);
-
-                node = new Node();
-                node.pt = p3;
-                node.arc = arc2;
-                lln = new LinkedListNode<Node>(node);
-                f.shape.points.AddLast(lln);
-
-                node = new Node();
-                node.pt = p1;
-                lln = new LinkedListNode<Node>(node);
-                f.shape.points.AddLast(lln);
 
                 mainUnit.AddFigure(f);
 
             }
+        }
+
+        private void DecodeArcSegment(PcbFileElement seg)
+        {
+            Node arcNode = FetchArc(seg);
+
+            double width = seg.ParseParameterNumeric("width");
+            if (arcNode != null && width > 0)
+            {
+                Figure f = CreateArc(arcNode, width);
+                f.name = "aseg " + arcNode.startPt.x.ToString(CultureInfo.InvariantCulture) + " " + (-arcNode.startPt.y).ToString(CultureInfo.InvariantCulture) + " <-> " +
+                  arcNode.pt.x.ToString(CultureInfo.InvariantCulture) + " " + (-arcNode.pt.y).ToString(CultureInfo.InvariantCulture);
+                f.net = seg.ParseNet();
+                mainUnit.AddFigure(f);
+            }
+
+
+
         }
 
         private Polygon FetchPolygon(PcbFileElement parent)
@@ -816,7 +1091,7 @@ namespace KiCad2Gcode
                 //mainUnit.PrintText("POLYGON");
                 //mainUnit.PrintText("\n");
 
-                bool layerOk = polygon.CheckLayer(activeLayerString[(int)activeLayer]);
+                bool layerOk = polygon.CheckCopperLayer((int)activeLayer);
 
                 if (layerOk == false)
                 {
@@ -832,35 +1107,95 @@ namespace KiCad2Gcode
                 zoneUnit.ConvertToValidFigure(f);
 
                 mainUnit.AddZoneFigure(f);
-
             }
         }
 
-        private void DecodeLine(PcbFileElement el)
+        private Figure CreatePolygon(Polygon p, double width, bool fill)
+        {
+            p = p.GetValidPolygon();
+            p.SetOrientation(Graph2D.ORIENTATION_et.CW);
+
+            Figure f = new Figure();
+
+            f.shape = p;
+
+
+
+            if (width > 0)
+            {
+                PatchUnit path = new PatchUnit(mainUnit);
+                List<Polygon> newShapes = path.CreatePatch(p, width);
+
+                if (fill == false)
+                {
+                    p.SetOrientation(Graph2D.ORIENTATION_et.CCW);
+                    List<Polygon> newHoles = path.CreatePatch(p, width);
+
+                    f.holes = newHoles;
+                }
+
+
+                f.shape = newShapes[0];
+            }
+            return f;
+        }
+
+        
+
+private void DecodeLine(PcbFileElement el)
         {
             if ((el.name != null) && (el.name == "gr_line"))
             {
 
-                bool layerOk = el.CheckLayer(cutLayer);
-
-                if (layerOk == false)
+                if (el.CheckCutLayer())
                 {
-                    return;
+                    double[] startArr = el.ParseParameterNumericArr("start", 2, 2);
+                    if (startArr == null) { return; }
+                    double[] endArr = el.ParseParameterNumericArr("end", 2, 2);
+                    if (endArr == null) { return; }
+
+                    Node node;
+
+                    node = new Node();
+                    node.startPt = new Point2D(startArr[0] * xFactor, -startArr[1]);
+                    node.pt = new Point2D(endArr[0] * xFactor, -endArr[1]);
+
+
+                    mainUnit.AddCuts(node);
+                }
+                else if(el.CheckCopperLayer((int)activeLayer) )
+                {
+                    double[] startArr = el.ParseParameterNumericArr("start", 2, 2);
+                    if (startArr == null) { return; }
+                    double[] endArr = el.ParseParameterNumericArr("end", 2, 2);
+                    if (endArr == null) { return; }
+                    PcbFileElement strokeEl = el.FindElement("stroke");
+                    if(strokeEl == null) { return; }
+                    double width = strokeEl.ParseParameterNumeric("width");
+                    if (width == Double.NaN) { return; }
+
+                    startArr[0] *= xFactor;
+                    endArr[0] *= xFactor;
+                    startArr[1] *= -1;
+                    endArr[1] *= -1;
+
+                    Point2D startPt = new Point2D(startArr[0], startArr[1]);
+                    Point2D endPt = new Point2D(endArr[0], endArr[1]);
+
+                    Figure f = CreateSegment(startPt, endPt, width);
+
+                    f.name = "line " + startArr[0].ToString(CultureInfo.InvariantCulture) + " -" + startArr[1].ToString(CultureInfo.InvariantCulture) + " <-> " +
+                                      endArr[0].ToString(CultureInfo.InvariantCulture) + " -" + endArr[1].ToString(CultureInfo.InvariantCulture);
+                    f.net = el.ParseNet();
+
+                    mainUnit.AddFigure(f);
+
+
+
+
                 }
 
-                double[] startArr = el.ParseParameterNumericArr("start", 2, 2);
-                if (startArr == null) { return; }
-                double[] endArr = el.ParseParameterNumericArr("end", 2, 2);
-                if (endArr == null) { return; }
-                
-                Node node;
 
-                node = new Node();
-                node.startPt = new Point2D(startArr[0] * xFactor, -startArr[1]);
-                node.pt = new Point2D(endArr[0] * xFactor, -endArr[1]);
-
-
-                mainUnit.AddCuts(node);
             }
         }
 
@@ -869,59 +1204,161 @@ namespace KiCad2Gcode
             if ((el.name != null) && (el.name == "gr_circle"))
             {
 
-                bool layerOk = el.CheckLayer(cutLayer);
-
-                if (layerOk == false)
+                if (el.CheckCutLayer())
                 {
-                    return;
+
+                    double[] centerArr = el.ParseParameterNumericArr("center", 2, 2);
+                    if (centerArr == null) { return; }
+                    double[] endArr = el.ParseParameterNumericArr("end", 2, 2);
+                    if (endArr == null) { return; }
+
+
+                    Node node;
+
+                    node = new Node();
+                    node.startPt = new Point2D(endArr[0] * xFactor, -endArr[1]);
+                    node.pt = new Point2D(endArr[0] * xFactor, -endArr[1]);
+
+                    Arc arc = new Arc();
+                    //arc.start = new Point2D(endArr[0], -endArr[1]);
+                    //arc.end = new Point2D(endArr[0], -endArr[1]);
+                    arc.centre = new Point2D(centerArr[0] * xFactor, -centerArr[1]);
+                    arc.startAngle = 0;
+                    arc.endAngle = -2 * Math.PI;
+                    arc.radius = Math.Sqrt(Math.Pow(centerArr[0] - endArr[0], 2) + Math.Pow(centerArr[1] - endArr[1], 2));
+
+                    node.arc = arc;
+                    Polygon p = new Polygon();
+                    p.points.AddLast(node);
+
+                    mainUnit.AddCutsPolygon(p);
                 }
+                else if (el.CheckCopperLayer((int)activeLayer))
+                {
+                    double[] centerArr = el.ParseParameterNumericArr("center", 2, 2);
+                    if (centerArr == null) { return; }
+                    double[] endArr = el.ParseParameterNumericArr("end", 2, 2);
+                    if (endArr == null) { return; }
+                    PcbFileElement strokeEl = el.FindElement("stroke");
+                    if (strokeEl == null) { return; }
+                    double width = strokeEl.ParseParameterNumeric("width");
+                    if (width == Double.NaN) { return; }
+                    bool fill = false;
+                    PcbFileElement fEl = el.FindElement("fill");
+                    fill = (fEl != null && fEl.values.Contains("yes"));
 
-                double[] centerArr = el.ParseParameterNumericArr("center", 2, 2);
-                if (centerArr == null) { return; }
-                double[] endArr = el.ParseParameterNumericArr("end", 2, 2);
-                if (endArr == null) { return; }
+                    Point2D centrePt  = new Point2D(centerArr[0] * xFactor, -centerArr[1]);
+                    Point2D endPt = new Point2D(endArr[0] * xFactor, -endArr[1]);
+                    Vector vr = endPt - centrePt;
+                    Figure f = CreateCircle(centrePt, vr.Length, width, fill);
+
+                    f.net = el.ParseNet() ;
+                    f.name = "gr_circle";
+                    mainUnit.AddFigure(f);
 
 
-                Node node;
-
-                node = new Node();
-                node.startPt = new Point2D(endArr[0] * xFactor, -endArr[1]);
-                node.pt = new Point2D(endArr[0] * xFactor, -endArr[1]);
-
-                Arc arc = new Arc();
-                //arc.start = new Point2D(endArr[0], -endArr[1]);
-                //arc.end = new Point2D(endArr[0], -endArr[1]);
-                arc.centre = new Point2D(centerArr[0] * xFactor, -centerArr[1]);
-                arc.startAngle = 0;
-                arc.endAngle = -2 * Math.PI;
-                arc.radius = Math.Sqrt(Math.Pow(centerArr[0] - endArr[0], 2) + Math.Pow(centerArr[1] - endArr[1], 2));
-
-                node.arc = arc;
-                Polygon p = new Polygon();
-                p.points.AddLast(node);
-
-                mainUnit.AddCutsPolygon(p);
+                }
             }
         }
 
-        private void DecodeArc(PcbFileElement el)
+        private Figure CreateArc(Node arcNode, double width)
         {
-            if ((el.name != null) && (el.name == "gr_arc"))
+
+            Polygon p = new Polygon();
+
+            Node node;
+            Arc arc;
+
+            if(arcNode.arc.ccw)
+            {
+                width = -width;
+            }
+
+            Vector vs = arcNode.startPt - arcNode.arc.centre;
+            Vector ve = arcNode.pt - arcNode.arc.centre;
+            vs.Normalize();
+            ve.Normalize();
+
+            vs *= (width / 2);
+            ve *= (width / 2);
+
+            Point2D p0 = arcNode.startPt + vs;
+            Point2D p1 = arcNode.pt + ve;
+            Point2D p2 = arcNode.pt - ve;
+            Point2D p3 = arcNode.startPt - vs;
+
+
+
+            /* start arc */
+            node = new Node();
+            node.pt = p0;
+            arc = new Arc();
+            
+            arc.centre = arcNode.startPt;
+            arc.radius = width / 2;
+            arc.startAngle = Math.Atan2(-vs.y, -vs.x);
+            arc.endAngle = Math.Atan2(vs.y, vs.x);
+            node.arc = arc;
+            p.points.AddLast(node);
+
+            /* outer arc */
+            node = new Node();
+            node.pt = p1;
+            arc = new Arc();
+            
+            arc.centre = arcNode.arc.centre;
+            arc.startAngle = arcNode.arc.startAngle;
+            arc.endAngle = arcNode.arc.endAngle;
+            arc.radius =  arcNode.arc.radius + width/2;
+            arc.ccw = arcNode.arc.ccw;
+            node.arc = arc;
+            p.points.AddLast(node);
+
+            /* end arc */
+            node = new Node();
+            node.pt = p2;
+            arc = new Arc();
+            
+            arc.centre = arcNode.pt;
+            arc.radius = width / 2;
+            arc.startAngle = Math.Atan2(ve.y, ve.x);
+            arc.endAngle = Math.Atan2(-ve.y, -ve.x);
+            node.arc = arc;
+            p.points.AddLast(node);
+
+            /* inner arc */
+            node = new Node();
+            node.pt = p3;
+            arc = new Arc();
+            
+            arc.centre = arcNode.arc.centre;
+            arc.startAngle = arcNode.arc.endAngle;
+            arc.endAngle = arcNode.arc.startAngle;
+            arc.radius = arcNode.arc.radius - width/2;
+            arc.ccw = !arcNode.arc.ccw;
+            node.arc = arc;
+            p.points.AddLast(node);
+
+            Figure f = new Figure();
+            f.shape = p;
+            return f;
+
+
+        }
+
+        private Node FetchArc(PcbFileElement el)
+        {
+            if ((el.name != null) && ((el.name == "gr_arc") || (el.name == "arc")))
             {
 
-                bool layerOk = el.CheckLayer(cutLayer);
 
-                if (layerOk == false)
-                {
-                    return;
-                }
 
                 double[] startArr = el.ParseParameterNumericArr("start", 2, 2);
-                if (startArr == null) { return; }
+                if (startArr == null) { return null; }
                 double[] midArr = el.ParseParameterNumericArr("mid", 2, 2);
-                if (midArr == null) { return; }
+                if (midArr == null) { return null; }
                 double[] endArr = el.ParseParameterNumericArr("end", 2, 2);
-                if (endArr == null) { return; }
+                if (endArr == null) { return null; }
 
                 Point2D sPt = new Point2D(startArr[0], -startArr[1]);
                 Point2D mPt = new Point2D(midArr[0], -midArr[1]);
@@ -971,8 +1408,103 @@ namespace KiCad2Gcode
                 node.pt = ePt;
                 node.arc = arc;
 
-                mainUnit.AddCuts(node);
+                return node;
             }
+            return null;
+        }
+
+        private void DecodeArc(PcbFileElement el)
+        {
+
+
+            if (el.CheckCutLayer())
+            {
+                Node n = FetchArc(el);
+                if (n != null)
+                {
+                    mainUnit.AddCuts(n);
+                }
+            }
+            else if (el.CheckCopperLayer((int)activeLayer))
+            {
+                Node arcNode = FetchArc(el);
+
+                PcbFileElement strokeEl = el.FindElement("stroke");
+                if (strokeEl == null) { return; }
+                double width = strokeEl.ParseParameterNumeric("width");
+                if (arcNode != null && width > 0)
+                {
+                    Figure f = CreateArc(arcNode, width);
+                    f.net = el.ParseNet();
+                    mainUnit.AddFigure(f);
+                }
+            }
+
+        }
+
+        private Polygon FetchRect(PcbFileElement el)
+        {
+            double[] startArr = el.ParseParameterNumericArr("start", 2, 2);
+            if (startArr == null) { return null; }
+
+            double[] endArr = el.ParseParameterNumericArr("end", 2, 2);
+            if (endArr == null) { return null; }
+
+
+            Point2D pt1 = new Point2D(startArr[0], -startArr[1]);
+            Point2D pt2 = new Point2D(endArr[0], -startArr[1]);
+            Point2D pt3 = new Point2D(endArr[0], -endArr[1]);
+            Point2D pt4 = new Point2D(startArr[0], -endArr[1]);
+
+            Polygon p = new Polygon();
+
+            Node n = new Node();
+            n.pt = pt1;
+            p.points.AddLast(n);
+            n = new Node();
+            n.pt = pt2;
+            p.points.AddLast(n);
+            n = new Node();
+            n.pt = pt3;
+            p.points.AddLast(n);
+            n = new Node();
+            n.pt = pt4;
+            p.points.AddLast(n);
+
+            return p;
+
+
+        }
+
+        private void DecodeRect(PcbFileElement el)
+        {
+            if ((el.name != null) && (el.name == "gr_rect"))
+            {
+
+                if (el.CheckCutLayer())
+                {
+
+                    Polygon p = FetchRect(el);
+                    mainUnit.AddCutsPolygon(p);
+                }
+                else if (el.CheckCopperLayer((int)activeLayer))
+                {
+                    Polygon p = FetchRect(el);
+
+                    PcbFileElement strokeEl = el.FindElement("stroke");
+                    if (strokeEl == null) { return; }
+                    double width = strokeEl.ParseParameterNumeric("width");
+                    if (width == Double.NaN) { return; }
+                    bool fill = false;
+                    PcbFileElement fEl = el.FindElement("fill");
+                    fill = (fEl != null && fEl.values.Contains("yes"));
+
+                    Figure f = CreatePolygon(p, width, fill);
+                    f.net = el.ParseNet();
+                    mainUnit.AddFigure(f);
+                }
+            }
+
         }
 
         private void DecodePoly(PcbFileElement el)
@@ -980,16 +1512,93 @@ namespace KiCad2Gcode
             if ((el.name != null) && (el.name == "gr_poly"))
             {
 
-                bool layerOk = el.CheckLayer(cutLayer);
-
-                if (layerOk == false)
+                if (el.CheckCutLayer())
                 {
-                    return;
-                }
 
-                Polygon p = FetchPolygon(el);
-                             
-                mainUnit.AddCutsPolygon(p);
+                    Polygon p = FetchPolygon(el);
+                    mainUnit.AddCutsPolygon(p);
+                }
+                else if (el.CheckCopperLayer((int)activeLayer))
+                {
+                    Polygon p = FetchPolygon(el);
+
+                    PcbFileElement strokeEl = el.FindElement("stroke");
+                    if (strokeEl == null) { return; }
+                    double width = strokeEl.ParseParameterNumeric("width");
+                    if (width == Double.NaN) { return; }
+                    bool fill = false;
+                    PcbFileElement fEl = el.FindElement("fill");
+                    fill = (fEl != null && fEl.values.Contains("yes"));
+
+                    Figure f = CreatePolygon(p, width, fill);
+                    f.net = el.ParseNet();
+                    mainUnit.AddFigure(f);
+                }
+            }
+        }
+
+
+
+
+
+        private void DecodeCurve(PcbFileElement el)
+        {
+            if ((el.name != null) && (el.name == "gr_curve"))
+            {
+
+                if (el.CheckCutLayer())
+                {
+                    Polygon p = FetchPolygon(el);
+                    if (p.points.Count == 4)
+                    {
+                        p = Graph2D.CreateBezier(p);
+
+                        LinkedListNode<Node> actNode = p.points.First;
+                        Point2D prevPt = actNode.Value.pt;
+                        actNode = actNode.Next;
+
+                        while(actNode != null)
+                        {
+                            Node n = new Node();
+                            n.startPt = prevPt;
+                            n.pt = actNode.Value.pt;
+                            mainUnit.AddCuts(n);
+
+                            prevPt = actNode.Value.pt;
+                            actNode = actNode.Next;
+                        }
+                    }
+                }
+                else if (el.CheckCopperLayer((int)activeLayer))
+                {
+                    PcbFileElement strokeEl = el.FindElement("stroke");
+                    if (strokeEl == null) { return; }
+                    double width = strokeEl.ParseParameterNumeric("width");
+                    if (width == Double.NaN) { return; }
+
+                    Polygon p = FetchPolygon(el);
+                    if (p.points.Count == 4)
+                    {
+                        p = Graph2D.CreateBezier(p);
+
+                        Point2D prevPt;
+
+                        LinkedListNode<Node> actNode = p.points.First;
+                        prevPt = actNode.Value.pt;
+                        actNode = actNode.Next;
+
+                        while (actNode != null)
+                        {
+                            Figure f = CreateSegment(prevPt, actNode.Value.pt, width);
+                            f.net = el.ParseNet();
+
+                            mainUnit.AddFigure(f);
+
+                            prevPt = actNode.Value.pt;
+                            actNode = actNode.Next;
+                        }
+                    }
+                }
             }
         }
 
@@ -1044,6 +1653,10 @@ namespace KiCad2Gcode
                 {
                     DecodeSegment(top);
                 }
+                else if (top.name == "arc")
+                {
+                    DecodeArcSegment(top);
+                }
                 else if (top.name == "gr_line")
                 {
                     DecodeLine(top);
@@ -1056,9 +1669,17 @@ namespace KiCad2Gcode
                 {
                     DecodeArc(top);
                 }
+                else if (top.name == "gr_rect")
+                {
+                    DecodeRect(top);
+                }
                 else if (top.name == "gr_poly")
                 {
                     DecodePoly(top);
+                }
+                else if (top.name == "gr_curve")
+                {
+                    DecodeCurve(top);
                 }
                 else if (top.name == "kicad_pcb")
                 {

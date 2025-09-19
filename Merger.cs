@@ -52,16 +52,16 @@ namespace KiCad2Gcode
                 while (n2 != null)
                 {
                     CrossUnit crossUnit = new CrossUnit();
-/*
-                    if(n1Idx == 6 && n2Idx == 7)
+
+                    if(n1Idx == 0 && n2Idx == 3)
                     {
                         int trap = 0; 
                     }
-                    if (n1Idx == 7 && n2Idx == 6)
+                    if (n1Idx == 1 && n2Idx == 0)
                     {
                         int trap = 0;
                     }
-*/
+
                     List<Point2D> points = crossUnit.GetCrosssingPoints(n1, n2);
 
                     
@@ -493,7 +493,7 @@ namespace KiCad2Gcode
                     */
                     prevPoint = actNode.Value.pt;
 
-                    if (Math.Abs(out1Angle - out2Angle) < 0.000001)
+                    if (Math.Abs(out1Angle - out2Angle) < 0.00001)
                     {
 
                         if (wgt1 < wgt2)
@@ -636,8 +636,8 @@ namespace KiCad2Gcode
             MainUnit.PrintText(f1.name + "\n");
             PrintPolygonData(f1.shape);
             MainUnit.PrintText(f2.name + "\n");
-            PrintPolygonData(f2.shape);*/
-            
+            PrintPolygonData(f2.shape);
+            */
             
 
             /* find crossing points */
@@ -708,7 +708,7 @@ namespace KiCad2Gcode
 
                     if (actNode != null)
                     {
-                        MainUnit.PrintText("Hole start at  " + actNode.Value.pt.x.ToString() + "," + actNode.Value.pt.y.ToString() + "\n");
+                        //MainUnit.PrintText("Hole start at  " + actNode.Value.pt.x.ToString() + "," + actNode.Value.pt.y.ToString() + "\n");
                         newPol = CreatePolygon(f1.shape, f2.shape, actNode, true,false);
 
                         newFigure.holes.Add(newPol);

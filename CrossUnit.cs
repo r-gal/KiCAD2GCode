@@ -579,7 +579,7 @@ namespace KiCad2Gcode
             }
             else
             {
-                if (c + 0.000001  > r1 + r2 )
+                if (c - 0.000001  > r1 + r2 )
                 {
                     return null;
                 }

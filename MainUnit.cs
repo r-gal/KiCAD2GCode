@@ -380,6 +380,21 @@ namespace KiCad2Gcode
                         millPath.Add(p);
                     }
 
+                    foreach (Polygon h in f.holes)
+                    {
+                        pathPolygons = path.CreatePatch(h, millDiameter);
+
+                        if (pathPolygons.Count == 0)
+                        {
+                            PrintText("No path for hole detected \n");
+                        }
+
+                        foreach (Polygon p in pathPolygons)
+                        {
+                            millPath.Add(p);
+                        }
+
+                    }
                 }
             }
 

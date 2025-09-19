@@ -7,6 +7,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 using System.Xml.Linq;
 using static KiCad2Gcode.CrossUnit;
 
@@ -76,7 +77,7 @@ namespace KiCad2Gcode
 
         public bool IsSameAs(Point2D pt)
         {
-            return (Math.Abs(pt.x - x) < 0.000001 && Math.Abs(pt.y - y) < 0.000001);
+            return (Math.Abs(pt.x - x) < 0.00001 && Math.Abs(pt.y - y) < 0.00001);
         }
 
         public static Point2D operator +(Point2D a, Vector b)
@@ -755,6 +756,110 @@ namespace KiCad2Gcode
                 points = newList;
             }
         }
+
+        public Polygon GetValidPolygon()
+        {
+            if (points.Count < 3)
+            {
+                return this;
+            }
+
+            LinkedListNode<Node> node1 = points.First;
+            LinkedListNode<Node> node2 = points.Last;
+            /* select cross points */
+            bool crossesFound = false;
+
+            while (node1 != null)
+            {
+                node2 = node1.Next;
+
+                while (node2 != null)
+                {
+                    CrossUnit crossUnit = new CrossUnit();
+
+                    List<Point2D> crossPoint = crossUnit.GetCrosssingPoints(node1, node2);
+
+                    if (crossPoint != null && crossPoint.Count > 0)
+                    {
+
+
+                        /* cut f1 */
+
+                        node1 = Figure.SplitChunk(node1, crossPoint);
+
+                        /* cut f2 */
+
+                        node2 = Figure.SplitChunk(node2, crossPoint);
+
+                        if (crossPoint.Count == 1)
+                        {
+                            /* easy case */
+                            node1.Value.oppNode = node2;
+                            node2.Value.oppNode = node1;
+
+                        }
+                        else
+                        {
+                            if (node1.Value.pt == node2.Value.pt)
+                            {
+                                node1.Value.oppNode = node2;
+                                node2.Value.oppNode = node1;
+
+                                node1.Next.Value.oppNode = node2.Next ?? node2.List.First;
+                                node2.Next.Value.oppNode = node1.Next ?? node1.List.First;
+                            }
+                            else
+                            {
+                                node1.Value.oppNode = node2.Next ?? node2.List.First;
+                                node2.Value.oppNode = node1.Next ?? node1.List.First;
+
+                                node1.Next.Value.oppNode = node2;
+                                node2.Next.Value.oppNode = node1;
+
+                            }
+                        }
+                        crossesFound = true;
+
+                    }
+
+                    node2 = node2.Next;
+                }
+
+
+                node1 = node1.Next;
+            }
+
+            if(crossesFound)
+            {
+                Polygon np = new Polygon();
+
+                LinkedListNode<Node> startNode = points.First;
+                LinkedListNode<Node> actNode = startNode;
+
+                do
+                {
+                    np.points.AddLast(actNode.Value);
+
+                    if (actNode.Value.pt.type == Point2D.PointType_et.NORMAL)
+                    {
+                        actNode = actNode.Next ?? actNode.List.First;
+                    }
+                    else
+                    {                        
+                        actNode = actNode.Value.oppNode;
+                        actNode = actNode.Next ?? actNode.List.First;
+                    }
+
+                } while (startNode.Value.pt != actNode.Value.pt);
+
+                return np;
+
+            }
+            else
+            {
+                return this;
+            }
+        }
     }
 
     public class Figure
@@ -1221,6 +1326,47 @@ namespace KiCad2Gcode
             {
                 return ORIENTATION_et.UNKNOWN;
             }
+        }
+
+        public static Polygon CreateBezier(Polygon pIn)
+        {
+            LinkedListNode<Node> actNode = pIn.points.First;
+            Point2D A = actNode.Value.pt;
+            actNode = actNode.Next;
+            Point2D B = actNode.Value.pt;
+            actNode = actNode.Next;
+            Point2D C = actNode.Value.pt;
+            actNode = actNode.Next;
+            Point2D D = actNode.Value.pt;
+
+            Polygon p = new Polygon();
+
+            double steps = 20;
+            double step = 0.05;
+
+
+            for(int i = 0; i<= steps; i++)
+            {
+                double t = i*step;
+
+                double tA = Math.Pow(1 - t, 3);
+                double tB = Math.Pow(1 - t, 2) * t;
+                double tC = Math.Pow(t,2) * (1-t);
+                double tD = Math.Pow(t, 3);
+
+                double x = A.x * tA + 3 * B.x * tB + 3 * C.x * tC + D.x * tD;
+                double y = A.y * tA + 3 * B.y * tB + 3 * C.y * tC + D.y * tD;
+
+                Node n = new Node();
+                n.pt = new Point2D(x, y);
+
+                p.points.AddLast(n);
+            }
+
+            return p;
+
+
+
         }
     }
 }

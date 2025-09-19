@@ -22,7 +22,7 @@ namespace KiCad2Gcode
 
         String filePath = "";
 
-        String MainText = "KiCAD2Gcode v1.1 ";
+        String MainText = "KiCAD2Gcode v1.2 ";
 
         public Form1()
         {
