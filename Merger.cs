@@ -18,11 +18,139 @@ namespace KiCad2Gcode
     {
         MainUnit mainUnit;
 
+        List<Figure> listA = null;
+        List<Figure> listB = null;
+
+        int idxA;
+        int idxB;
+
         public Merger(MainUnit mainUnit)
         {
             this.mainUnit = mainUnit;
         }
 
+        public bool Init(List<Figure> listA, List<Figure> listB)
+        {
+            this.listA = listA;
+            this.listB = listB;
+
+            idxA = 0;
+
+            if (listA == listB)
+            {
+                if(listA.Count < 2)
+                {
+                    return false;
+                }
+                idxB = 1;
+            }
+            else
+            {
+                if (listA.Count < 1 || listB.Count < 1)
+                {
+                    return false;
+                }
+                idxB = 0;
+            }
+            return true;
+        }
+
+        public bool Step(int phase)
+        {
+            bool result;
+            bool merged = false;
+
+
+            foreach (Figure f in listA)
+            {
+                f.shape.selected = 0;
+            }
+
+            if(listA != listB)
+            {
+                foreach (Figure f in listB)
+                {
+                    f.shape.selected = 0;
+                }
+            }
+
+            if ((listA == listB) && (idxB == idxA)) { idxB++; }
+
+            if (listA != null && idxA < listA.Count && idxB < listB.Count && ((listA != listB) || (idxA != idxB)))
+            {
+
+                merged = false;
+
+                listA[idxA].shape.selected = 1;
+                listB[idxB].shape.selected = 2;
+
+                Figure mergedFigure = null;
+
+                if (phase != 2 || listA[idxA].touched == true || listB[idxB].touched == true)
+                {
+                    mergedFigure = Merge(listA[idxA], listB[idxB]);
+                }
+
+
+                if (mergedFigure != null)
+                {
+
+                    //PrintText("Found " + idxA.ToString() + " vs " + idxB.ToString() + "size = " + netList[idxNet].figures.Count.ToString() + "\n");
+
+                    listA[idxA] = mergedFigure;
+                    listB.RemoveAt(idxB);
+
+
+                    merged = true;
+
+                    if (phase >= 1)
+                    {
+                        mergedFigure.touched = true;
+                    }
+                }
+                else
+                {
+
+                    //PrintText("skip\n");
+                    idxB++;
+                    if ((listA == listB) && (idxB == idxA)) { idxB++; }
+                }
+
+                if (merged == true)
+                {
+                    if (listA == listB)
+                    {
+                        idxB = idxA + 1;
+                    }
+                    else
+                    {
+                        idxB = 0;
+                    }
+
+                }
+
+                if (idxB >= listB.Count)
+                {
+                    idxA++;
+                    if (listA == listB)
+                    {
+                        idxB = idxA + 1;
+                    }
+                    else
+                    {
+                        idxB = 0;
+                    }
+                }
+
+
+                result = true;
+            }
+            else
+            {
+                result = false;
+            }
+            return result;
+        }
 
 
         
@@ -589,10 +717,6 @@ namespace KiCad2Gcode
 
         }
 
-        public void Step()
-        {
-
-        }
 
         private void PrintPolygonData(Polygon p)
         {

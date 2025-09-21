@@ -169,7 +169,7 @@ namespace KiCad2Gcode
 
         }
 
-        public void Redraw(Net[] netList, List<Net> zones, Figure cuts, List<Drill> drills, List<Polygon> millPath, Polygon boardMillPath, List<Polygon> boardHolesMillPath, List<Polygon> fieldsMillPath)
+        public void Redraw(Net[] netList, Figure cuts, List<Drill> drills, List<Polygon> millPath, Polygon boardMillPath, List<Polygon> boardHolesMillPath, List<Polygon> fieldsMillPath)
         {
 
 
@@ -199,18 +199,19 @@ namespace KiCad2Gcode
                         if (f.shape.extPoint[3].y < minY) { minY = f.shape.extPoint[3].y; }
                     }
                 }
-            }
-
-            foreach (Net z in zones)
-            {
-                foreach (Figure f in z.figures)
+                foreach (Net z in netList)
                 {
-                    if (f.shape.extPoint[0].x < minX) { minX = f.shape.extPoint[0].x; }
-                    if (f.shape.extPoint[1].y > maxY) { maxY = f.shape.extPoint[1].y; }
-                    if (f.shape.extPoint[2].x > maxX) { maxX = f.shape.extPoint[2].x; }
-                    if (f.shape.extPoint[3].y < minY) { minY = f.shape.extPoint[3].y; }
+                    foreach (Figure f in z.zoneFigures)
+                    {
+                        if (f.shape.extPoint[0].x < minX) { minX = f.shape.extPoint[0].x; }
+                        if (f.shape.extPoint[1].y > maxY) { maxY = f.shape.extPoint[1].y; }
+                        if (f.shape.extPoint[2].x > maxX) { maxX = f.shape.extPoint[2].x; }
+                        if (f.shape.extPoint[3].y < minY) { minY = f.shape.extPoint[3].y; }
+                    }
                 }
             }
+
+
 
 
             if (cuts != null && cuts.shape != null && cuts.shape.points.Count > 0)
@@ -324,80 +325,80 @@ namespace KiCad2Gcode
                                 n = n.Next;
                             }
                         }
+
                     }
-                }
-            }
-
-            foreach (Net z in zones)
-            {
-                foreach (Figure f in z.figures)
-                {
-                    LinkedListNode<Node> n = f.shape.points.First;
-
-                    bool first = true;
-
-                    while (n != null)
+                    foreach (Figure f in net.zoneFigures)
                     {
-                        LinkedListNode<Node> nPrev = n.Previous ?? f.shape.points.Last;
+                        LinkedListNode<Node> n = f.shape.points.First;
 
-                        Color color = Color.Red;
-                        if (f.shape.selected == 1)
-                        {
-                            color = Color.Green;
-                        }
-                        else if (f.shape.selected == 2)
-                        {
-                            color = Color.LightBlue;
-                        }
-                        else if (n.Value.pt.type == Point2D.PointType_et.BRIDGE)
-                        {
-                            color = Color.Cyan;
-                        }
-
-                        DrawChunk(nPrev.Value.pt, n.Value.pt, n.Value.arc, bmp, color);
-
-                        DrawDotInt(n.Value.pt, 3, bmp, first ? Color.DarkOrange : Color.Black);
-                        if (first)
-                        {
-                            first = false;
-                        }
-
-
-                        n = n.Next;
-                    }
-
-                    foreach (Polygon p in f.holes)
-                    {
-                        n = p.points.First;
-                        first = true;
+                        bool first = true;
 
                         while (n != null)
                         {
-                            LinkedListNode<Node> nPrev = n.Previous ?? p.points.Last;
+                            LinkedListNode<Node> nPrev = n.Previous ?? f.shape.points.Last;
 
-                            Color color = Color.Blue;
-                            if (p.selected == 1)
+                            Color color = Color.Red;
+                            if (f.shape.selected == 1)
                             {
                                 color = Color.Green;
                             }
-                            else if (p.selected == 2)
+                            else if (f.shape.selected == 2)
                             {
                                 color = Color.LightBlue;
+                            }
+                            else if (n.Value.pt.type == Point2D.PointType_et.BRIDGE)
+                            {
+                                color = Color.Cyan;
                             }
 
                             DrawChunk(nPrev.Value.pt, n.Value.pt, n.Value.arc, bmp, color);
 
-                            DrawDotInt(n.Value.pt, first? 4 : 2, bmp, first ? Color.DarkOrange : Color.Black);
+                            DrawDotInt(n.Value.pt, 3, bmp, first ? Color.DarkOrange : Color.Black);
                             if (first)
                             {
                                 first = false;
                             }
 
+
                             n = n.Next;
+                        }
+
+                        foreach (Polygon p in f.holes)
+                        {
+                            n = p.points.First;
+                            first = true;
+
+                            while (n != null)
+                            {
+                                LinkedListNode<Node> nPrev = n.Previous ?? p.points.Last;
+
+                                Color color = Color.Blue;
+                                if (p.selected == 1)
+                                {
+                                    color = Color.Green;
+                                }
+                                else if (p.selected == 2)
+                                {
+                                    color = Color.LightBlue;
+                                }
+
+                                DrawChunk(nPrev.Value.pt, n.Value.pt, n.Value.arc, bmp, color);
+
+                                DrawDotInt(n.Value.pt, first ? 4 : 2, bmp, first ? Color.DarkOrange : Color.Black);
+                                if (first)
+                                {
+                                    first = false;
+                                }
+
+                                n = n.Next;
+                            }
                         }
                     }
                 }
+
+
             }
+
 
             if (cuts != null)
             {

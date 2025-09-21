@@ -10,6 +10,8 @@ namespace KiCad2Gcode
     {
         List<Figure> increasedFigures = new List<Figure>();
 
+        List<Figure> invertedFigures = new List<Figure>();
+
         MainUnit unit;
 
         internal FieldMillingUnit( MainUnit unit)
@@ -23,9 +25,10 @@ namespace KiCad2Gcode
             return path.CreatePatch(polygon,diameter);
         }
 
-        internal void CreateFields(Figure board, List<Net> zones, Net[] netList, double diameter)
+        internal void CreateFields(Figure board, Net[] netList, double diameter)
         {
             increasedFigures.Clear();
+            invertedFigures.Clear();
 
 
 
@@ -49,11 +52,8 @@ namespace KiCad2Gcode
                     }
                     increasedFigures.Add(newFigure);
                 }
-            }
 
-            foreach (Net net in zones)
-            {
-                foreach (Figure figure in net.figures)
+                foreach (Figure figure in net.zoneFigures)
                 {
                     Figure newFigure = new Figure();
 
@@ -72,16 +72,54 @@ namespace KiCad2Gcode
                 }
             }
 
-            foreach(Figure f in increasedFigures)
+            /* phase  - merge all Figures*/
+            foreach (Figure f in increasedFigures)
+            {
+                f.shape.GetExtPoints();
+                foreach(Node n in f.shape.points)
+                {
+                    n.pt.type = Point2D.PointType_et.NORMAL;
+                }
+                foreach(Polygon h in f.holes)
+                {
+                    foreach (Node n in h.points)
+                    {
+                        n.pt.type = Point2D.PointType_et.NORMAL;
+                    }
+                }
+            }
+
+            bool res = false;
+
+            Merger merger = new Merger(unit);
+            merger.Init(increasedFigures, increasedFigures);
+
+            do
+            {
+                res = merger.Step(0);
+            } while (res == true);
+
+
+            /* phase - invert and sort  */
+
+            Figure topFigure = new Figure();
+            topFigure.shape = board.shape;
+
+            invertedFigures.Add(topFigure);
+
+
+
+
+            /* print */
+
+            foreach (Figure f in increasedFigures)
             {
                 unit.millFieldsPath.Add(f.shape);
-                foreach(Polygon p in f.holes)
+                foreach (Polygon p in f.holes)
                 {
                     unit.millFieldsPath.Add(p);
                 }
             }
-
-            /* phase  - merge all Figures*/
 
         }
     }

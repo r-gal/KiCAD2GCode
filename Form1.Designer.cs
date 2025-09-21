@@ -768,7 +768,6 @@
             this.button7.TabIndex = 37;
             this.button7.Text = "field1";
             this.button7.UseVisualStyleBackColor = true;
-            this.button7.Visible = false;
             this.button7.Click += new System.EventHandler(this.button7_Click_1);
             // 
             // Form1

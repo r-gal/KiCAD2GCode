@@ -39,7 +39,7 @@ namespace KiCad2Gcode
 
         FieldMillingUnit fieldMillingUnit;
 
-        List<Net> zones = new List<Net>();
+        //List<Net> zones = new List<Net>();
         List<Node> cuts = new List<Node>();
         List<Polygon> cutPolygons = new List<Polygon>();
         List<Drill> drills = new List<Drill>();
@@ -96,7 +96,7 @@ namespace KiCad2Gcode
             cuts.Clear();
             cutPolygons.Clear();
             drills.Clear();
-            zones.Clear();
+            //zones.Clear();
 
             millPath.Clear();
             boardHolesMillPath.Clear();
@@ -114,11 +114,7 @@ namespace KiCad2Gcode
                     {
                         f.shape.GetExtPoints();
                     }
-                }
-
-                foreach (Net n in zones)
-                {
-                    foreach (Figure f in n.figures)
+                    foreach (Figure f in n.zoneFigures)
                     {
                         f.shape.GetExtPoints();
                     }
@@ -139,17 +135,13 @@ namespace KiCad2Gcode
                     Vector moveVector = new Vector(-offset.x, -offset.y);
 
 
-                    foreach (Net n in zones)
+                    foreach (Net n in netList)
                     {
                         foreach (Figure f in n.figures)
                         {
                             f.Move(moveVector);
                         }
-                    }
-
-                    foreach (Net n in netList)
-                    {
-                        foreach (Figure f in n.figures)
+                        foreach (Figure f in n.zoneFigures)
                         {
                             f.Move(moveVector);
                         }
@@ -239,7 +231,7 @@ namespace KiCad2Gcode
                     break;
 
                 case 10:
-                    fieldMillingUnit.CreateFields(board, zones, netList,0.5);
+                    fieldMillingUnit.CreateFields(board, netList,0.5);
                     RedrawAll();
                     break;
 
@@ -267,22 +259,19 @@ namespace KiCad2Gcode
                 PrintText("Run merge polygons\n");
             }
 
-
-            bool res = false;
-
-            idxA = 0;
-            idxB = 0;
-            idxNet = 0;
-
-            do
+            foreach(Net net in netList)
             {
-                res = Step(0);
-            } while (res == true);
+                bool res = false;
+
+                merger.Init(net.figures, net.figures);
+
+                do
+                {
+                    res = merger.Step(0);
+                } while (res == true);
+            }
             RedrawAll();
 
-            idxA = 0;
-            idxB = 0;
-            idxNet = 0;
 
             SetState(STATE_et.PATHES_MERGED);
             PrintText("Done\n");
@@ -300,21 +289,19 @@ namespace KiCad2Gcode
                 PrintText("Run join zones\n");
             }
 
-            bool res = false;
 
-            idxA = 0;
-            idxB = 0;
-            idxNet = 0;
-
-            do
+            foreach (Net net in netList)
             {
-                res = Step(1);
-            } while (res == true);
-            RedrawAll();
+                bool res = false;
 
-            idxA = 0;
-            idxB = 0;
-            idxNet = 0;
+                merger.Init(net.zoneFigures, net.figures);
+
+                do
+                {
+                    res = merger.Step(1);
+                } while (res == true);
+            }
+            RedrawAll();
 
             SetState(STATE_et.ZONES_JOINED);
             PrintText("Done\n");
@@ -331,21 +318,20 @@ namespace KiCad2Gcode
             {
                 PrintText("Run merge zones\n");
             }
-            bool res = false;
 
-            idxA = 0;
-            idxB = 0;
-            idxNet = 0;
-
-            do
+            foreach (Net net in netList)
             {
-                res = Step(2);
-            } while (res == true);
+                bool res = false;
+
+                merger.Init(net.zoneFigures, net.zoneFigures);
+
+                do
+                {
+                    res = merger.Step(2);
+                } while (res == true);
+            }
             RedrawAll();
 
-            idxA = 0;
-            idxB = 0;
-            idxNet = 0;
             SetState(STATE_et.ZONES_MERGED);
             PrintText("Done\n");
         }
@@ -396,12 +382,8 @@ namespace KiCad2Gcode
 
                     }
                 }
-            }
 
-            foreach (Net z in zones)
-            {
-                z.Renumerate();
-                foreach (Figure f in z.figures)
+                foreach (Figure f in n.zoneFigures)
                 {
                     /*if (f.idx == 23)
                     { */
@@ -598,32 +580,10 @@ namespace KiCad2Gcode
             //figures.Add(f);
         }
 
-        public void InitZone(int net)
-        {
-            foreach (Net z in zones)
-            {
-                if (z.net == net)
-                {
-                    /*zone already defined */
-                    return;
-                }
-            }
 
-            Net zn = new Net();
-            zn.net = net;
-            zn.figures = new List<Figure>();
-            zones.Add(zn);
-        }
         public void AddZoneFigure(Figure f)
         {
-            foreach (Net z in zones)
-            {
-                if (z.net == f.net)
-                {
-                    z.figures.Add(f);
-                    return;
-                }
-            }
+            netList[f.net].zoneFigures.Add(f);
         }
 
         public void AddCuts(Node n)
@@ -660,7 +620,7 @@ namespace KiCad2Gcode
 
         internal void RedrawAll()
         {
-            drawer.Redraw(netList, zones, board, drills, millPath,  boardMillPath, boardHolesMillPath, millFieldsPath);
+            drawer.Redraw(netList, board, drills, millPath,  boardMillPath, boardHolesMillPath, millFieldsPath);
         }
 
         private bool Step(int phase)
@@ -679,7 +639,7 @@ namespace KiCad2Gcode
             }
             else if (phase == 1)
             {
-
+                /*
                 foreach (Net z in zones)
                 {
                     if (z.net == idxNet)
@@ -688,11 +648,11 @@ namespace KiCad2Gcode
                         break;
                     }
                 }
-                listB = netList[idxNet].figures;
+                listB = netList[idxNet].figures;*/
             }
             else if (phase == 2)
             {
-                foreach (Net z in zones)
+                /*foreach (Net z in zones)
                 {
                     if (z.net == idxNet)
                     {
@@ -701,7 +661,7 @@ namespace KiCad2Gcode
 
                         break;
                     }
-                }
+                }*/
             }
             else
             {
@@ -817,13 +777,13 @@ namespace KiCad2Gcode
                 corner = new Point2D(board.shape.extPoint[0].x, board.shape.extPoint[3].y);
 
             }
-            else if (zones.Count > 0)
+            else if (netList.Length > 0)
             {
-                foreach(Net nz in zones)
+                foreach(Net nz in netList)
                 {
-                    if(nz.figures != null && nz.figures.Count > 0)
+                    if(nz.zoneFigures != null && nz.zoneFigures.Count > 0)
                     {
-                        foreach(Figure f in  nz.figures)
+                        foreach(Figure f in  nz.zoneFigures)
                         {
                             f.shape.GetExtPoints();
 

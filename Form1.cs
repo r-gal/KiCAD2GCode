@@ -667,8 +667,8 @@ namespace KiCad2Gcode
 
         private void button7_Click_1(object sender, EventArgs e)
         {
-            //unit.Run(10);
-            unit.TestStep();
+            unit.Run(10);
+            //unit.TestStep();
         }
     }
 }

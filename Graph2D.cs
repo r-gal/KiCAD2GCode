@@ -1161,12 +1161,19 @@ namespace KiCad2Gcode
     public class Net
     {
         public List<Figure> figures = new List<Figure>();
+        public List<Figure> zoneFigures = new List<Figure>();
         public int net;
 
         public void Renumerate()
         {
             int cnt = 0;
             foreach(Figure figure in figures)
+            {
+                figure.idx = cnt;
+                cnt++;
+            }
+            cnt = 0;
+            foreach (Figure figure in zoneFigures)
             {
                 figure.idx = cnt;
                 cnt++;

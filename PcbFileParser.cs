@@ -1623,7 +1623,7 @@ private void DecodeLine(PcbFileElement el)
         {
             int net = el.ParseNet();
 
-            mainUnit.InitZone(net);
+            //mainUnit.InitZone(net);
 
             foreach (PcbFileElement fp in el.children)
             {
