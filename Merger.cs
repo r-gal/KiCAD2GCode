@@ -525,6 +525,14 @@ namespace KiCad2Gcode
                     /*infinite loop*/
                     //newPolygon.GetExtPoints();
                     //return newPolygon;
+
+                    MainUnit.PrintText("Start point at idx " + startNode.Value.idx.ToString() + " pt = " + startNode.Value.pt.x.ToString() + " " + startNode.Value.pt.y.ToString());
+
+                    MainUnit.PrintText(" pol1: \n");
+                    PrintPolygonData(pol1);
+                    MainUnit.PrintText(" pol2: \n");
+                    PrintPolygonData(pol2);
+
                     return null;
                 }
                 if(redraw)
@@ -723,7 +731,7 @@ namespace KiCad2Gcode
             MainUnit.PrintText(" Polygon data: \n ");
             foreach (Node n in p.points)
             {
-                MainUnit.PrintText("Node " + n.idx.ToString() + "State " + n.pt.state.ToString() + " Type " + n.pt.type.ToString() + " (" + n.pt.x.ToString() + " " + n.pt.y.ToString() + ")");
+                MainUnit.PrintText("Node " + n.idx.ToString() + "State " + n.pt.state.ToString() + " Type " + n.pt.storedType.ToString() + " (" + n.pt.x.ToString() + " " + n.pt.y.ToString() + ")");
                 if (n.oppNode != null)
                 {
                     MainUnit.PrintText(" OppIdx = " + n.oppNode.Value.idx.ToString() + " " + n.oppNode.Value.pt.type.ToString());
@@ -773,10 +781,10 @@ namespace KiCad2Gcode
 
             if (crossingPoints > 0)
             {
-               /*
+               
                 f1.shape.Renumerate();
                 f2.shape.Renumerate();
-
+               /*
                 MainUnit.PrintText(f1.name + "\n");
                 PrintPolygonData(f1.shape);
                 MainUnit.PrintText(f2.name + "\n");
@@ -808,6 +816,7 @@ namespace KiCad2Gcode
                     {
                         MainUnit.PrintText("Error\n");
                     }
+                    n.pt.storedType = n.pt.type;
                 }
 
                 foreach (Node n in f2.shape.points)
@@ -816,6 +825,7 @@ namespace KiCad2Gcode
                     {
                         MainUnit.PrintText("Error\n");
                     }
+                    n.pt.storedType = n.pt.type;
                 }
 
                 Polygon newPol = CreatePolygon(f1.shape, f2.shape, actNode, true,false);
@@ -835,7 +845,16 @@ namespace KiCad2Gcode
                         //MainUnit.PrintText("Hole start at  " + actNode.Value.pt.x.ToString() + "," + actNode.Value.pt.y.ToString() + "\n");
                         newPol = CreatePolygon(f1.shape, f2.shape, actNode, true,false);
 
-                        newFigure.holes.Add(newPol);
+                        if(newPol == null)
+                        {
+                            MainUnit.PrintText("Error\n");
+                        }
+                        else
+                        {
+                            newFigure.holes.Add(newPol);
+                        }
+
+                        
                     }
                 } while (actNode != null);
 
@@ -911,7 +930,14 @@ namespace KiCad2Gcode
                             {
                                 newPol = CreatePolygon(hole, f2.shape, actNode, true,false);
 
-                                newFigure.holes.Add(newPol);
+                                if (newPol == null)
+                                {
+                                    MainUnit.PrintText("Error\n");
+                                }
+                                else
+                                {
+                                    newFigure.holes.Add(newPol);
+                                }
                             }
                         } while (actNode != null);
                         merged = true;
@@ -960,7 +986,14 @@ namespace KiCad2Gcode
                             { 
                                 newPol = CreatePolygon(hole, f1.shape, actNode, true, false);
 
-                                newFigure.holes.Add(newPol);
+                                if (newPol == null)
+                                {
+                                    MainUnit.PrintText("Error\n");
+                                }
+                                else
+                                {
+                                    newFigure.holes.Add(newPol);
+                                }
                             }
                         } while (actNode != null);
                         merged = true;
@@ -1004,7 +1037,14 @@ namespace KiCad2Gcode
                                 {         
                                     newPol = CreatePolygon(hole2, hole2, actNode, true, false);
 
-                                    newFigure.holes.Add(newPol);
+                                    if (newPol == null)
+                                    {
+                                        MainUnit.PrintText("Error\n");
+                                    }
+                                    else
+                                    {
+                                        newFigure.holes.Add(newPol);
+                                    }
                                 }
                             } while (actNode != null);
                         }
@@ -1014,11 +1054,11 @@ namespace KiCad2Gcode
 
                             if(pos == Polygon.POLYGONS_POS_et.P1_IN_P2)
                             {
-                                newFigure.holes.Add(hole2);
+                                newFigure.holes.Add(hole1);
                             }
                             else if (pos == Polygon.POLYGONS_POS_et.P2_IN_P1)
                             {
-                                newFigure.holes.Add(hole1);
+                                newFigure.holes.Add(hole2);
                             }
                             /* check if holes are fully overlaped is necessary */
                         }

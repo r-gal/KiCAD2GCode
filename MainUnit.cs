@@ -90,6 +90,15 @@ namespace KiCad2Gcode
             RedrawAll();
         }
 
+        internal void ClearNetList()
+        {
+            foreach(Net n in netList)
+            {
+                n.figures.Clear();
+                n.zoneFigures.Clear();
+            }
+        }
+
         internal bool LoadFile(string filePath, ACTIVE_LAYER_et activeLayer_)
         {
             netList = null;
@@ -203,10 +212,10 @@ namespace KiCad2Gcode
                     MergePolygons();
                     MergePolygonsToZones();
                     MergeZones();
-                    ProceedTracesMilling();
+                    /*ProceedTracesMilling();
                     ProceedBoardMilling();
                     ProceedHoles();
-                    GenerateGCode();
+                    GenerateGCode();*/
                     break;
                 case 1:/*MERGE POLYGONS*/
                     MergePolygons();
@@ -577,7 +586,6 @@ namespace KiCad2Gcode
         public void AddFigure(Figure f)
         {
             netList[f.net].figures.Add(f);
-            //figures.Add(f);
         }
 
 

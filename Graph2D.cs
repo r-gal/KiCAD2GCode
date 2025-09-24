@@ -32,6 +32,7 @@ namespace KiCad2Gcode
             ARC
         };
         public PointType_et type;
+        public PointType_et storedType; 
 
         public enum STATE_et
         {
@@ -334,6 +335,8 @@ namespace KiCad2Gcode
     public class Polygon : Graph2D
     {
         public LinkedList<Node> points = new LinkedList<Node>();
+
+        public List<Figure> innerFigures = null; /* used in field milling unit to hierarhical sort */
 
         int L = 0, U = 1, R = 2, D = 3;
 

@@ -608,6 +608,13 @@ namespace KiCad2Gcode
                         pt1.type = Point2D.PointType_et.CROSS_X;
                         pt2.type = Point2D.PointType_et.CROSS_X;
                     }
+                    else
+                    {
+                        if(pt1.IsSameAs(eP1) == false && eP1.IsSameAs(eP2) == false)
+                        {
+                            pt1 = null;
+                        }
+                    }
 
                 }
 
