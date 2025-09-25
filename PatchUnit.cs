@@ -106,9 +106,12 @@ namespace KiCad2Gcode
 
                     //mainForm.drawer.DrawDot(middlePoint, 3, Color.Red);
 
+                    bool ok1 = false;
+
                     if( CheckPointCollision(middlePoint,orgPolygon, toolRadius) == false)
                     {
-                        return next1;
+                        //return next1;
+                        ok1 = true;
                     }
 
                     nextPt = next2.Value.pt;
@@ -124,9 +127,43 @@ namespace KiCad2Gcode
                         middlePoint = new Point2D(x, y);
                     }
 
+                    bool ok2 = false;
+
                     if (CheckPointCollision(middlePoint, orgPolygon, toolRadius) == false)
                     {
+                        //return next2;
+                        ok2 = true;
+                    }
+
+
+                    if(ok1 && ok2)
+                    {
+                        /* both directions are ok, choose not used */
+                        if(next1.Value.pt.state == Point2D.STATE_et.FREE)
+                        {
+                            return next1;
+                        }
+                        else if (next2.Value.pt.state == Point2D.STATE_et.FREE)
+                        {
+                            return next2;
+                        }
+                        else
+                        {
+                            return next2;
+                        }
+
+                    }
+                    else if(ok1)
+                    {
+                        return next1;
+                    }
+                    else if(ok2)
+                    {
                         return next2;
+                    }
+                    else
+                    {
+                        return null;
                     }
 
                 }
@@ -532,18 +569,18 @@ namespace KiCad2Gcode
                 /*
                 foreach (Node n in path.points)
                 {
-                    mainForm.PrintText("Node " + n.idx.ToString() + "State " + n.pt.state.ToString() +  " Type " + n.pt.type.ToString() + " (" + n.pt.x.ToString() + " " + n.pt.y.ToString() + ")");
+                    MainUnit.PrintText("Node " + n.idx.ToString() + "State " + n.pt.state.ToString() +  " Type " + n.pt.type.ToString() + " (" + n.pt.x.ToString() + " " + n.pt.y.ToString() + ")");
                     if(n.oppNode!= null)
                     {
-                        mainForm.PrintText(" OppIdx = " + n.oppNode.Value.idx.ToString() + " " + n.oppNode.Value.pt.type.ToString());
+                        MainUnit.PrintText(" OppIdx = " + n.oppNode.Value.idx.ToString() + " " + n.oppNode.Value.pt.type.ToString());
                     }
                     if(n.arc != null)
                     {
-                        mainForm.PrintText(" Arc ");
+                        MainUnit.PrintText(" Arc ");
                     }
-                    mainForm.PrintText("\n ");
-                }*/
-                
+                    MainUnit.PrintText("\n ");
+                }
+                */
 
                 LinkedListNode<Node> startScanNode = path.points.First;
                     bool cont = false;

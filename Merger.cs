@@ -88,6 +88,51 @@ namespace KiCad2Gcode
 
                 if (phase != 2 || listA[idxA].touched == true || listB[idxB].touched == true)
                 {
+                    Figure figA = listA[idxA];
+                    Figure figB = listB[idxB];
+
+
+                    foreach (Node n in figA.shape.points)
+                    {
+                        if (n.pt.type != Point2D.PointType_et.NORMAL && n.oppNode == null)
+                        {
+                            MainUnit.PrintText("Error\n");
+                        }
+                        n.pt.storedType = n.pt.type;
+                    }
+
+                    foreach (Polygon p in figA.holes)
+                    {
+                        foreach (Node n in p.points)
+                        {
+                            if (n.pt.type != Point2D.PointType_et.NORMAL && n.oppNode == null)
+                            {
+                                MainUnit.PrintText("Error\n");
+                            }
+                            n.pt.storedType = n.pt.type;
+                        }
+                    }
+
+                    foreach (Node n in figB.shape.points)
+                    {
+                        if (n.pt.type != Point2D.PointType_et.NORMAL && n.oppNode == null)
+                        {
+                            MainUnit.PrintText("Error\n");
+                        }
+                        n.pt.storedType = n.pt.type;
+                    }
+
+                    foreach (Polygon p in figB.holes)
+                    {
+                        foreach (Node n in p.points)
+                        {
+                            if (n.pt.type != Point2D.PointType_et.NORMAL && n.oppNode == null)
+                            {
+                                MainUnit.PrintText("Error\n");
+                            }
+                            n.pt.storedType = n.pt.type;
+                        }
+                    }
                     mergedFigure = Merge(listA[idxA], listB[idxB]);
                 }
 
@@ -106,6 +151,28 @@ namespace KiCad2Gcode
                     if (phase >= 1)
                     {
                         mergedFigure.touched = true;
+                    }
+
+
+                    foreach (Node n in mergedFigure.shape.points)
+                    {
+                        if (n.pt.type != Point2D.PointType_et.NORMAL && n.oppNode == null)
+                        {
+                            MainUnit.PrintText("Error\n");
+                        }
+                        n.pt.storedType = n.pt.type;
+                    }
+
+                    foreach(Polygon p in mergedFigure.holes)
+                    {
+                        foreach (Node n in p.points)
+                        {
+                            if (n.pt.type != Point2D.PointType_et.NORMAL && n.oppNode == null)
+                            {
+                                MainUnit.PrintText("Error\n");
+                            }
+                            n.pt.storedType = n.pt.type;
+                        }
                     }
                 }
                 else
@@ -169,6 +236,24 @@ namespace KiCad2Gcode
             Point2D lastFoundPoint2 = null;
             int lastIdx1 = 0;
             int lastIdx2 = 0;
+
+            foreach (Node n in pol1.points)
+            {
+                if (n.pt.type != Point2D.PointType_et.NORMAL && n.oppNode == null)
+                {
+                    MainUnit.PrintText("Error\n");
+                }
+                n.pt.storedType = n.pt.type;
+            }
+
+            foreach (Node n in pol2.points)
+            {
+                if (n.pt.type != Point2D.PointType_et.NORMAL && n.oppNode == null)
+                {
+                    MainUnit.PrintText("Error\n");
+                }
+                n.pt.storedType = n.pt.type;
+            }
 
             LinkedListNode<Node> n1 = pol1.points.First;
 
@@ -249,17 +334,8 @@ namespace KiCad2Gcode
                                 n2.Next.Value.oppNode = n1;
 
                             }
-/*
-                            mainUnit.PrintText("Set oppNode for f1: " + n1.Value.oppNode.Value.pt.x.ToString() + "," + n1.Value.oppNode.Value.pt.y.ToString() + "\n");
-                            mainUnit.PrintText("Set oppNode for f2: " + n2.Value.oppNode.Value.pt.x.ToString() + "," + n2.Value.oppNode.Value.pt.y.ToString() + "\n");
-
-                            mainUnit.PrintText("Set oppNode 2 for f1: " + n1.Next.Value.oppNode.Value.pt.x.ToString() + "," + n1.Next.Value.oppNode.Value.pt.y.ToString() + "\n");
-                            mainUnit.PrintText("Set oppNode 2 for f2: " + n2.Next.Value.oppNode.Value.pt.x.ToString() + "," + n2.Next.Value.oppNode.Value.pt.y.ToString() + "\n");
-*/
 
                         }
-
-
                     }
                     else
                     {
@@ -513,6 +589,10 @@ namespace KiCad2Gcode
             {
                 Node n = actNode.Value;
                 Node newNode = new Node();
+                /*
+                newNode.pt = new Point2D(n.pt);
+                newNode.pt.type = Point2D.PointType_et.NORMAL;
+                newNode.arc = n.arc == null ? null : new Arc(n.arc);*/
                 newNode.pt = n.pt;
                 newNode.arc = n.arc;
                 newNode.oppNode = null;
@@ -520,11 +600,34 @@ namespace KiCad2Gcode
 
                 newPolygon.points.AddLast(copiedNode);
 
+                if (n.pt.state != Point2D.STATE_et.FREE && n.pt != firstNode.Value.pt)
+                {
+                    MainUnit.PrintText("Error, point reused\n");
+
+                    MainUnit.PrintText("Start point at idx " + startNode.Value.idx.ToString() + " pt = " + startNode.Value.pt.x.ToString() + " " + startNode.Value.pt.y.ToString());
+
+                    MainUnit.PrintText(" pol1: \n");
+                    PrintPolygonData(pol1);
+                    MainUnit.PrintText(" pol2: \n");
+                    PrintPolygonData(pol2);
+
+                    MainUnit.PrintText(" newpol: \n");
+                    PrintPolygonData(newPolygon);
+
+                    return null;
+                }
+
+                n.pt.state = Point2D.STATE_et.ALREADY_USED;
+
+
+
+                
+
                 if (newPolygon.points.Count > 200000)
                 {
                     /*infinite loop*/
                     //newPolygon.GetExtPoints();
-                    //return newPolygon;
+                    //return newPolygon;ok,
 
                     MainUnit.PrintText("Start point at idx " + startNode.Value.idx.ToString() + " pt = " + startNode.Value.pt.x.ToString() + " " + startNode.Value.pt.y.ToString());
 
@@ -705,6 +808,10 @@ namespace KiCad2Gcode
 
 
                 }
+                else
+                {                 
+                    MainUnit.PrintText("Error\n");                    
+                }
                 initial = false;
 
                 
@@ -770,7 +877,30 @@ namespace KiCad2Gcode
             MainUnit.PrintText(f2.name + "\n");
             PrintPolygonData(f2.shape);
             */
-            
+
+            foreach(Node n in f1.shape.points)
+            {
+                n.pt.state = Point2D.STATE_et.FREE;
+            }
+            foreach(Polygon p in f1.holes)
+            {
+                foreach (Node n in p.points)
+                {
+                    n.pt.state = Point2D.STATE_et.FREE;
+                }
+            }
+
+            foreach (Node n in f2.shape.points)
+            {
+                n.pt.state = Point2D.STATE_et.FREE;
+            }
+            foreach (Polygon p in f2.holes)
+            {
+                foreach (Node n in p.points)
+                {
+                    n.pt.state = Point2D.STATE_et.FREE;
+                }
+            }
 
             /* find crossing points */
 
@@ -826,7 +956,7 @@ namespace KiCad2Gcode
                         MainUnit.PrintText("Error\n");
                     }
                     n.pt.storedType = n.pt.type;
-                }
+                } 
 
                 Polygon newPol = CreatePolygon(f1.shape, f2.shape, actNode, true,false);
                 if(newPol == null) { return null; }
@@ -852,6 +982,17 @@ namespace KiCad2Gcode
                         else
                         {
                             newFigure.holes.Add(newPol);
+
+                            foreach (Node n in newPol.points)
+                            {
+                                if (n.pt.type != Point2D.PointType_et.NORMAL && n.oppNode == null)
+                                {
+                                    MainUnit.PrintText("Error\n");
+                                }
+                                n.pt.storedType = n.pt.type;
+                            }
+
+                            
                         }
 
                         
@@ -937,6 +1078,15 @@ namespace KiCad2Gcode
                                 else
                                 {
                                     newFigure.holes.Add(newPol);
+
+                                    foreach (Node n in newPol.points)
+                                    {
+                                        if (n.pt.type != Point2D.PointType_et.NORMAL && n.oppNode == null)
+                                        {
+                                            MainUnit.PrintText("Error\n");
+                                        }
+                                        n.pt.storedType = n.pt.type;
+                                    }
                                 }
                             }
                         } while (actNode != null);
@@ -993,6 +1143,16 @@ namespace KiCad2Gcode
                                 else
                                 {
                                     newFigure.holes.Add(newPol);
+
+
+                                    foreach (Node n in newPol.points)
+                                    {
+                                        if (n.pt.type != Point2D.PointType_et.NORMAL && n.oppNode == null)
+                                        {
+                                            MainUnit.PrintText("Error\n");
+                                        }
+                                        n.pt.storedType = n.pt.type;
+                                    }
                                 }
                             }
                         } while (actNode != null);
@@ -1044,6 +1204,15 @@ namespace KiCad2Gcode
                                     else
                                     {
                                         newFigure.holes.Add(newPol);
+
+                                        foreach (Node n in newPol.points)
+                                        {
+                                            if (n.pt.type != Point2D.PointType_et.NORMAL && n.oppNode == null)
+                                            {
+                                                MainUnit.PrintText("Error\n");
+                                            }
+                                            n.pt.storedType = n.pt.type;
+                                        }
                                     }
                                 }
                             } while (actNode != null);

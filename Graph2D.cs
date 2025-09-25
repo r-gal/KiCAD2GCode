@@ -276,6 +276,16 @@ namespace KiCad2Gcode
             ccw = false;
         }
 
+        public Arc(Arc a)
+        {
+            type = ChunkType.Arc;
+            ccw = a.ccw;
+            startAngle = a.startAngle;
+            endAngle = a.endAngle;
+            radius = a.radius;
+            centre = new Point2D(a.centre);
+        }
+
         override public void Rotate(double angle)
         {
             /*start.Rotate(angle);

@@ -60,7 +60,7 @@ namespace KiCad2Gcode
 
         }
 
-        private void AddToMillListTmp(List<Figure> increasedFigures)
+        private void AddToMillList(List<Figure> increasedFigures)
         {
 
             foreach (Figure f in increasedFigures)
@@ -79,7 +79,7 @@ namespace KiCad2Gcode
             unit.RedrawAll();
         }
 
-        private void AddToMillList(List<Figure> increasedFigures)
+        private void AddToMillListTest(List<Figure> increasedFigures)
         {
             unit.ClearNetList();
             foreach (Figure f in increasedFigures)

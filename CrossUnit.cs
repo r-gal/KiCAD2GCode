@@ -24,11 +24,11 @@ namespace KiCad2Gcode
             LinkedListNode<Node> n2Prev = node2.Previous ?? node2.List.Last;
             Point2D sP1 = node1.Value.startPt ?? n1Prev.Value.pt;
             Point2D sP2 = node2.Value.startPt ?? n2Prev.Value.pt;
-
+            /*
             if(sP1.IsSameAs(eP2) || sP2.IsSameAs(eP1))
             {
                 return null;
-            }
+            }*/
 
             Point2D pt1 = null;
             Point2D pt2 = null;
@@ -54,7 +54,7 @@ namespace KiCad2Gcode
             double a = t.x*v.x - s.x * v.x+  t.y*v.y - s.y * v.y;
             Point2D tmpPt = s + a * v;
 
-            if (  tmpPt.IsSameAs(eP1))
+            if (  tmpPt.IsSameAs(eP1) && tmpPt.IsSameAs(sP2) == false)
             {
                 if(a >= 0 && a <= length2)
                 {
@@ -71,7 +71,7 @@ namespace KiCad2Gcode
              a = t.x * v.x - s.x * v.x + t.y * v.y - s.y * v.y;
              tmpPt = s + a * v;
 
-            if ( tmpPt.IsSameAs(eP2))
+            if ( tmpPt.IsSameAs(eP2) && tmpPt.IsSameAs(sP1) == false)
             {
                 if(a >= 0 && a <= length1)
                 {
@@ -83,6 +83,10 @@ namespace KiCad2Gcode
 
             if (pt1 != null || pt2 != null)
             {
+                if (sP1.IsSameAs(eP2) || sP2.IsSameAs(eP1))
+                {
+                    //return null;
+                }
                 List<Point2D> ptArr = new List<Point2D>();
 
                 if (pt1 != null)
@@ -108,6 +112,10 @@ namespace KiCad2Gcode
             {
                 if(Math.Abs(m1) < 0.0000001)
                 {
+                    if (sP1.IsSameAs(eP2) || sP2.IsSameAs(eP1))
+                    {
+                        return null;
+                    }
                     /*Parallel, may overlap*/
 
                     pt1 = null;
@@ -126,7 +134,17 @@ namespace KiCad2Gcode
                         pt2.type = Point2D.PointType_et.CROSS_T;
                     }
 
-                    if(pt1 != null || pt2 != null)
+                    if (pt1 != null && (sP1.IsSameAs(pt1) || sP2.IsSameAs(pt1)))
+                    {
+                        pt1 = null;
+                    }
+
+                    if (pt2 != null && (sP1.IsSameAs(pt2) || sP2.IsSameAs(pt2)))
+                    {
+                        pt2 = null;
+                    }
+
+                    if (pt1 != null || pt2 != null)
                     {
                         List<Point2D> ptArr = new List<Point2D>();
 
@@ -151,6 +169,11 @@ namespace KiCad2Gcode
             }
             else
             {
+
+                if (sP1.IsSameAs(eP2) || sP2.IsSameAs(eP1))
+                {
+                    return null;
+                }
 
                 m1 = m1 / div;
                 m2 = m2 / -div;
