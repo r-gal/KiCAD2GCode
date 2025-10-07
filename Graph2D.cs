@@ -721,6 +721,56 @@ namespace KiCad2Gcode
             }
         }
 
+        private bool ComparePoints(Point2D pt1, Point2D pt2)
+        {
+            if( Math.Abs(pt1.x - pt2.x) > 0.001)
+            {
+                return false;
+            }
+
+            if (Math.Abs(pt1.y - pt2.y) > 0.001)
+            {
+                return false;
+            }
+            return true;
+        }
+
+        public bool CheckConsistency()
+        {
+            if(CheckOrientation() == ORIENTATION_et.UNKNOWN)
+            {
+                return false;
+            }
+
+            
+
+            Point2D prevPoint = points.Last.Value.pt;
+
+            foreach(Node n in points)
+            {
+                if(n.arc != null)
+                {
+                    Point2D sPt = new Point2D(n.arc.centre.x + n.arc.radius * Math.Cos(n.arc.startAngle), n.arc.centre.y + n.arc.radius * Math.Sin(n.arc.startAngle));
+                    Point2D ePt = new Point2D(n.arc.centre.x + n.arc.radius * Math.Cos(n.arc.endAngle), n.arc.centre.y + n.arc.radius * Math.Sin(n.arc.endAngle));
+
+                    if(ComparePoints(sPt,prevPoint) == false)
+                    {
+                        return false;
+                    }
+
+                    if (ComparePoints(ePt,n.pt) == false)
+                    {
+                        return false;
+                    }
+
+                }
+                prevPoint = n.pt;
+
+            }
+            return true;
+
+        }
+
         public void SetOrientation(ORIENTATION_et orientation)
         {
             ORIENTATION_et actOrientation = CheckOrientation();
@@ -790,7 +840,7 @@ namespace KiCad2Gcode
                 {
                     CrossUnit crossUnit = new CrossUnit();
 
-                    List<Point2D> crossPoint = crossUnit.GetCrosssingPoints(node1, node2);
+                    List<Point2D> crossPoint = crossUnit.GetCrosssingPoints(node1, node2,false);
 
                     if (crossPoint != null && crossPoint.Count > 0)
                     {
@@ -1276,7 +1326,7 @@ namespace KiCad2Gcode
             }
         }
 
-        public static bool IsPointOnLine(Point2D pt, Point2D sPt, Point2D ePt)
+        public static bool IsPointOnLine(Point2D pt, Point2D sPt, Point2D ePt, bool allowStartPoint)
         {
             if(pt.IsSameAs(ePt))
             {
@@ -1285,7 +1335,7 @@ namespace KiCad2Gcode
 
             if (pt.IsSameAs(sPt))
             {
-                return false;
+                return allowStartPoint;
             }
 
 
@@ -1307,7 +1357,7 @@ namespace KiCad2Gcode
             }
         }
 
-        public static bool IsPointOnArc(Point2D pt, Point2D sPt, Point2D ePt, Arc arc)
+        public static bool IsPointOnArc(Point2D pt, Point2D sPt, Point2D ePt, Arc arc, bool allowStartPoint)
         {
             if (pt.IsSameAs(ePt))
             {
@@ -1316,7 +1366,7 @@ namespace KiCad2Gcode
 
             if (pt.IsSameAs(sPt))
             {
-                return false;
+                return allowStartPoint;
             }
 
             double angle = Math.Atan2(pt.y - arc.centre.y, pt.x - arc.centre.x);      

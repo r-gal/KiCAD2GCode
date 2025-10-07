@@ -241,7 +241,7 @@ namespace KiCad2Gcode
 
                 case 10:
                     fieldMillingUnit.CreateFields(board, netList,0.5);
-                    RedrawAll();
+                    //RedrawAll();
                     break;
 
             }
@@ -368,7 +368,7 @@ namespace KiCad2Gcode
                 n.Renumerate();
                 foreach (Figure f in n.figures)
                 {
-                    List<Polygon> pathPolygons = path.CreatePatch(f.shape, millDiameter);
+                    List<Polygon> pathPolygons = path.CreatePatch(f.shape, millDiameter, true);
 
                     foreach (Polygon p in pathPolygons)
                     {
@@ -377,7 +377,7 @@ namespace KiCad2Gcode
 
                     foreach (Polygon h in f.holes)
                     {
-                        pathPolygons = path.CreatePatch(h, millDiameter);
+                        pathPolygons = path.CreatePatch(h, millDiameter, false);
 
                         if (pathPolygons.Count == 0)
                         {
@@ -396,7 +396,7 @@ namespace KiCad2Gcode
                 {
                     /*if (f.idx == 23)
                     { */
-                    List<Polygon> pathPolygons = path.CreatePatch(f.shape, millDiameter);
+                    List<Polygon> pathPolygons = path.CreatePatch(f.shape, millDiameter, true);
 
                     if (pathPolygons.Count == 0)
                     {
@@ -410,7 +410,7 @@ namespace KiCad2Gcode
 
                     foreach (Polygon h in f.holes)
                     {
-                        pathPolygons = path.CreatePatch(h, millDiameter);
+                        pathPolygons = path.CreatePatch(h, millDiameter, false);
 
                         if (pathPolygons.Count == 0)
                         {
@@ -454,7 +454,7 @@ namespace KiCad2Gcode
             if (board.shape.points.Count> 0)
             {
                 List<Polygon> pathPolygons;
-                pathPolygons = path.CreatePatch(board.shape, millDiameter);
+                pathPolygons = path.CreatePatch(board.shape, millDiameter, true);
                 if(pathPolygons != null && pathPolygons.Count > 0)
                 {
                     boardMillPath = pathPolygons[0];
@@ -464,7 +464,7 @@ namespace KiCad2Gcode
             foreach(Polygon h in board.holes)
             {
                 List<Polygon> pathPolygons;
-                pathPolygons = path.CreatePatch(h, millDiameter);
+                pathPolygons = path.CreatePatch(h, millDiameter, false);
                 foreach (Polygon p in pathPolygons)
                 {
                     boardHolesMillPath.Add(p);

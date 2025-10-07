@@ -63,7 +63,7 @@ namespace KiCad2Gcode
                 (float)(size * 2));
             }
         }
-
+        
         private void DrawCircleInt(Point2D position, int size, Bitmap bmp, System.Drawing.Color color)
         {
             using (Graphics g = Graphics.FromImage(bmp))
@@ -88,6 +88,35 @@ namespace KiCad2Gcode
         public void DrawElement(Point2D startPt, Point2D endPt, Arc arc)
         {
             DrawChunk(startPt, endPt, arc, bmp, System.Drawing.Color.Black);
+            pBox.Image = bmp;
+            pBox.Refresh();
+        }
+
+        public void DrawListOfElements(LinkedList<Node> list)
+        {
+            LinkedListNode<Node> n = list.First;
+
+            while(n != null)
+            {
+                Point2D startPt;
+                if(n.Value.startPt != null)
+                {
+                    startPt = n.Value.startPt;
+                }
+                else
+                {
+                    LinkedListNode<Node> prevNode = n.Previous ?? n.List.Last;
+                    startPt = prevNode.Value.pt;
+                }
+                System.Drawing.Color color = System.Drawing.Color.Black;
+
+                if(n.Value.active)
+                {
+                    color = System.Drawing.Color.Red;
+                }
+                DrawChunk(startPt, n.Value.pt, n.Value.arc, bmp, color);
+                n = n.Next;
+            }
             pBox.Image = bmp;
             pBox.Refresh();
         }
@@ -265,7 +294,12 @@ namespace KiCad2Gcode
                             LinkedListNode<Node> nPrev = n.Previous ?? f.shape.points.Last;
 
                             Color color = Color.Red;
-                            if (f.shape.selected == 1)
+
+                            if(n.Value.active == true)
+                            {
+                                color = Color.Black;
+                            }
+                            else if (f.shape.selected == 1)
                             {
                                 color = Color.Green;
                             }
@@ -310,7 +344,10 @@ namespace KiCad2Gcode
                                 {
                                     color = Color.LightBlue;
                                 }
-
+                                else if (p.selected == 3)
+                                {
+                                    color = Color.Pink;
+                                }
 
 
 

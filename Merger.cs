@@ -1,12 +1,15 @@
 ﻿using System;
 using System.CodeDom;
 using System.Collections.Generic;
+using System.Diagnostics.Eventing.Reader;
 using System.Drawing;
 using System.Globalization;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 using static KiCad2Gcode.CrossUnit;
 using static KiCad2Gcode.Polygon;
 
@@ -92,47 +95,6 @@ namespace KiCad2Gcode
                     Figure figB = listB[idxB];
 
 
-                    foreach (Node n in figA.shape.points)
-                    {
-                        if (n.pt.type != Point2D.PointType_et.NORMAL && n.oppNode == null)
-                        {
-                            MainUnit.PrintText("Error\n");
-                        }
-                        n.pt.storedType = n.pt.type;
-                    }
-
-                    foreach (Polygon p in figA.holes)
-                    {
-                        foreach (Node n in p.points)
-                        {
-                            if (n.pt.type != Point2D.PointType_et.NORMAL && n.oppNode == null)
-                            {
-                                MainUnit.PrintText("Error\n");
-                            }
-                            n.pt.storedType = n.pt.type;
-                        }
-                    }
-
-                    foreach (Node n in figB.shape.points)
-                    {
-                        if (n.pt.type != Point2D.PointType_et.NORMAL && n.oppNode == null)
-                        {
-                            MainUnit.PrintText("Error\n");
-                        }
-                        n.pt.storedType = n.pt.type;
-                    }
-
-                    foreach (Polygon p in figB.holes)
-                    {
-                        foreach (Node n in p.points)
-                        {
-                            if (n.pt.type != Point2D.PointType_et.NORMAL && n.oppNode == null)
-                            {
-                                MainUnit.PrintText("Error\n");
-                            }
-                            n.pt.storedType = n.pt.type;
-                        }
-                    }
                     mergedFigure = Merge(listA[idxA], listB[idxB]);
                 }
 
@@ -153,27 +115,7 @@ namespace KiCad2Gcode
                         mergedFigure.touched = true;
                     }
 
-
-                    foreach (Node n in mergedFigure.shape.points)
-                    {
-                        if (n.pt.type != Point2D.PointType_et.NORMAL && n.oppNode == null)
-                        {
-                            MainUnit.PrintText("Error\n");
-                        }
-                        n.pt.storedType = n.pt.type;
-                    }
-
-                    foreach(Polygon p in mergedFigure.holes)
-                    {
-                        foreach (Node n in p.points)
-                        {
-                            if (n.pt.type != Point2D.PointType_et.NORMAL && n.oppNode == null)
-                            {
-                                MainUnit.PrintText("Error\n");
-                            }
-                            n.pt.storedType = n.pt.type;
-                        }
-                    }
+                   
                 }
                 else
                 {
@@ -275,7 +217,7 @@ namespace KiCad2Gcode
                         int trap = 0;
                     }
 
-                    List<Point2D> points = crossUnit.GetCrosssingPoints(n1, n2);
+                    List<Point2D> points = crossUnit.GetCrosssingPoints(n1, n2,false);
 
                     
                     if (points != null)
@@ -414,7 +356,7 @@ namespace KiCad2Gcode
 
             while (n1 != null)
             {
-                if(n1.Value.pt.type != Point2D.PointType_et.NORMAL)
+                if((n1.Value.pt.type != Point2D.PointType_et.NORMAL) && (n1.Value.pt.state == Point2D.STATE_et.FREE ))
                 {
                     return n1;
                 }
@@ -429,7 +371,7 @@ namespace KiCad2Gcode
 
             while (n1 != null)
             {
-                if (n1.Value.pt.type != Point2D.PointType_et.NORMAL)
+                if ((n1.Value.pt.type != Point2D.PointType_et.NORMAL) && (n1.Value.pt.state == Point2D.STATE_et.FREE))
                 {
                     return n1;
                 }
@@ -544,12 +486,155 @@ namespace KiCad2Gcode
             return GetNode(selectPol, areaPol, true);            
         }
 
+        class AngleData
+        {
+            internal bool isInput;
+
+            /* angle is for compare only so alfa function is enough */
+            internal double angle;
+            internal double wgt;
+
+            internal LinkedListNode<Node> node;
+
+
+            public AngleData(Node actNode, LinkedListNode<Node> nextNode, bool isInput)
+            {
+                this.isInput = isInput;
+
+                Point2D actPoint = actNode.pt;
+                Point2D nextPoint = nextNode.Value.pt;
+
+                node = nextNode;
+
+                if (isInput)
+                {
+                    if (actNode.arc == null)
+                    {
+                        angle = Vector.GetAlpha(actPoint, nextPoint);
+                        wgt = 0;// Double.MaxValue;
+                    }
+                    else
+                    {
+
+                        Vector v = actNode.arc.centre - actPoint;
+                        Vector vt;
+                        if (actNode.arc.ccw == true)
+                        {
+                            vt = new Vector(-v.y, v.x);
+                            wgt = 1 / actNode.arc.radius;
+                        }
+                        else
+                        {
+                            vt = new Vector(v.y, -v.x);
+                            wgt = -1 / actNode.arc.radius;
+                        }
+                        angle = Vector.GetAlpha(vt);
+                    }
+                }
+                else
+                {
+                    if (nextNode.Value.arc == null)
+                    {
+                        angle = Vector.GetAlpha(actPoint, nextPoint);
+                        wgt = 0;// Double.MaxValue;
+                    }
+                    else
+                    {
+
+                        Vector v = nextNode.Value.arc.centre - actPoint;
+                        Vector vt;
+                        if (nextNode.Value.arc.ccw == false)
+                        {
+                            vt = new Vector(-v.y, v.x);
+                            wgt = 1 / nextNode.Value.arc.radius;
+                        }
+                        else
+                        {
+                            vt = new Vector(v.y, -v.x);
+                            wgt = -1 / nextNode.Value.arc.radius;
+                        }
+                        angle = Vector.GetAlpha(vt);
+                    }
+                }
+            }
+
+        }
+
+        private List<AngleData> SortAngles(LinkedListNode<Node> actNode, LinkedListNode<Node> prevNode)
+        {
+
+            List<AngleData> list = new List<AngleData>();
+            if (actNode.Value.oppNode != null)
+            {
+                LinkedListNode<Node> oppNode = actNode.Value.oppNode;
+
+                LinkedListNode<Node> nodeA = actNode.Next ?? actNode.List.First;
+                LinkedListNode<Node> nodeB = oppNode.Next ?? oppNode.List.First;
+
+                list.Add(new AngleData(actNode.Value, nodeA,false));
+                list.Add(new AngleData(actNode.Value, nodeB, false));
+                
+                if (prevNode == null)
+                {
+                    LinkedListNode<Node> oppPrev = oppNode.Previous ?? oppNode.List.First;
+                    list.Add(new AngleData(actNode.Value, oppPrev, true));
+
+                    prevNode = actNode.Previous ?? actNode.List.First;
+                }
+                list.Add(new AngleData(actNode.Value, prevNode, true));
+
+            }
+
+            bool ready;
+
+            do
+            {
+                ready = true;
+                for(int i = 0; i< list.Count-1;i++)
+                {
+                    bool swap = false;
+
+                    if (Math.Abs(list[i].angle - list[i + 1].angle) < 0.00001)
+                    {
+                        if (list[i].wgt > list[i + 1].wgt)
+                        {
+                            swap = true;
+                        }
+                    }
+                    else if (list[i].angle < list[i+1].angle)
+                    {
+                        swap = true;
+                    }
+
+
+                    if(swap)
+                    {
+                        ready = false;
+                        AngleData tmp = list[i];
+                        list[i] = list[i + 1];
+                        list[i + 1] = tmp;
+                    }
+
+                }
+            } while(ready == false);
+
+            while (list[0].isInput == false)
+            {
+                AngleData tmp = list[0];
+                list.RemoveAt(0);
+                list.Add(tmp);
+            }
+            
+
+            return list;
+        }
+
         private Polygon CreatePolygon(Polygon pol1, Polygon pol2, LinkedListNode<Node> startNode, bool goLeft, bool redraw)
         {
             LinkedListNode<Node> actNode = startNode;
             LinkedListNode<Node> firstNode = startNode;
-            LinkedListNode<Node> prevNode = startNode.Previous ?? startNode.List.Last;
-            Point2D prevPoint = prevNode.Value.pt;
+            LinkedListNode<Node> prevNode = null;
+            //Point2D prevPoint = prevNode.Value.pt;
             /*
             if(actNode.Value.pt.type != Point2D.PointType_et.NORMAL)
             {
@@ -562,6 +647,7 @@ namespace KiCad2Gcode
 
 
             Polygon newPolygon = new Polygon();
+           /*
             if (redraw)
             {
                 mainUnit.drawer.DrawDot(startNode.Value.pt, 2, Color.LightGreen);
@@ -583,11 +669,91 @@ namespace KiCad2Gcode
                     }
                 }
             }
-                
+               */ 
 
             do
             {
                 Node n = actNode.Value;
+
+
+                if (n.pt.state != Point2D.STATE_et.FREE && n.pt != firstNode.Value.pt)
+                {
+                    /* check if another way from start point is possible, just clear new polygon and start loop one more time. First way is signed 
+                     * as already used so only next way can be selected. If another way is also signed as already used then null will be returned*/
+                    bool nextTry = false;
+                    if(firstNode.Value.pt.type == Point2D.PointType_et.CROSS_T)
+                    {
+                        LinkedListNode<Node> oppNode = firstNode.Value.oppNode;
+
+                        LinkedListNode<Node> nodeA = firstNode.Next ?? actNode.List.First;
+                        LinkedListNode<Node> nodeB = oppNode.Next ?? oppNode.List.First;
+
+                        if (nodeA.Value.pt.state == Point2D.STATE_et.FREE) 
+                        {
+                            /* way is possible, try it */
+                            nextTry = true;
+                            newPolygon.points.Clear();
+                            actNode = firstNode;
+                            prevNode = actNode.Previous ?? actNode.List.Last;
+
+                        }
+                        else if( nodeB.Value.pt.state == Point2D.STATE_et.FREE)
+                        {
+                            /* way is possible, try it */
+                            nextTry = true;
+                            newPolygon.points.Clear();
+                            actNode = oppNode;
+                            prevNode = oppNode.Previous ?? oppNode.List.Last;
+                        }
+                    }
+
+
+                    if (nextTry == false)
+                    {
+
+                        MainUnit.PrintText("Error, point reused\n");
+
+                        MainUnit.PrintText("Start point at idx " + startNode.Value.idx.ToString() + " pt = " + startNode.Value.pt.x.ToString() + " " + startNode.Value.pt.y.ToString());
+
+                        MainUnit.PrintText(" pol1: \n");
+                        PrintPolygonData(pol1);
+                        MainUnit.PrintText(" pol2: \n");
+                        PrintPolygonData(pol2);
+
+                        MainUnit.PrintText(" newpol: \n");
+                        PrintPolygonData(newPolygon);
+
+                        mainUnit.ClearNetList();
+
+                        pol1.GetExtPoints();
+                        Figure ft1 = new Figure();
+                        ft1.shape = pol1;
+                        ft1.net = 0;
+                        newPolygon.selected = 1;
+                        mainUnit.AddFigure(ft1);
+
+                        pol2.GetExtPoints();
+                        Figure ft2 = new Figure();
+                        ft2.shape = pol2;
+                        ft2.net = 0;
+                        newPolygon.selected = 2;
+                        mainUnit.AddFigure(ft2);
+
+                        newPolygon.GetExtPoints();
+                        Figure ft3 = new Figure();
+                        ft3.shape = newPolygon;
+                        ft3.net = 0;
+                        newPolygon.selected = 3;
+                        mainUnit.AddFigure(ft3);
+
+                        mainUnit.RedrawAll();
+
+
+
+                        return null;
+                    }
+                }
+
                 Node newNode = new Node();
                 /*
                 newNode.pt = new Point2D(n.pt);
@@ -600,26 +766,7 @@ namespace KiCad2Gcode
 
                 newPolygon.points.AddLast(copiedNode);
 
-                if (n.pt.state != Point2D.STATE_et.FREE && n.pt != firstNode.Value.pt)
-                {
-                    MainUnit.PrintText("Error, point reused\n");
-
-                    MainUnit.PrintText("Start point at idx " + startNode.Value.idx.ToString() + " pt = " + startNode.Value.pt.x.ToString() + " " + startNode.Value.pt.y.ToString());
-
-                    MainUnit.PrintText(" pol1: \n");
-                    PrintPolygonData(pol1);
-                    MainUnit.PrintText(" pol2: \n");
-                    PrintPolygonData(pol2);
-
-                    MainUnit.PrintText(" newpol: \n");
-                    PrintPolygonData(newPolygon);
-
-                    return null;
-                }
-
                 n.pt.state = Point2D.STATE_et.ALREADY_USED;
-
-
 
                 
 
@@ -638,175 +785,89 @@ namespace KiCad2Gcode
 
                     return null;
                 }
+                /*
                 if(redraw)
                 {
                     mainUnit.drawer.SetCentre(n.pt);
                     mainUnit.drawer.DrawElement(prevPoint, n.pt, n.arc);
                 }
-                
+                */
 
                 if (actNode.Value.pt.type == Point2D.PointType_et.NORMAL)
                 {
-                    prevPoint = actNode.Value.pt;
+                    //prevPoint = actNode.Value.pt;
+                    
+                    prevNode = actNode;
                     actNode = actNode.Next ?? actNode.List.First;
                 }
-
-                else if (actNode.Value.pt.type == Point2D.PointType_et.CROSS_T || initial)
+                else if (initial)
                 {
-                    actNode.Value.pt.type = Point2D.PointType_et.NORMAL; /* reset type */
-                    LinkedListNode<Node> nodeA = actNode.Next ?? actNode.List.First;
-                    LinkedListNode<Node> nodeB = actNode.Value.oppNode.Next ?? actNode.Value.oppNode.List.First;
-
-                    /* choose correct node */
-
-                    /* angle is for compare only so alfa function is enough */
-
-                    Point2D actPoint = actNode.Value.pt;
-
-                    Point2D nextPoint1 = nodeA.Value.pt;
-                    Point2D nextPoint2 = nodeB.Value.pt;
-
-                    double inputAngle = Vector.GetAlpha(actPoint, prevPoint);
-
-                    double out1Angle = 0;
-                    double out2Angle = 0;
-
-                    double wgt1 = 0;
-                    double wgt2 = 0;
+                    
 
 
-                    if (nodeA.Value.arc == null)
+                    List<AngleData> list = SortAngles(actNode, prevNode);
+
+                    //prevPoint = actNode.Value.pt;
+
+                    if (list.Count == 4)
                     {
-                        out1Angle = Vector.GetAlpha(actPoint, nextPoint1);
-                        wgt1 = 0;// Double.MaxValue;
-                    }
-                    else
-                    {
-                        Vector v = nodeA.Value.arc.centre - actPoint;
-                        Vector vt;
-                        if(nodeA.Value.arc.ccw == false)
+                        if (list[1].isInput == false && list[2].isInput == false)
                         {
-                            vt = new Vector(-v.y, v.x);
-                            wgt1 = 1/nodeA.Value.arc.radius;
+                            actNode = list[1].node;
+                        }
+                        else if (list[2].isInput == false && list[3].isInput == false)
+                        {
+                            actNode = list[2].node;
                         }
                         else
                         {
-                            vt = new Vector(v.y, -v.x);
-                            wgt1 = -1/nodeA.Value.arc.radius;
-                        }
-                        out1Angle = Vector.GetAlpha(vt);
-                        
-                    }
-
-                    if (nodeB.Value.arc == null)
-                    {
-                        out2Angle = Vector.GetAlpha(actPoint, nextPoint2);
-
-                        wgt2 = 0;// Double.MaxValue;
-                    }
-                    else
-                    {
-                        Vector v = nodeB.Value.arc.centre - actPoint;
-                        Vector vt;
-                        if (nodeB.Value.arc.ccw == false)
-                        {
-                            vt = new Vector(-v.y, v.x);
-                            wgt2 = 1/nodeB.Value.arc.radius;
-                        }
-                        else
-                        {
-                            vt = new Vector(v.y, -v.x);
-                            wgt2 = -1/nodeB.Value.arc.radius;
-                        }
-                        out2Angle = Vector.GetAlpha(vt);
-                        
-                    }
-
-
-                    /*
-                    mainUnit.PrintText("Test in " + actPoint.x.ToString() + "," + actPoint.y.ToString() + "\n");
-                    mainUnit.PrintText("NODE1 " + nextPoint1.x.ToString() + "," + nextPoint1.y.ToString() + "\n");
-                    mainUnit.PrintText("NODE2 " + nextPoint2.x.ToString() + "," + nextPoint2.y.ToString() + "\n");
-
-                    mainUnit.PrintText("Alpha : IN=" + inputAngle.ToString() + " OUT1=" + out1Angle.ToString() + " OUT2=" + out2Angle.ToString() + "\n");
-                    */
-                    prevPoint = actNode.Value.pt;
-
-                    if (Math.Abs(out1Angle - out2Angle) < 0.00001)
-                    {
-
-                        if (wgt1 < wgt2)
-                        {
-                            /*out1 is 2 */
-                            actNode = nodeA;
-                        }
-                        else
-                        {
-                            /*out2 is 2 */
-                            actNode = nodeB;
-                        }
-                    }
-                    else if(inputAngle == out1Angle)
-                    {
-                        actNode = nodeB;
-                    }
-                    else if (inputAngle == out2Angle)
-                    {
-                        actNode = nodeA;
-                    }
-                    else if (inputAngle > out1Angle)
-                    {
-                        if (inputAngle > out2Angle)
-                        {
-                            /* prev is 3 */
-                            if (out1Angle > out2Angle)
+                            /* not explicit choose, try first */
+                            if (list[1].node.Value.pt.state == Point2D.STATE_et.FREE)
                             {
-                                /*out1 is 2 */
-                                actNode = nodeA;
+                                actNode = list[1].node;
+                            }
+                            else if (list[3].node.Value.pt.state == Point2D.STATE_et.FREE)
+                            {
+                                actNode = list[3].node;
                             }
                             else
                             {
-                                /*out2 is 2 */
-                                actNode = nodeB;
+                                return null;
                             }
-                        }
-                        else
-                        {
-                            /* prev is 2 , out1 is 1*/
-                            actNode = nodeA;
-                        }
-                    }
-                    else if (inputAngle > out2Angle)
-                    {
-                        /* prev is 2 , out2 is 1*/
-                        actNode = nodeB;
-                    }
-                    else
-                    {
-                        /* prev is 1 */
-                        if (out1Angle > out2Angle)
-                        {
-                            /*out1 is 3 */
-                            actNode = nodeA;
-                        }
-                        else
-                        {
-                            /*out2 is 3 */
-                            actNode = nodeB;
                         }
                     }
 
-                    //mainUnit.PrintText("Go to  " + actNode.Value.pt.x.ToString() + "," + actNode.Value.pt.y.ToString() + "\n");
+
+                    prevNode = actNode.Previous ?? actNode.List.Last;
+
+                    /* sort input and output angles */
+
+
+                }
+                else if (actNode.Value.pt.type == Point2D.PointType_et.CROSS_T)
+                {
+                   
+
+                    List<AngleData> list = SortAngles(actNode, prevNode);
+
+                    actNode = list[1].node;
+
+                    prevNode = actNode.Previous ?? actNode.List.Last;
+
+
+
+                    
 
                 }
                 else if (actNode.Value.pt.type == Point2D.PointType_et.CROSS_X)
                 {
-                    actNode.Value.pt.type = Point2D.PointType_et.NORMAL; /* reset type */
-                    prevPoint = actNode.Value.pt;
+                    prevNode = actNode.Value.oppNode;
+                    
+                    //prevPoint = actNode.Value.pt;
                     actNode = actNode.Value.oppNode.Next ?? actNode.Value.oppNode.List.First;
 
 
-
+                   
                 }
                 else
                 {                 
@@ -824,7 +885,19 @@ namespace KiCad2Gcode
                 newPolygon.points.First.Value = actNode.Value;
             }
 
+            if( newPolygon.CheckOrientation() == Graph2D.ORIENTATION_et.UNKNOWN)
+            {
+                return null;
+            }
+
             newPolygon.GetExtPoints();
+
+            foreach(Node n in newPolygon.points)
+            {
+                n.pt.state = Point2D.STATE_et.USED;
+            }
+
+            newPolygon.CheckConsistency();
 
             return newPolygon;
 
@@ -881,24 +954,28 @@ namespace KiCad2Gcode
             foreach(Node n in f1.shape.points)
             {
                 n.pt.state = Point2D.STATE_et.FREE;
+                n.pt.type = Point2D.PointType_et.NORMAL;
             }
             foreach(Polygon p in f1.holes)
             {
                 foreach (Node n in p.points)
                 {
                     n.pt.state = Point2D.STATE_et.FREE;
+                    n.pt.type = Point2D.PointType_et.NORMAL;
                 }
             }
 
             foreach (Node n in f2.shape.points)
             {
                 n.pt.state = Point2D.STATE_et.FREE;
+                n.pt.type = Point2D.PointType_et.NORMAL;
             }
             foreach (Polygon p in f2.holes)
             {
                 foreach (Node n in p.points)
                 {
                     n.pt.state = Point2D.STATE_et.FREE;
+                    n.pt.type = Point2D.PointType_et.NORMAL;
                 }
             }
 
@@ -937,27 +1014,6 @@ namespace KiCad2Gcode
                 //MainUnit.PrintText("Start point at idx " + actNode.Value.idx.ToString() + " pt = " + actNode.Value.pt.x.ToString() + " " + actNode.Value.pt.y.ToString());
 
 
-
-                /* sanity check */
-
-                foreach (Node n in f1.shape.points)
-                {
-                    if(n.pt.type != Point2D.PointType_et.NORMAL && n.oppNode == null)
-                    {
-                        MainUnit.PrintText("Error\n");
-                    }
-                    n.pt.storedType = n.pt.type;
-                }
-
-                foreach (Node n in f2.shape.points)
-                {
-                    if (n.pt.type != Point2D.PointType_et.NORMAL && n.oppNode == null)
-                    {
-                        MainUnit.PrintText("Error\n");
-                    }
-                    n.pt.storedType = n.pt.type;
-                } 
-
                 Polygon newPol = CreatePolygon(f1.shape, f2.shape, actNode, true,false);
                 if(newPol == null) { return null; }
 
@@ -985,10 +1041,6 @@ namespace KiCad2Gcode
 
                             foreach (Node n in newPol.points)
                             {
-                                if (n.pt.type != Point2D.PointType_et.NORMAL && n.oppNode == null)
-                                {
-                                    MainUnit.PrintText("Error\n");
-                                }
                                 n.pt.storedType = n.pt.type;
                             }
 
@@ -1051,11 +1103,11 @@ namespace KiCad2Gcode
                     PrintPolygonData(f2.shape);*/
 
                     crossingPoints = SelectCrossingPoints(hole, f2.shape);
-                    /*
+                    
                     hole.Renumerate();
                     f2.shape.Renumerate();
 
-                    
+                    /*
                     PrintPolygonData(hole);
                     MainUnit.PrintText(f2.name + "\n");
                     PrintPolygonData(f2.shape);
@@ -1078,15 +1130,6 @@ namespace KiCad2Gcode
                                 else
                                 {
                                     newFigure.holes.Add(newPol);
-
-                                    foreach (Node n in newPol.points)
-                                    {
-                                        if (n.pt.type != Point2D.PointType_et.NORMAL && n.oppNode == null)
-                                        {
-                                            MainUnit.PrintText("Error\n");
-                                        }
-                                        n.pt.storedType = n.pt.type;
-                                    }
                                 }
                             }
                         } while (actNode != null);
@@ -1143,16 +1186,6 @@ namespace KiCad2Gcode
                                 else
                                 {
                                     newFigure.holes.Add(newPol);
-
-
-                                    foreach (Node n in newPol.points)
-                                    {
-                                        if (n.pt.type != Point2D.PointType_et.NORMAL && n.oppNode == null)
-                                        {
-                                            MainUnit.PrintText("Error\n");
-                                        }
-                                        n.pt.storedType = n.pt.type;
-                                    }
                                 }
                             }
                         } while (actNode != null);

@@ -1124,12 +1124,12 @@ namespace KiCad2Gcode
             if (width > 0)
             {
                 PatchUnit path = new PatchUnit(mainUnit);
-                List<Polygon> newShapes = path.CreatePatch(p, width);
+                List<Polygon> newShapes = path.CreatePatch(p, width, true);
 
                 if (fill == false)
                 {
                     p.SetOrientation(Graph2D.ORIENTATION_et.CCW);
-                    List<Polygon> newHoles = path.CreatePatch(p, width);
+                    List<Polygon> newHoles = path.CreatePatch(p, width, false);
 
                     f.holes = newHoles;
                 }
@@ -1216,16 +1216,22 @@ private void DecodeLine(PcbFileElement el)
                     Node node;
 
                     node = new Node();
+                    /*
                     node.startPt = new Point2D(endArr[0] * xFactor, -endArr[1]);
                     node.pt = new Point2D(endArr[0] * xFactor, -endArr[1]);
+                    */
 
                     Arc arc = new Arc();
                     //arc.start = new Point2D(endArr[0], -endArr[1]);
                     //arc.end = new Point2D(endArr[0], -endArr[1]);
                     arc.centre = new Point2D(centerArr[0] * xFactor, -centerArr[1]);
+
                     arc.startAngle = 0;
                     arc.endAngle = -2 * Math.PI;
                     arc.radius = Math.Sqrt(Math.Pow(centerArr[0] - endArr[0], 2) + Math.Pow(centerArr[1] - endArr[1], 2));
+
+                    node.pt = new Point2D(arc.centre.x + arc.radius, arc.centre.y);
+                    node.startPt = new Point2D(node.pt);
 
                     node.arc = arc;
                     Polygon p = new Polygon();

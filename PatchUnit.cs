@@ -203,6 +203,7 @@ namespace KiCad2Gcode
                 newNode.pt = n.pt;
                 newNode.arc = n.arc;
                 newNode.oppNode = null;
+                newNode.idx = n.idx;
                 LinkedListNode<Node> copiedNode = new LinkedListNode<Node>(newNode);
 
                 newPolygon.points.AddLast(copiedNode);
@@ -235,11 +236,29 @@ namespace KiCad2Gcode
             {
                 newPolygon.points.First.Value.arc = actNode.Value.arc;
             }
- 
+
+            Graph2D.ORIENTATION_et newOrnt = newPolygon.CheckOrientation();
+
+            if (newOrnt == Graph2D.ORIENTATION_et.UNKNOWN || newOrnt != orgPolygon.CheckOrientation())
+            {
+                return null;
+            }
+
+            
+
+
+            newPolygon.CheckConsistency();
+
+            if (newPolygon.points.Count  < 2)
+            {
+                MainUnit.PrintText("one point polygon \n");
+            }
+
+
             return newPolygon;
         }
 
-        public List<Polygon> CreatePatch(Polygon polygon, double toolDiameter_)
+        public List<Polygon> CreatePatch(Polygon polygon, double toolDiameter_, bool mainShape)
         {
             double toolRadius = toolDiameter_ / 2;
             List<Polygon> pathList = new List<Polygon>();
@@ -249,7 +268,7 @@ namespace KiCad2Gcode
 
             Point2D prevPoint = polygon.points.Last.Value.pt;
 
-
+            Polygon.ORIENTATION_et orgOrient = polygon.CheckOrientation();
 
             Vector prevOut;
             if(polygon.points.Last.Value.arc == null)
@@ -276,6 +295,17 @@ namespace KiCad2Gcode
                 if(n.arc != null)
                 {
                     /*arc */
+                    /*sanity check */
+
+                    Point2D calcSPt = new Point2D(n.arc.centre.x + n.arc.radius * Math.Cos(n.arc.startAngle), n.arc.centre.y + n.arc.radius * Math.Sin(n.arc.startAngle));
+
+                    if(calcSPt.IsSameAs(patchNode.startPt) == false)
+                    {
+                        MainUnit.PrintText("Sanity error \n");
+                    }
+                    patchNode.startPt = calcSPt;
+
+
                     patchNode.arc = new Arc();
                     patchNode.arc.ccw = n.arc.ccw;
                     patchNode.arc.centre = n.arc.centre;    
@@ -364,7 +394,8 @@ namespace KiCad2Gcode
 
                 double angle = Vector.AngleBetween(prevNode.Value.vOut, actNode.Value.vIn);
 
-                if (Math.Abs(angle) < 0.001)
+                if(actNode.Value.startPt.IsSameAs(prevNode.Value.pt))
+                //if(Math.Abs(angle) < 0.0001)
                 {
 
                 }
@@ -373,24 +404,138 @@ namespace KiCad2Gcode
                     Node arcNode = new Node();
                     arcNode.arc = new Arc();
                     arcNode.arc.centre = prevNode.Value.oldPt;
-                    arcNode.pt = actNode.Value.startPt ;
+                    arcNode.pt = actNode.Value.startPt;
                     arcNode.startPt = prevNode.Value.pt;
                     arcNode.arc.radius = toolRadius;
                     arcNode.arc.startAngle = Math.Atan2(arcNode.startPt.y - arcNode.arc.centre.y, arcNode.startPt.x - arcNode.arc.centre.x);
                     arcNode.arc.endAngle = Math.Atan2(arcNode.pt.y - arcNode.arc.centre.y, arcNode.pt.x - arcNode.arc.centre.x);
+
+                    /* double check */
+
+                    if(arcNode.arc.startAngle > arcNode.arc.endAngle)
+                    {
+                        if(arcNode.arc.startAngle - arcNode.arc.endAngle > Math.PI)
+                        {
+                            arcNode.arc = null;
+                        }
+                    }
+                    else if(arcNode.arc.startAngle < arcNode.arc.endAngle)
+                    {
+                        double a = arcNode.arc.startAngle + 2*Math.PI;
+                        if (a - arcNode.arc.endAngle > Math.PI)
+                        {
+                            arcNode.arc = null;
+                        }
+                    }
+                    else
+                    {
+                        arcNode.arc = null;
+                    }
+
+
                     path.points.AddBefore(actNode, arcNode);
 
                 }
+
                 else
                 {
+                    CrossUnit crossUnit = new CrossUnit();
 
-                    /*just connect points using dummy line. It will be filtered in next phase */
-                    Node lineNode = new Node();
-                    lineNode.pt = actNode.Value.startPt;
-                    lineNode.startPt = prevNode.Value.pt;
-                    path.points.AddBefore(actNode, lineNode);
 
-                    prevNode.Value.pt.type = Point2D.PointType_et.CROSS_X;
+                    bool cont = true;
+
+                    LinkedListNode<Node> scanNode = actNode;
+                    List<Point2D> crossPoint = null;
+
+                    while (cont)
+                    {
+                        crossPoint = crossUnit.GetCrosssingPoints(prevNode, scanNode, true);
+                        break; /* temporary block of loop */
+                        if (crossPoint != null)
+                        {
+                            break;
+                        }
+                        else
+                        {
+                            scanNode = scanNode.Next ?? scanNode.List.First;
+                            if(scanNode == prevNode)
+                            {
+                                break;
+                            }
+                        }
+
+
+                    }
+
+                    if(crossPoint == null)
+                    {
+                        /*
+                        mainUnit.ClearNetList();
+
+                        prevNode.Value.active = true;
+                        actNode.Value.active = true;
+                        
+
+                        mainUnit.drawer.DrawListOfElements(path.points);
+                        */
+                        MainUnit.PrintText("unable to find crossing \n");
+                        /*just connect points using dummy line. It will be filtered in next phase */
+                        Node lineNode = new Node();
+                        lineNode.pt = actNode.Value.startPt;
+                        lineNode.startPt = prevNode.Value.pt;
+                        path.points.AddBefore(actNode, lineNode);
+
+                        prevNode.Value.pt.type = Point2D.PointType_et.CROSS_X;
+
+                        //mainUnit.RedrawAll();
+                        //return null;
+                    }
+                    else if (crossPoint.Count == 1)
+                    {
+                        Point2D crossPt = crossPoint[0];
+
+                        prevNode.Value.pt = crossPt;
+                        if(prevNode.Value.arc != null)
+                        {
+                            prevNode.Value.arc.endAngle = Math.Atan2(crossPt.y - prevNode.Value.arc.centre.y, crossPt.x - prevNode.Value.arc.centre.x);
+                        }
+                        scanNode.Value.startPt = crossPoint[0];
+                        if (scanNode.Value.arc != null)
+                        {
+                            scanNode.Value.arc.startAngle = Math.Atan2(crossPt.y - scanNode.Value.arc.centre.y, crossPt.x - scanNode.Value.arc.centre.x);
+                        }
+
+                        if(scanNode != actNode)
+                        {
+                            /* remove nodes from actNode to scanNode */
+
+
+                            LinkedListNode<Node> tmpNode = actNode;
+                            actNode = scanNode;
+
+                            do
+                            {
+                                LinkedListNode<Node> delNode = tmpNode;
+                                tmpNode = tmpNode.Next ?? tmpNode.List.First;
+                                actNode.List.Remove(delNode);
+                                
+                            } while( tmpNode != actNode );
+                        }
+                    }
+                    else
+                    {
+                        MainUnit.PrintText("Find more crossing points \n");
+                        /*just connect points using dummy line. It will be filtered in next phase */
+                        Node lineNode = new Node();
+                        lineNode.pt = actNode.Value.startPt;
+                        lineNode.startPt = prevNode.Value.pt;
+                        path.points.AddBefore(actNode, lineNode);
+
+                        prevNode.Value.pt.type = Point2D.PointType_et.CROSS_X;
+                    }
+
+
+
 
 
                 }
@@ -412,7 +557,7 @@ namespace KiCad2Gcode
                 {
                     CrossUnit crossUnit = new CrossUnit();
 
-                    List<Point2D> crossPoint = crossUnit.GetCrosssingPoints(prevNode, actNode);
+                    List<Point2D> crossPoint = crossUnit.GetCrosssingPoints(prevNode, actNode,false);
 
                     if(crossPoint != null)
                     {
@@ -484,7 +629,7 @@ namespace KiCad2Gcode
                     }
 
 
-                    List<Point2D> crossPoint = crossUnit.GetCrosssingPoints(node1, node2);
+                    List<Point2D> crossPoint = crossUnit.GetCrosssingPoints(node1, node2, false);
 
 
                     if(crossPoint != null)
@@ -636,6 +781,29 @@ namespace KiCad2Gcode
                     else if (pathList.Count == 0)
                     {
                         MainUnit.PrintText("Start point not found\n ");
+                        if(mainShape)
+                        {
+                            MainUnit.PrintText("Main shape fault\n ");
+
+                            MainUnit.PrintText(" path: \n");
+                            PrintPolygonData(path);
+
+                            mainUnit.ClearNetList();
+
+                            polygon.GetExtPoints();
+                            Figure ft1 = new Figure();
+                            ft1.shape = polygon;
+                            ft1.net = 0;
+                            polygon.selected = 1;
+                            mainUnit.AddFigure(ft1);
+
+                            path.GetExtPoints();
+                            Figure ft2 = new Figure();
+                            ft2.shape = path;
+                            ft2.net = 0;
+                            path.selected = 2;
+                            mainUnit.AddFigure(ft2);
+                        }
                     }
 
 
@@ -645,10 +813,41 @@ namespace KiCad2Gcode
             }
             else
             {
-                pathList.Add(path);
+                Polygon.ORIENTATION_et newOrient = path.CheckOrientation();
+
+                if(newOrient == orgOrient)
+                {
+                    pathList.Add(path);
+                }
+                else
+                {
+                    MainUnit.PrintText("Faulty orientation, discard polygon\n ");
+                }
+
+                
             }
 
             return pathList;
+
+
+        }
+
+        private void PrintPolygonData(Polygon p)
+        {
+            MainUnit.PrintText(" Polygon data: \n ");
+            foreach (Node n in p.points)
+            {
+                MainUnit.PrintText("Node " + n.idx.ToString() + "State " + n.pt.state.ToString() + " Type " + n.pt.storedType.ToString() + " (" + n.pt.x.ToString() + " " + n.pt.y.ToString() + ")");
+                if (n.oppNode != null)
+                {
+                    MainUnit.PrintText(" OppIdx = " + n.oppNode.Value.idx.ToString() + " " + n.oppNode.Value.pt.type.ToString());
+                }
+                if (n.arc != null)
+                {
+                    MainUnit.PrintText(" Arc " + (n.arc.ccw ? "CCW" : "CW"));
+                }
+                MainUnit.PrintText("\n ");
+            }
 
 
         }

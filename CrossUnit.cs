@@ -5,7 +5,7 @@ namespace KiCad2Gcode
 {
     internal class CrossUnit
     {
-        public List<Point2D> GetCrossingLineLine(LinkedListNode<Node> node1, LinkedListNode<Node> node2)
+        public List<Point2D> GetCrossingLineLine(LinkedListNode<Node> node1, LinkedListNode<Node> node2, bool allPoints)
         {
             Point2D eP1 = node1.Value.pt;
             Point2D eP2 = node2.Value.pt;
@@ -122,13 +122,13 @@ namespace KiCad2Gcode
                     pt2 = null;
 
 
-                    if(Graph2D.IsPointOnLine(eP1,sP2,eP2))
+                    if(Graph2D.IsPointOnLine(eP1,sP2,eP2, allPoints))
                     {
                         pt1 = eP1;
                         pt1.type = Point2D.PointType_et.CROSS_T;
                     }
 
-                    if (Graph2D.IsPointOnLine(eP2, sP1, eP1))
+                    if (Graph2D.IsPointOnLine(eP2, sP1, eP1, allPoints))
                     {
                         pt2 = eP2;
                         pt2.type = Point2D.PointType_et.CROSS_T;
@@ -309,7 +309,7 @@ namespace KiCad2Gcode
 
                     Point2D pt = new Point2D(x, y);
 
-                    if (Graph2D.IsPointOnLine(pt, sP1, eP1) == true && Graph2D.IsPointOnLine(pt, sP2, eP2) == true)
+                    if (Graph2D.IsPointOnLine(pt, sP1, eP1, false) == true && Graph2D.IsPointOnLine(pt, sP2, eP2, false) == true)
                     {
                         if (pt.IsSameAs(eP1))
                         {
@@ -363,7 +363,7 @@ namespace KiCad2Gcode
 
         }
 
-        public List<Point2D> GetCrossingLineArc(LinkedListNode<Node> node1, LinkedListNode<Node> node2)
+        public List<Point2D> GetCrossingLineArc(LinkedListNode<Node> node1, LinkedListNode<Node> node2, bool allPoints)
         {
             LinkedListNode<Node> n1Prev = node1.Previous ?? node1.List.Last;
             LinkedListNode<Node> n2Prev = node2.Previous ?? node2.List.Last;
@@ -451,7 +451,7 @@ namespace KiCad2Gcode
             }*/
             if (ptM != null)
             {
-                if (Graph2D.IsPointOnLine(ptM, sP1, eP1) == false)
+                if (Graph2D.IsPointOnLine(ptM, sP1, eP1, allPoints) == false)
                 {
                     ptM = null;
                 }
@@ -468,7 +468,7 @@ namespace KiCad2Gcode
                     ptM2 = null;
                 }*/
 
-                if (Graph2D.IsPointOnLine(ptM2, sP1, eP1) == false)
+                if (Graph2D.IsPointOnLine(ptM2, sP1, eP1, allPoints) == false)
                 {
                     ptM2 = null;
                 }
@@ -477,7 +477,7 @@ namespace KiCad2Gcode
             /* check if points are on arc */
             if (ptM != null)
             {
-                if (Graph2D.IsPointOnArc(ptM, sP2, eP2, arc) == false)
+                if (Graph2D.IsPointOnArc(ptM, sP2, eP2, arc, allPoints) == false)
                 {
                     ptM = null;
                 }
@@ -486,7 +486,7 @@ namespace KiCad2Gcode
 
             if (ptM2 != null)
             {
-                if (Graph2D.IsPointOnArc(ptM2, sP2, eP2, arc) == false)
+                if (Graph2D.IsPointOnArc(ptM2, sP2, eP2, arc, allPoints) == false)
                 {
                     ptM2 = null;
                 }
@@ -527,7 +527,7 @@ namespace KiCad2Gcode
             return ptArr;
         }
 
-        public List<Point2D> GetCrossingArcArc(LinkedListNode<Node> node1, LinkedListNode<Node> node2)
+        public List<Point2D> GetCrossingArcArc(LinkedListNode<Node> node1, LinkedListNode<Node> node2, bool allPoints)
         {
             LinkedListNode<Node> n1Prev = node1.Previous ?? node1.List.Last;
             LinkedListNode<Node> n2Prev = node2.Previous ?? node2.List.Last;
@@ -564,13 +564,13 @@ namespace KiCad2Gcode
                 else
                 {
                     /* arcs have same centre and radius */
-                    if (Graph2D.IsPointOnArc(eP2, sP1, eP1, arc1))
+                    if (Graph2D.IsPointOnArc(eP2, sP1, eP1, arc1, allPoints))
                     {
                         pt1 = eP2;
                         pt1.type = Point2D.PointType_et.CROSS_T;
                     }
 
-                    if (Graph2D.IsPointOnArc(eP1, sP2, eP2, arc2))
+                    if (Graph2D.IsPointOnArc(eP1, sP2, eP2, arc2, allPoints))
                     {
                         if( pt1 == null || pt1.IsSameAs(eP1) == false)
                         {
@@ -621,7 +621,7 @@ namespace KiCad2Gcode
 
                     pt1 = pc1 + a * vcc;
                     pt1.type = Point2D.PointType_et.CROSS_T;
-                    if (h2 > 0.0000001)
+                    if (h2 > 0.000000001)
                     {
                         Vector vcc2 = new Vector(vcc.y, -vcc.x);
                         h = Math.Sqrt(h2);
@@ -633,7 +633,7 @@ namespace KiCad2Gcode
                     }
                     else
                     {
-                        if(pt1.IsSameAs(eP1) == false && eP1.IsSameAs(eP2) == false)
+                        if(allPoints == false && pt1.IsSameAs(eP1) == false && eP1.IsSameAs(eP2) == false)
                         {
                             pt1 = null;
                         }
@@ -644,7 +644,7 @@ namespace KiCad2Gcode
                 /* check if points are on arc1 */
                 if (pt1 != null)
                 {
-                    if(Graph2D.IsPointOnArc(pt1, sP1, eP1, arc1 ) == false)
+                    if(Graph2D.IsPointOnArc(pt1, sP1, eP1, arc1 , allPoints) == false)
                     {
                         pt1 = null;
                     }
@@ -652,7 +652,7 @@ namespace KiCad2Gcode
 
                 if (pt2 != null)
                 {
-                    if (Graph2D.IsPointOnArc(pt2, sP1, eP1, arc1) == false)
+                    if (Graph2D.IsPointOnArc(pt2, sP1, eP1, arc1, allPoints) == false)
                     {
                         pt2 = null;
                     }
@@ -661,7 +661,7 @@ namespace KiCad2Gcode
                 /* check if points are on arc2 */
                 if (pt1 != null)
                 {
-                    if (Graph2D.IsPointOnArc(pt1, sP2, eP2, arc2) == false)
+                    if (Graph2D.IsPointOnArc(pt1, sP2, eP2, arc2, allPoints) == false)
                     {
                         pt1 = null;
                     }
@@ -669,7 +669,7 @@ namespace KiCad2Gcode
 
                 if (pt2 != null)
                 {
-                    if (Graph2D.IsPointOnArc(pt2, sP2, eP2, arc2) == false)
+                    if (Graph2D.IsPointOnArc(pt2, sP2, eP2, arc2, allPoints) == false)
                     {
                         pt2 = null;
                     }
@@ -708,23 +708,23 @@ namespace KiCad2Gcode
         }
 
 
-        public List<Point2D> GetCrosssingPoints(LinkedListNode<Node> node1, LinkedListNode<Node> node2)
+        public List<Point2D> GetCrosssingPoints(LinkedListNode<Node> node1, LinkedListNode<Node> node2, bool allPoints)
         {
             if (node1.Value.arc == null && node2.Value.arc == null)
             {
-                return GetCrossingLineLine(node1, node2);
+                return GetCrossingLineLine(node1, node2, allPoints);
             }
             else if (node1.Value.arc == null && node2.Value.arc != null)
             {
-                return GetCrossingLineArc(node1, node2);
+                return GetCrossingLineArc(node1, node2, allPoints);
             }
             else if (node1.Value.arc != null && node2.Value.arc == null)
             {
-                return GetCrossingLineArc(node2, node1);
+                return GetCrossingLineArc(node2, node1, allPoints);
             }
             else if (node1.Value.arc != null && node2.Value.arc != null)
             {
-                return GetCrossingArcArc(node1, node2);
+                return GetCrossingArcArc(node1, node2, allPoints);
             }
 
             return null;
@@ -965,7 +965,7 @@ namespace KiCad2Gcode
                     {
                         leftCr = CR_PT_TYPE_et.CR_DN;
                     }
-                    else if (Graph2D.IsPointOnArc(leftPt, sP, eP, node.Value.arc))
+                    else if (Graph2D.IsPointOnArc(leftPt, sP, eP, node.Value.arc,false))
                     {
                         leftCr = CR_PT_TYPE_et.CR_NORMAL;
                     }
@@ -982,7 +982,7 @@ namespace KiCad2Gcode
                     {
                         rightCr = CR_PT_TYPE_et.CR_UP;
                     }
-                    else if ( Graph2D.IsPointOnArc(rightPt, sP, eP, node.Value.arc))
+                    else if ( Graph2D.IsPointOnArc(rightPt, sP, eP, node.Value.arc, false))
                     {
                         rightCr = CR_PT_TYPE_et.CR_NORMAL;
                     }
