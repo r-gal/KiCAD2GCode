@@ -74,6 +74,12 @@ namespace KiCad2Gcode
             {
                 return actNode.Next ?? actNode.List.First;
             }
+            else if (actNode.Value.pt.type == Point2D.PointType_et.CROSS_X)
+            {
+                LinkedListNode<Node> next1 = actNode.Value.oppNode;
+                next1 = next1.Next ?? actNode.List.First;
+                return next1;
+            }
             else
             {
                 LinkedListNode<Node> next1 = actNode.Value.oppNode;
@@ -236,14 +242,14 @@ namespace KiCad2Gcode
             {
                 newPolygon.points.First.Value.arc = actNode.Value.arc;
             }
-
+            /*
             Graph2D.ORIENTATION_et newOrnt = newPolygon.CheckOrientation();
 
             if (newOrnt == Graph2D.ORIENTATION_et.UNKNOWN || newOrnt != orgPolygon.CheckOrientation())
             {
                 return null;
             }
-
+            */
             
 
 
@@ -258,8 +264,34 @@ namespace KiCad2Gcode
             return newPolygon;
         }
 
+        private void AddToPathList(List<Polygon> pathList, Polygon newPath, Polygon.ORIENTATION_et orgOrientation)
+        {
+            newPath.orientation = newPath.CheckOrientation();
+
+            if (newPath.orientation != Graph2D.ORIENTATION_et.UNKNOWN)
+            {
+                if (orgOrientation == Graph2D.ORIENTATION_et.CCW)
+                {
+                    if (newPath.orientation == orgOrientation)
+                    {
+                        pathList.Add(newPath);
+                        MainUnit.PrintText("Add pathlist 2 \n");
+                    }
+                }
+                else
+                {
+                    pathList.Add(newPath);
+                    MainUnit.PrintText("Add pathlist 3 \n");
+                }
+            }
+        }
+
         public List<Polygon> CreatePatch(Polygon polygon, double toolDiameter_, bool mainShape)
         {
+            
+
+
+
             double toolRadius = toolDiameter_ / 2;
             List<Polygon> pathList = new List<Polygon>();
 
@@ -269,6 +301,8 @@ namespace KiCad2Gcode
             Point2D prevPoint = polygon.points.Last.Value.pt;
 
             Polygon.ORIENTATION_et orgOrient = polygon.CheckOrientation();
+
+            MainUnit.PrintText("Create path for " + orgOrient.ToString() + " shape\n");
 
             Vector prevOut;
             if(polygon.points.Last.Value.arc == null)
@@ -727,6 +761,11 @@ namespace KiCad2Gcode
                 }
                 */
 
+                if(path.points.Count == 17)
+                {
+                    int trap = 0;
+                }
+
                 LinkedListNode<Node> startScanNode = path.points.First;
                     bool cont = false;
                 do
@@ -748,20 +787,39 @@ namespace KiCad2Gcode
                     }
 
 
-                    if(firstNode != null)
+                    if (firstNode != null)
                     {
-                        Polygon p = CreatePolygon(firstNode,polygon,toolRadius);
+                        Polygon p = CreatePolygon(firstNode, polygon, toolRadius);
 
-                        if(p != null)
+                        if (p != null)
                         {
-                            foreach(Node n in path.points)
+                            p.orientation = p.CheckOrientation();
+
+                            if (p.orientation == Graph2D.ORIENTATION_et.UNKNOWN)
                             {
-                                if(n.pt.state == Point2D.STATE_et.ALREADY_USED)
+                                p = null;
+                            }
+                            else if (orgOrient == Graph2D.ORIENTATION_et.CCW && p.orientation != Graph2D.ORIENTATION_et.CCW)
+                            {
+                                p = null;
+                            }
+                        }
+
+
+                        if (p != null)
+                        {
+                            foreach (Node n in path.points)
+                            {
+                                if (n.pt.state == Point2D.STATE_et.ALREADY_USED)
                                 {
                                     n.pt.state = Point2D.STATE_et.USED;
                                 }
                             }
-                            pathList.Add(p);
+
+                            MainUnit.PrintText("Add pathlist 1 \n");
+
+                            AddToPathList(pathList, p, orgOrient);
+                            
                         }
                         else
                         {
@@ -774,35 +832,54 @@ namespace KiCad2Gcode
                                 }
                             }
                             //firstNode.Value.pt.state = Point2D.STATE_et.BAD;
-                            
+
                         }
                         startScanNode = firstNode.Next;
                     }
-                    else if (pathList.Count == 0)
+                    else
                     {
-                        MainUnit.PrintText("Start point not found\n ");
-                        if(mainShape)
+                        int freeCnt = 0;
+                        foreach (Node n in path.points)
                         {
-                            MainUnit.PrintText("Main shape fault\n ");
+                            if (n.pt.state == Point2D.STATE_et.FREE)
+                            {
+                                freeCnt++;
+                            }
+                        }
+                        MainUnit.PrintText(freeCnt.ToString() +  " free points left\n ");
 
-                            MainUnit.PrintText(" path: \n");
+                        if(freeCnt > 0)
+                        {
+                            MainUnit.PrintText("Massive discard\n ");
                             PrintPolygonData(path);
+                            MainUnit.PrintText("End.\n ");
+                        }
+                        if (pathList.Count == 0)
+                        {
+                            MainUnit.PrintText("Start point not found\n ");
+                            if (mainShape)
+                            {
+                                MainUnit.PrintText("Main shape fault\n ");
 
-                            mainUnit.ClearNetList();
+                                MainUnit.PrintText(" path: \n");
+                                PrintPolygonData(path);
 
-                            polygon.GetExtPoints();
-                            Figure ft1 = new Figure();
-                            ft1.shape = polygon;
-                            ft1.net = 0;
-                            polygon.selected = 1;
-                            mainUnit.AddFigure(ft1);
+                                mainUnit.ClearNetList();
 
-                            path.GetExtPoints();
-                            Figure ft2 = new Figure();
-                            ft2.shape = path;
-                            ft2.net = 0;
-                            path.selected = 2;
-                            mainUnit.AddFigure(ft2);
+                                polygon.GetExtPoints();
+                                Figure ft1 = new Figure();
+                                ft1.shape = polygon;
+                                ft1.net = 0;
+                                polygon.selected = 1;
+                                mainUnit.AddFigure(ft1);
+
+                                path.GetExtPoints();
+                                Figure ft2 = new Figure();
+                                ft2.shape = path;
+                                ft2.net = 0;
+                                path.selected = 2;
+                                mainUnit.AddFigure(ft2);
+                            }
                         }
                     }
 
@@ -813,20 +890,12 @@ namespace KiCad2Gcode
             }
             else
             {
-                Polygon.ORIENTATION_et newOrient = path.CheckOrientation();
-
-                if(newOrient == orgOrient)
-                {
-                    pathList.Add(path);
-                }
-                else
-                {
-                    MainUnit.PrintText("Faulty orientation, discard polygon\n ");
-                }
+                AddToPathList(pathList, path, orgOrient);
 
                 
+                
             }
-
+            MainUnit.PrintText("End of create path \n");
             return pathList;
 
 

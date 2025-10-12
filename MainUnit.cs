@@ -43,7 +43,7 @@ namespace KiCad2Gcode
         List<Node> cuts = new List<Node>();
         List<Polygon> cutPolygons = new List<Polygon>();
         List<Drill> drills = new List<Drill>();
-        Figure board;
+        public Figure board;
 
         List<Polygon> millPath = new List<Polygon>();
         List<Polygon> boardHolesMillPath = new List<Polygon>();
@@ -97,6 +97,21 @@ namespace KiCad2Gcode
                 n.figures.Clear();
                 n.zoneFigures.Clear();
             }
+        }
+        internal void ClearAll()
+        {
+            foreach (Net n in netList)
+            {
+                n.figures.Clear();
+                n.zoneFigures.Clear();
+            }
+
+            cuts.Clear();
+            cutPolygons.Clear();
+            drills.Clear();
+            board = null; 
+
+            
         }
 
         internal bool LoadFile(string filePath, ACTIVE_LAYER_et activeLayer_)

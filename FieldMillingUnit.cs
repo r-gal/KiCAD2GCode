@@ -85,11 +85,27 @@ namespace KiCad2Gcode
         private int AddToMillListTest(List<Figure> increasedFigures)
         {
             unit.ClearNetList();
+            unit.ClearAll();
             int millsCnt = 0;
             foreach (Figure f in increasedFigures)
             {
                 f.net = 0;
-                unit.AddFigure(f);
+
+                if (f.name == null || f.name.Contains("board") == false)
+                {
+                    unit.AddFigure(f);
+                }
+                else
+                {
+                    f.holes.Clear();
+                    unit.board = f;
+                }
+
+                
+
+
+                
+                
                 millsCnt++;
 
             }
@@ -201,6 +217,8 @@ namespace KiCad2Gcode
 
         }
 
+
+
         internal void CreateFields(Figure board, Net[] netList, double diameter)
         {
             increasedFigures.Clear();
@@ -218,7 +236,25 @@ namespace KiCad2Gcode
                     List<Polygon> newPolygons = IncreasePolygon(figure.shape, diameter,true);
 
                     if (newPolygons == null || newPolygons.Count < 1) { return; }
-                    newFigure.shape = newPolygons[0];
+
+                    int cwCnt = 0;
+
+                    foreach(Polygon p in newPolygons)
+                    {
+                        if(p.orientation == Graph2D.ORIENTATION_et.CCW)
+                        {
+                            newFigure.holes.Add(p);
+                        }
+                        else if(cwCnt == 0)
+                        {
+                            cwCnt++;
+                            newFigure.shape = p;
+                        }
+                        else
+                        {
+                            MainUnit.PrintText("Error, found more CW shapes\n ");
+                        }
+                    }
 
                     foreach (Polygon h in figure.holes)
                     {
@@ -237,7 +273,25 @@ namespace KiCad2Gcode
 
                     List<Polygon> newPolygons = IncreasePolygon(figure.shape, diameter, true);
                     if (newPolygons == null ||newPolygons.Count < 1) { return; }
-                    newFigure.shape = newPolygons[0];
+
+                    int cwCnt = 0;
+                    foreach (Polygon p in newPolygons)
+                    {
+                        if (p.orientation == Graph2D.ORIENTATION_et.CCW)
+                        {
+                            newFigure.holes.Add(p);
+                        }
+                        else if (cwCnt == 0)
+                        {
+                            cwCnt++;
+                            newFigure.shape = p;
+                        }
+                        else
+                        {
+                            MainUnit.PrintText("Error, found more CW shapes\n ");
+                        }
+                    }
+
 
                     foreach (Polygon h in figure.holes)
                     {
@@ -254,7 +308,7 @@ namespace KiCad2Gcode
             /* create top figure */
 
             Figure topFigure = new Figure();
-            List<Polygon> polygons = IncreasePolygon(board.shape, 2*diameter, true);
+            List<Polygon> polygons = IncreasePolygon(board.shape, 5*diameter, true);
             topFigure.shape = polygons[0];
             topFigure.holes.Add(board.shape);
             topFigure.net = 0;
@@ -294,6 +348,8 @@ namespace KiCad2Gcode
 
             bool res = false;
 
+            //AddToMillList(increasedFigures);
+
             Merger merger = new Merger(unit);
             merger.Init(increasedFigures, increasedFigures);
 
@@ -313,6 +369,7 @@ namespace KiCad2Gcode
             int cnt = 0;
             do
             {
+                MainUnit.PrintText("Start try " + cnt.ToString() + "\n ");
                 List<Figure> tmpList = new List<Figure>();
                 addedMills = 0;
                 /*phase 1 - increase all shapes and holes*/
@@ -326,12 +383,32 @@ namespace KiCad2Gcode
 
                     List<Polygon> newPolygons = IncreasePolygon(figure.shape, diameter, true);
                     if (newPolygons.Count < 1) { return; }
-                    newFigure.shape = newPolygons[0];
 
+                    int cwCnt = 0;
+                    foreach (Polygon p in newPolygons)
+                    {
+                        if (p.orientation == Graph2D.ORIENTATION_et.CCW)
+                        {
+                            newFigure.holes.Add(p);
+                        }
+                        else if (cwCnt == 0)
+                        {
+                            cwCnt++;
+                            newFigure.shape = p;
+                        }
+                        else
+                        {
+                            MainUnit.PrintText("Error, found more CW shapes\n ");
+                        }
+                    }
 
                     foreach (Polygon h in figure.holes)
                     {
                         newPolygons = IncreasePolygon(h, diameter, false);
+                        if(newPolygons.Count > 1)
+                        {
+                            MainUnit.PrintText("More holes\n ");
+                        }
                         foreach (Polygon p in newPolygons)
                         {
                             newFigure.holes.Add(p);
@@ -381,8 +458,9 @@ namespace KiCad2Gcode
 
                 cnt++;
                 //addedMills = 0;
+                MainUnit.PrintText("Added " + addedMills.ToString() + " mills\n ");
 
-            } while (addedMills > 0 && cnt < 20);
+            } while (addedMills > 0 && cnt < 50);
 
 
 
@@ -392,135 +470,6 @@ namespace KiCad2Gcode
 
         }
 
-        internal void CreateFieldsOld(Figure board, Net[] netList, double diameter)
-        {
-            increasedFigures.Clear();
-            invertedFigures.Clear();
-
-
-
-            /*phase 1 - increase all shapes and holes*/
-            foreach (Net net in netList)
-            {
-                foreach (Figure figure in net.figures)
-                {
-                    Figure newFigure = new Figure();
-
-                    List<Polygon> newPolygons = IncreasePolygon(figure.shape, diameter, true);
-                    newFigure.shape = newPolygons[0];
-
-                    foreach (Polygon h in figure.holes)
-                    {
-                        newPolygons = IncreasePolygon(h, diameter, false);
-                        foreach (Polygon p in newPolygons)
-                        {
-                            newFigure.holes.Add(p);
-                        }
-                    }
-                    increasedFigures.Add(newFigure);
-                }
-
-                foreach (Figure figure in net.zoneFigures)
-                {
-                    Figure newFigure = new Figure();
-
-                    List<Polygon> newPolygons = IncreasePolygon(figure.shape, diameter, true);
-                    newFigure.shape = newPolygons[0];
-
-                    foreach (Polygon h in figure.holes)
-                    {
-                        newPolygons = IncreasePolygon(h, diameter, false);
-                        foreach (Polygon p in newPolygons)
-                        {
-                            newFigure.holes.Add(p);
-                        }
-                    }
-                    increasedFigures.Add(newFigure);
-                }
-            }
-
-            /* phase  - merge all Figures*/
-            foreach (Figure f in increasedFigures)
-            {
-                f.shape.GetExtPoints();
-                foreach (Node n in f.shape.points)
-                {
-                    n.pt.type = Point2D.PointType_et.NORMAL;
-                }
-                foreach (Polygon h in f.holes)
-                {
-                    foreach (Node n in h.points)
-                    {
-                        n.pt.type = Point2D.PointType_et.NORMAL;
-                    }
-                }
-            }
-
-            bool res = false;
-
-            Merger merger = new Merger(unit);
-            merger.Init(increasedFigures, increasedFigures);
-
-            do
-            {
-                res = merger.Step(0);
-            } while (res == true);
-
-            /* phase - invert holes  */
-
-            foreach (Figure f in increasedFigures)
-            {
-                foreach (Polygon p in f.holes)
-                {
-                    p.SetOrientation(Graph2D.ORIENTATION_et.CW);
-                    p.innerFigures = new List<Figure>();
-                }
-                f.touched = false;
-            }
-
-            /* phase - sort  */
-
-            SortList(increasedFigures);
-
-            Figure topFigure = new Figure();
-            topFigure.shape = board.shape;
-
-            foreach (Figure innerFig in increasedFigures)
-            {
-                topFigure.holes.Add(innerFig.shape);
-                CreateMillFigures(innerFig);
-            }
-            millFigures.Add(topFigure);
-
-            foreach (Figure f in millFigures)
-            {
-                f.shape.SetOrientation(Graph2D.ORIENTATION_et.CCW);
-            }
-
-            /* fill */
-            /*
-                        foreach (Figure f in millFigures)
-                        {
-
-                            Figure newFig = new Figure();
-
-                            newFig.shape = Mill
-                        }*/
-
-            /* print */
-
-            foreach (Figure f in millFigures)
-            {
-                unit.millFieldsPath.Add(f.shape);
-                unit.RedrawAll();
-                foreach (Polygon p in f.holes)
-                {
-                    unit.millFieldsPath.Add(p);
-                    unit.RedrawAll();
-                }
-
-            }
-
-        }
+       
     }
 }

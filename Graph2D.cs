@@ -357,6 +357,8 @@ namespace KiCad2Gcode
 
         public int selected = 0;
 
+        public ORIENTATION_et orientation = ORIENTATION_et.NOT_CHECKED;
+
         public void Renumerate()
         {
             int cnt = 0;
@@ -632,9 +634,150 @@ namespace KiCad2Gcode
             }
         }
 
-
-
         public ORIENTATION_et CheckOrientation()
+        {
+            if(orientation != ORIENTATION_et.NOT_CHECKED)
+            {
+                /* alrady checked */
+            }
+            else if (points.Count == 0)
+            {
+                orientation = ORIENTATION_et.UNKNOWN;
+            }
+            else if (points.Count == 1)
+            {
+                if (points.First.Value.arc != null)
+                {
+                    if (points.First.Value.arc.ccw)
+                    {
+                        orientation = ORIENTATION_et.CCW;
+                    }
+                    else
+                    {
+                        orientation = ORIENTATION_et.CW;
+                    }
+                }
+                else
+                {
+                    orientation = ORIENTATION_et.UNKNOWN;
+                }
+            }
+            else if (points.Count == 2)
+            {
+                double w1 = 0;
+                double w2 = 0;
+
+                if (points.First.Value.arc != null)
+                {
+                    double r1 = points.First.Value.arc.radius;
+                    if (points.First.Value.arc.ccw) r1 = -r1;
+                    w1 = 1 / r1;
+                }
+                if (points.Last.Value.arc != null)
+                {
+                    double r2 = points.Last.Value.arc.radius;
+                    if (points.Last.Value.arc.ccw) r2 = -r2;
+                    w2 = 1 / r2;
+                }
+                if (w1 + w2 < 0)
+                {
+                    orientation = ORIENTATION_et.CCW;
+                }
+                else if (w1 + w2 > 0)
+                {
+                    orientation = ORIENTATION_et.CW;
+                }
+                else
+                {
+                    orientation = ORIENTATION_et.UNKNOWN;
+                }
+            }
+            else
+            {
+                /*find point located  most down - right */
+
+                LinkedListNode<Node> selNode = points.First;
+                Point2D selPoint = selNode.Value.pt;
+
+                LinkedListNode<Node> actNode = points.First;
+
+                while (actNode != null)
+                {
+                    Point2D lowestPoint = actNode.Value.pt;
+
+                    if(actNode.Value.arc != null)
+                    { 
+                        if(Graph2D.IsAngleBetween(Math.PI * -0.5, actNode.Value.arc.startAngle, actNode.Value.arc.endAngle, actNode.Value.arc.ccw))
+                        {
+                            lowestPoint = new Point2D(actNode.Value.arc.centre);
+                            lowestPoint.y -= actNode.Value.arc.radius;
+                        }                        
+                    }
+
+                    if (lowestPoint.y < selNode.Value.pt.y)
+                    {
+                        selNode = actNode;
+                        selPoint = lowestPoint;
+                    }
+                    else if (lowestPoint.y == selNode.Value.pt.y)
+                    {
+                        if (lowestPoint.x > selNode.Value.pt.x)
+                        {
+                            selNode = actNode;
+                            selPoint = lowestPoint;
+                        }
+                    }
+                    actNode = actNode.Next;
+                }
+
+                if(selPoint.IsSameAs(selNode.Value.pt))
+                {
+                    LinkedListNode<Node> prevNode = selNode.Previous ?? selNode.List.Last;
+                    LinkedListNode<Node> nextNode = selNode.Next ?? selNode.List.First;
+                    AngleData inAngle = new AngleData(selNode.Value, prevNode, true);
+                    AngleData outAngle = new AngleData(selNode.Value, nextNode, false);
+
+                    if (Math.Abs(inAngle.angle - outAngle.angle) < 0.00001)
+                    {
+                        if (inAngle.wgt > outAngle.wgt)
+                        {
+                            orientation = ORIENTATION_et.CW;
+                        }
+                        else
+                        {
+                            orientation = ORIENTATION_et.CCW;
+                        }
+                    }
+                    else if(inAngle.angle < outAngle.angle)
+                    {
+                        orientation = ORIENTATION_et.CW;
+                    }
+                    else
+                    {
+                        orientation = ORIENTATION_et.CCW;
+                    }
+                }
+                else
+                {
+                    if (selNode.Value.arc.ccw)
+                    {
+                        orientation = ORIENTATION_et.CCW;
+                    }
+                    else
+                    {
+                        orientation = ORIENTATION_et.CW;
+                    }
+                }
+
+                                
+            }
+
+
+
+            return orientation;
+        }
+
+        public ORIENTATION_et CheckOrientationOld()
         {
             if (points.Count == 0)
             {
@@ -771,14 +914,14 @@ namespace KiCad2Gcode
 
         }
 
-        public void SetOrientation(ORIENTATION_et orientation)
+        public void SetOrientation(ORIENTATION_et orientation_)
         {
             ORIENTATION_et actOrientation = CheckOrientation();
-            if (actOrientation == orientation)
+            if (actOrientation == orientation_)
             {
                 return;
             }
-            else if (actOrientation != ORIENTATION_et.UNKNOWN && orientation != ORIENTATION_et.UNKNOWN)
+            else if (actOrientation != ORIENTATION_et.UNKNOWN && orientation_ != ORIENTATION_et.UNKNOWN)
             {
                 /* change orientation */
 
@@ -817,6 +960,7 @@ namespace KiCad2Gcode
                 };
 
                 points = newList;
+                orientation = orientation_;
             }
         }
 
@@ -1262,6 +1406,7 @@ namespace KiCad2Gcode
     {
         public enum ORIENTATION_et
         {
+            NOT_CHECKED,
             UNKNOWN,
             CW,
             CCW
@@ -1438,5 +1583,79 @@ namespace KiCad2Gcode
 
 
         }
+    }
+
+    internal class AngleData
+    {
+        internal bool isInput;
+
+        /* angle is for compare only so alfa function is enough */
+        internal double angle;
+        internal double wgt;
+
+        internal LinkedListNode<Node> node;
+
+
+        public AngleData(Node actNode, LinkedListNode<Node> nextNode, bool isInput)
+        {
+            this.isInput = isInput;
+
+            Point2D actPoint = actNode.pt;
+            Point2D nextPoint = nextNode.Value.pt;
+
+            node = nextNode;
+
+            if (isInput)
+            {
+                if (actNode.arc == null)
+                {
+                    angle = Vector.GetAlpha(actPoint, nextPoint);
+                    wgt = 0;// Double.MaxValue;
+                }
+                else
+                {
+
+                    Vector v = actNode.arc.centre - actPoint;
+                    Vector vt;
+                    if (actNode.arc.ccw == true)
+                    {
+                        vt = new Vector(-v.y, v.x);
+                        wgt = 1 / actNode.arc.radius;
+                    }
+                    else
+                    {
+                        vt = new Vector(v.y, -v.x);
+                        wgt = -1 / actNode.arc.radius;
+                    }
+                    angle = Vector.GetAlpha(vt);
+                }
+            }
+            else
+            {
+                if (nextNode.Value.arc == null)
+                {
+                    angle = Vector.GetAlpha(actPoint, nextPoint);
+                    wgt = 0;// Double.MaxValue;
+                }
+                else
+                {
+
+                    Vector v = nextNode.Value.arc.centre - actPoint;
+                    Vector vt;
+                    if (nextNode.Value.arc.ccw == false)
+                    {
+                        vt = new Vector(-v.y, v.x);
+                        wgt = 1 / nextNode.Value.arc.radius;
+                    }
+                    else
+                    {
+                        vt = new Vector(v.y, -v.x);
+                        wgt = -1 / nextNode.Value.arc.radius;
+                    }
+                    angle = Vector.GetAlpha(vt);
+                }
+            }
+        }
+
     }
 }
