@@ -27,19 +27,6 @@ namespace KiCad2Gcode
         {
             PatchUnit path = new PatchUnit(unit);
             List<Polygon> list =  path.CreatePatch(polygon,diameter, mainShape);
-            /*
-            if(list.Count > 0)
-            {
-                Graph2D.ORIENTATION_et ornt = polygon.CheckOrientation();
-
-                for (int i = list.Count - 1; i >= 0; i--)
-                {
-                    if (list[i].CheckOrientation() != ornt)
-                    {
-                        list.RemoveAt(i);
-                    }
-                }
-            }*/
 
 
             return list;
@@ -264,6 +251,11 @@ namespace KiCad2Gcode
                             newFigure.holes.Add(p);
                         }
                     }
+                    if (newFigure.shape.points.Count == 0)
+                    {
+                        MainUnit.PrintText("Error\n");
+                        newFigure.holes[0].CheckOrientation();
+                    }
                     increasedFigures.Add(newFigure);
                 }
 
@@ -285,6 +277,10 @@ namespace KiCad2Gcode
                         {
                             cwCnt++;
                             newFigure.shape = p;
+                            if (newFigure.shape.points.Count == 0)
+                            {
+                                MainUnit.PrintText("Error\n");
+                            }
                         }
                         else
                         {
@@ -300,6 +296,11 @@ namespace KiCad2Gcode
                         {
                             newFigure.holes.Add(p);
                         }
+                    }
+                    if (newFigure.shape.points.Count == 0)
+                    {
+                        MainUnit.PrintText("Error\n");
+                        newFigure.holes[0].CheckOrientation();
                     }
                     increasedFigures.Add(newFigure);
                 }
@@ -317,6 +318,11 @@ namespace KiCad2Gcode
             topFigure.shape.SetOrientation(Graph2D.ORIENTATION_et.CW);
             topFigure.holes[0].SetOrientation(Graph2D.ORIENTATION_et.CCW);
 
+            if (topFigure.shape.points.Count == 0)
+            {
+                MainUnit.PrintText("Error\n");
+            }
+
             increasedFigures.Add(topFigure);
 
             foreach(Polygon p in board.holes)
@@ -326,6 +332,10 @@ namespace KiCad2Gcode
                 holeFigure.name = "hole";
                 holeFigure.shape = p;
                 holeFigure.shape.SetOrientation(Graph2D.ORIENTATION_et.CW);
+                if (holeFigure.shape.points.Count == 0)
+                {
+                    MainUnit.PrintText("Error\n");
+                }
                 increasedFigures.Add(holeFigure);
             }
 
@@ -417,6 +427,13 @@ namespace KiCad2Gcode
 
 
                     newFigure.shape.GetExtPoints();
+
+                    if (newFigure.shape.points.Count == 0)
+                    {
+                        MainUnit.PrintText("Error\n");
+                    }
+
+
                     tmpList.Add(newFigure);
 
 

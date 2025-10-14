@@ -92,6 +92,7 @@
             this.comboBox3 = new System.Windows.Forms.ComboBox();
             this.label18 = new System.Windows.Forms.Label();
             this.button7 = new System.Windows.Forms.Button();
+            this.button9 = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.panel1.SuspendLayout();
             this.groupBox1.SuspendLayout();
@@ -771,11 +772,22 @@
             this.button7.UseVisualStyleBackColor = true;
             this.button7.Click += new System.EventHandler(this.button7_Click_1);
             // 
+            // button9
+            // 
+            this.button9.Location = new System.Drawing.Point(333, 103);
+            this.button9.Name = "button9";
+            this.button9.Size = new System.Drawing.Size(75, 23);
+            this.button9.TabIndex = 38;
+            this.button9.Text = "field1";
+            this.button9.UseVisualStyleBackColor = true;
+            this.button9.Click += new System.EventHandler(this.button9_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(2781, 1345);
+            this.Controls.Add(this.button9);
             this.Controls.Add(this.button7);
             this.Controls.Add(this.comboBox3);
             this.Controls.Add(this.label18);
@@ -877,6 +889,7 @@
         private System.Windows.Forms.Label label19;
         private System.Windows.Forms.TextBox m3DwelTextBox;
         private System.Windows.Forms.Button button7;
+        private System.Windows.Forms.Button button9;
     }
 }
 

@@ -714,14 +714,14 @@ namespace KiCad2Gcode
                         }                        
                     }
 
-                    if (lowestPoint.y < selNode.Value.pt.y)
+                    if (lowestPoint.y < selPoint.y)
                     {
                         selNode = actNode;
                         selPoint = lowestPoint;
                     }
-                    else if (lowestPoint.y == selNode.Value.pt.y)
+                    else if (lowestPoint.y == selPoint.y)
                     {
-                        if (lowestPoint.x > selNode.Value.pt.x)
+                        if (lowestPoint.x > selPoint.x)
                         {
                             selNode = actNode;
                             selPoint = lowestPoint;
@@ -736,6 +736,9 @@ namespace KiCad2Gcode
                     LinkedListNode<Node> nextNode = selNode.Next ?? selNode.List.First;
                     AngleData inAngle = new AngleData(selNode.Value, prevNode, true);
                     AngleData outAngle = new AngleData(selNode.Value, nextNode, false);
+
+                    if(inAngle.angle > 3) { inAngle.angle = 0; }
+                    if(outAngle.angle > 3) { outAngle.angle = 0; }
 
                     if (Math.Abs(inAngle.angle - outAngle.angle) < 0.00001)
                     {

@@ -670,5 +670,11 @@ namespace KiCad2Gcode
             unit.Run(10);
             //unit.TestStep();
         }
+
+        private void button9_Click(object sender, EventArgs e)
+        {
+            TestForm testForm = new TestForm();
+            testForm.ShowDialog();
+        }
     }
 }

@@ -198,6 +198,23 @@ namespace KiCad2Gcode
 
         }
 
+        public void InitBitmap(int xSize, int ySize)
+        {
+
+            bmp = new Bitmap(xSize, ySize);
+            pBox.Width = bmp.Width;
+            pBox.Height = bmp.Height;
+
+            offX = 0;
+            offY = 0;
+
+            H = ySize;
+            scale = 1;
+
+            pBox.Image = bmp;
+            pBox.Refresh();
+        }
+
         public void Redraw(Net[] netList, Figure cuts, List<Drill> drills, List<Polygon> millPath, Polygon boardMillPath, List<Polygon> boardHolesMillPath, List<Polygon> fieldsMillPath)
         {
 
@@ -648,8 +665,7 @@ namespace KiCad2Gcode
 
             }
 
-            pBox.Image = bmp;
-            pBox.Refresh();
+
 
             foreach (Drill drill in drills)
             {

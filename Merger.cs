@@ -575,30 +575,31 @@ namespace KiCad2Gcode
 
 
             Polygon newPolygon = new Polygon();
-           /*
-            if (redraw)
-            {
-                mainUnit.drawer.DrawDot(startNode.Value.pt, 2, Color.LightGreen);
-                mainUnit.drawer.SetCentre(startNode.Value.pt);
+            /*
+             if (redraw)
+             {
+                 mainUnit.drawer.DrawDot(startNode.Value.pt, 2, Color.LightGreen);
+                 mainUnit.drawer.SetCentre(startNode.Value.pt);
 
-                foreach (Node nt in pol1.points)
-                {
-                    if(nt.pt.type == Point2D.PointType_et.CROSS_X)
-                    {
-                        mainUnit.drawer.DrawDot(nt.pt, 2, Color.Pink);
-                    }
-                    else if (nt.pt.type == Point2D.PointType_et.CROSS_T)
-                    {
-                        mainUnit.drawer.DrawDot(nt.pt, 2, Color.Violet);
-                    }
-                    else
-                    {
-                        mainUnit.drawer.DrawDot(nt.pt, 2, Color.Black);
-                    }
-                }
-            }
-               */ 
+                 foreach (Node nt in pol1.points)
+                 {
+                     if(nt.pt.type == Point2D.PointType_et.CROSS_X)
+                     {
+                         mainUnit.drawer.DrawDot(nt.pt, 2, Color.Pink);
+                     }
+                     else if (nt.pt.type == Point2D.PointType_et.CROSS_T)
+                     {
+                         mainUnit.drawer.DrawDot(nt.pt, 2, Color.Violet);
+                     }
+                     else
+                     {
+                         mainUnit.drawer.DrawDot(nt.pt, 2, Color.Black);
+                     }
+                 }
+             }
+                */
 
+            bool tried = false;
             do
             {
                 Node n = actNode.Value;
@@ -609,7 +610,8 @@ namespace KiCad2Gcode
                     /* check if another way from start point is possible, just clear new polygon and start loop one more time. First way is signed 
                      * as already used so only next way can be selected. If another way is also signed as already used then null will be returned*/
                     bool nextTry = false;
-                    if(firstNode.Value.pt.type == Point2D.PointType_et.CROSS_T)
+                    
+                    if(firstNode.Value.pt.type == Point2D.PointType_et.CROSS_T && tried == false)
                     {
                         LinkedListNode<Node> oppNode = firstNode.Value.oppNode;
 
@@ -623,6 +625,7 @@ namespace KiCad2Gcode
                             newPolygon.points.Clear();
                             actNode = firstNode;
                             prevNode = actNode.Previous ?? actNode.List.Last;
+                            n = actNode.Value;
 
                         }
                         else if( nodeB.Value.pt.state == Point2D.STATE_et.FREE)
@@ -632,7 +635,10 @@ namespace KiCad2Gcode
                             newPolygon.points.Clear();
                             actNode = oppNode;
                             prevNode = oppNode.Previous ?? oppNode.List.Last;
+                            n = actNode.Value;
                         }
+                        tried = true;
+
                     }
 
 
