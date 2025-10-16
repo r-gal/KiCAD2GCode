@@ -242,24 +242,8 @@ namespace KiCad2Gcode
             {
                 newPolygon.points.First.Value.arc = actNode.Value.arc;
             }
-            /*
-            Graph2D.ORIENTATION_et newOrnt = newPolygon.CheckOrientation();
-
-            if (newOrnt == Graph2D.ORIENTATION_et.UNKNOWN || newOrnt != orgPolygon.CheckOrientation())
-            {
-                return null;
-            }
-            */
-            
-
 
             newPolygon.CheckConsistency();
-
-            if (newPolygon.points.Count  < 2)
-            {
-                MainUnit.PrintText("one point polygon \n");
-            }
-
 
             return newPolygon;
         }
@@ -274,14 +258,12 @@ namespace KiCad2Gcode
                 {
                     if (newPath.orientation == orgOrientation)
                     {
-                        pathList.Add(newPath);
-                        MainUnit.PrintText("Add pathlist 2 \n");
+                        pathList.Add(newPath);                        
                     }
                 }
                 else
                 {
                     pathList.Add(newPath);
-                    MainUnit.PrintText("Add pathlist 3 \n");
                 }
             }
         }
@@ -302,7 +284,7 @@ namespace KiCad2Gcode
 
             Polygon.ORIENTATION_et orgOrient = polygon.CheckOrientation();
 
-            MainUnit.PrintText("Create path for " + orgOrient.ToString() + " shape\n");
+            //MainUnit.PrintText("Create path for " + orgOrient.ToString() + " shape\n");
 
             Vector prevOut;
             if(polygon.points.Last.Value.arc == null)
@@ -503,16 +485,7 @@ namespace KiCad2Gcode
 
                     if(crossPoint == null)
                     {
-                        /*
-                        mainUnit.ClearNetList();
 
-                        prevNode.Value.active = true;
-                        actNode.Value.active = true;
-                        
-
-                        mainUnit.drawer.DrawListOfElements(path.points);
-                        */
-                        MainUnit.PrintText("unable to find crossing \n");
                         /*just connect points using dummy line. It will be filtered in next phase */
                         Node lineNode = new Node();
                         lineNode.pt = actNode.Value.startPt;
@@ -558,7 +531,7 @@ namespace KiCad2Gcode
                     }
                     else
                     {
-                        MainUnit.PrintText("Find more crossing points \n");
+                        
                         /*just connect points using dummy line. It will be filtered in next phase */
                         Node lineNode = new Node();
                         lineNode.pt = actNode.Value.startPt;
@@ -745,21 +718,7 @@ namespace KiCad2Gcode
                 }
 
                 path.Renumerate();
-                /*
-                foreach (Node n in path.points)
-                {
-                    MainUnit.PrintText("Node " + n.idx.ToString() + "State " + n.pt.state.ToString() +  " Type " + n.pt.type.ToString() + " (" + n.pt.x.ToString() + " " + n.pt.y.ToString() + ")");
-                    if(n.oppNode!= null)
-                    {
-                        MainUnit.PrintText(" OppIdx = " + n.oppNode.Value.idx.ToString() + " " + n.oppNode.Value.pt.type.ToString());
-                    }
-                    if(n.arc != null)
-                    {
-                        MainUnit.PrintText(" Arc ");
-                    }
-                    MainUnit.PrintText("\n ");
-                }
-                */
+
 
                 if(path.points.Count == 17)
                 {
@@ -816,8 +775,6 @@ namespace KiCad2Gcode
                                 }
                             }
 
-                            MainUnit.PrintText("Add pathlist 1 \n");
-
                             AddToPathList(pathList, p, orgOrient);
                             
                         }
@@ -846,18 +803,20 @@ namespace KiCad2Gcode
                                 freeCnt++;
                             }
                         }
-                        MainUnit.PrintText(freeCnt.ToString() +  " free points left\n ");
+                        /*MainUnit.PrintText(freeCnt.ToString() +  " free points left\n ");*/
 
                         if(freeCnt > 0)
                         {
+                            /*
                             MainUnit.PrintText("Massive discard\n ");
                             PrintPolygonData(path);
                             MainUnit.PrintText("End.\n ");
+                            */
                         }
                         if (pathList.Count == 0)
                         {
                             MainUnit.PrintText("Start point not found\n ");
-                            if (mainShape)
+                            /*if (mainShape)
                             {
                                 MainUnit.PrintText("Main shape fault\n ");
 
@@ -879,7 +838,7 @@ namespace KiCad2Gcode
                                 ft2.net = 0;
                                 path.selected = 2;
                                 mainUnit.AddFigure(ft2);
-                            }
+                            }*/
                         }
                     }
 

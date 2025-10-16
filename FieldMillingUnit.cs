@@ -366,6 +366,7 @@ namespace KiCad2Gcode
             do
             {
                 res = merger.Step(0);
+                //AddToMillList(increasedFigures);
             } while (res == true);
 
             AddToMillList(increasedFigures);

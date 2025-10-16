@@ -94,7 +94,6 @@ namespace KiCad2Gcode
                     Figure figA = listA[idxA];
                     Figure figB = listB[idxB];
 
-
                     mergedFigure = Merge(listA[idxA], listB[idxB]);
                 }
 
@@ -500,12 +499,12 @@ namespace KiCad2Gcode
                 LinkedListNode<Node> nodeB = oppNode.Next ?? oppNode.List.First;
 
                 list.Add(new AngleData(actNode.Value, nodeA,false));
-                list.Add(new AngleData(actNode.Value, nodeB, false));
+                list.Add(new AngleData(oppNode.Value, nodeB, false));
                 
                 if (prevNode == null)
                 {
                     LinkedListNode<Node> oppPrev = oppNode.Previous ?? oppNode.List.First;
-                    list.Add(new AngleData(actNode.Value, oppPrev, true));
+                    list.Add(new AngleData(oppNode.Value, oppPrev, true));
 
                     prevNode = actNode.Previous ?? actNode.List.First;
                 }

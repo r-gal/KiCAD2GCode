@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Security.Cryptography;
+using System.Security.Policy;
 
 namespace KiCad2Gcode
 {
@@ -891,6 +892,11 @@ namespace KiCad2Gcode
 
                 double h = pt.y - cP.y;
 
+                if( Math.Abs(h) > r + 0.00000001)
+                {
+                    return CROSS_TYPE_et.NONE;
+                }
+
                 double l2 = r * r - h * h;
 
 
@@ -910,98 +916,152 @@ namespace KiCad2Gcode
                 CR_PT_TYPE_et leftCr = CR_PT_TYPE_et.CR_NONE;
                 CR_PT_TYPE_et rightCr = CR_PT_TYPE_et.CR_NONE;
 
-                if (l2 < 0)
+                if (l2 > 0)
+                {
+                    a = Math.Sqrt(l2);
+                }
+
+                    
+                double leftx = cP.x - a;
+                double rightx = cP.x + a;
+
+                Point2D leftPt = new Point2D(leftx, pt.y);
+                Point2D rightPt = new Point2D(rightx, pt.y);
+
+                if(leftx > pt.x)
                 {
                     return CROSS_TYPE_et.NONE;
                 }
-                else
+
+                int caseS = sP.y > pt.y ? 2 : (sP.y == pt.y ? 1 : 0);
+                int caseE = eP.y > pt.y ? 2 : (eP.y == pt.y ? 1 : 0);
+
+                int caseCom = caseS + 3 * caseE;
+
+                switch( caseCom)
                 {
-                    a = Math.Sqrt(l2);
-                    double leftx = cP.x - a;
-                    double rightx = cP.x + a;
+                    case 0:  /* ys <y, ye < y */
+                    case 8:  /* ys >y, ye > y */
+                        if (leftx > pt.x ^ rightx > pt.x)
+                        {
+                            Point2D ptM = new Point2D(cP.x, pt.y);
+                            double angleS = Vector.GetAlpha(ptM, sP);
+                            double angleE = Vector.GetAlpha(ptM, eP);
 
-                    Point2D leftPt = new Point2D(leftx, pt.y);
-                    Point2D rightPt = new Point2D(rightx, pt.y);
 
-                    if(leftx > pt.x)
-                    {
-                        return CROSS_TYPE_et.NONE;
-                    }
 
-                    int caseS = sP.y > pt.y ? 2 : (sP.y == pt.y ? 1 : 0);
-                    int caseE = eP.y > pt.y ? 2 : (eP.y == pt.y ? 1 : 0);
-
-                    int caseCom = caseS + 3 * caseE;
-
-                    switch( caseCom)
-                    {
-                        case 0:  /* ys <y, ye < y */
-                        case 8:  /* ys >y, ye > y */
-                            if (leftx > pt.x ^ rightx > pt.x)
+                            if (node.Value.arc.ccw == false)
                             {
-                                Point2D ptM = new Point2D(cP.x, pt.y);
-                                double angleS = Vector.GetAlpha(ptM, sP);
-                                double angleE = Vector.GetAlpha(ptM, eP);
-
-
-
-                                if (node.Value.arc.ccw == false)
+                                if (angleS < angleE)
                                 {
-                                    if (angleS < angleE)
-                                    {
-                                        return CROSS_TYPE_et.NORMAL;
-                                    }
+                                    return CROSS_TYPE_et.NORMAL;
                                 }
-                                else
+                                else if (angleS == angleE && node.Value.arc.startAngle != node.Value.arc.endAngle)
                                 {
-                                    if (angleS > angleE)
-                                    {
-                                        return CROSS_TYPE_et.NORMAL;
-                                    }
+                                    return CROSS_TYPE_et.NORMAL;
                                 }
                             }
-                            return CROSS_TYPE_et.NONE; /* may be also double but effect is this same */
+                            else
+                            {
+                                if (angleS > angleE)
+                                {
+                                    return CROSS_TYPE_et.NORMAL;
+                                }
+                                else if (angleS == angleE && node.Value.arc.startAngle != node.Value.arc.endAngle)
+                                {
+                                    return CROSS_TYPE_et.NORMAL;
+                                }
+                            }
+                        }
+                        return CROSS_TYPE_et.NONE; /* may be also double but effect is this same */
                         
                             
 
-                        case 2:  /* ys >y, ye < y */
-                            if(node.Value.arc.ccw == true)
+                    case 2:  /* ys >y, ye < y */
+                        if(node.Value.arc.ccw == true)
+                        {
+                            if (leftx < pt.x)
                             {
-                                if (leftx < pt.x)
+                                return CROSS_TYPE_et.NORMAL;
+                            }
+                        }
+                        else
+                        {
+                            if (rightx < pt.x)
+                            {
+                                return CROSS_TYPE_et.NORMAL;
+                            }
+                        }
+                        return CROSS_TYPE_et.NONE;
+
+                    case 6:  /* ys <y, ye > y */
+                        if (node.Value.arc.ccw == true)
+                        {
+                            if (rightx < pt.x)
+                            {
+                                return CROSS_TYPE_et.NORMAL;
+                            }
+                        }
+                        else
+                        {
+                            if (leftx < pt.x)
+                            {
+                                return CROSS_TYPE_et.NORMAL;
+                            }
+                        }
+                        return CROSS_TYPE_et.NONE;
+
+                    case 4:  /* ys =y, ye = y */
+                        if(rightx >= pt.x && leftx < pt.x)
+                        {
+                            if(sP.x < pt.x ^ node.Value.arc.ccw)
+                            {
+                                return CROSS_TYPE_et.END_UP;
+                            }
+                            else
+                            {
+                                return CROSS_TYPE_et.END_DN;
+                            }
+                        }
+                        return CROSS_TYPE_et.NONE;
+
+                    case 1:  /* ys =y, ye < y */
+                        if(rightx < pt.x)
+                        {
+                            return CROSS_TYPE_et.END_DN;
+                        }
+                        if (leftx < pt.x)
+                        {
+                            if (sP.x < pt.x)
+                            {
+                                if (node.Value.arc.ccw == true)
                                 {
-                                    return CROSS_TYPE_et.NORMAL;
+                                    return CROSS_TYPE_et.END_DN;
+                                }
+                                else
+                                {
+                                    return CROSS_TYPE_et.END_UP;
                                 }
                             }
                             else
                             {
-                                if (rightx < pt.x)
+                                if (node.Value.arc.ccw == true)
                                 {
                                     return CROSS_TYPE_et.NORMAL;
                                 }
                             }
-                            return CROSS_TYPE_et.NONE;
-
-                        case 6:  /* ys <y, ye > y */
-                            if (node.Value.arc.ccw == true)
+                        } 
+                        return CROSS_TYPE_et.NONE;
+                    case 3:  /* ys <y, ye = y */
+                        if (rightx < pt.x)
+                        {
+                            return CROSS_TYPE_et.END_DN;
+                        }
+                        if (leftx < pt.x)
+                        {
+                            if (eP.x < pt.x)
                             {
-                                if (rightx < pt.x)
-                                {
-                                    return CROSS_TYPE_et.NORMAL;
-                                }
-                            }
-                            else
-                            {
-                                if (leftx < pt.x)
-                                {
-                                    return CROSS_TYPE_et.NORMAL;
-                                }
-                            }
-                            return CROSS_TYPE_et.NONE;
-
-                        case 4:  /* ys =y, ye = y */
-                            if(rightx >= pt.x && leftx < pt.x)
-                            {
-                                if(sP.x < pt.x ^ node.Value.arc.ccw)
+                                if (node.Value.arc.ccw == true)
                                 {
                                     return CROSS_TYPE_et.END_UP;
                                 }
@@ -1010,123 +1070,76 @@ namespace KiCad2Gcode
                                     return CROSS_TYPE_et.END_DN;
                                 }
                             }
-                            return CROSS_TYPE_et.NONE;
-
-                        case 1:  /* ys =y, ye < y */
-                            if(rightx < pt.x)
+                            else
                             {
-                                return CROSS_TYPE_et.END_DN;
-                            }
-                            if (leftx < pt.x)
-                            {
-                                if (sP.x < pt.x)
+                                if (node.Value.arc.ccw == false)
                                 {
-                                    if (node.Value.arc.ccw == true)
-                                    {
-                                        return CROSS_TYPE_et.END_DN;
-                                    }
-                                    else
-                                    {
-                                        return CROSS_TYPE_et.END_UP;
-                                    }
+                                    return CROSS_TYPE_et.NORMAL;
+                                }
+                            }
+                        }
+                        return CROSS_TYPE_et.NONE;
+                    case 5:  /* ys >y, ye = y */
+                        if (rightx < pt.x)
+                        {
+                            return CROSS_TYPE_et.END_UP;
+                        }
+                        if (leftx < pt.x)
+                        {
+                            if (eP.x < pt.x)
+                            {
+                                if (node.Value.arc.ccw == true)
+                                {
+                                    return CROSS_TYPE_et.END_UP;
                                 }
                                 else
                                 {
-                                    if (node.Value.arc.ccw == true)
-                                    {
-                                        return CROSS_TYPE_et.NORMAL;
-                                    }
+                                    return CROSS_TYPE_et.END_DN;
                                 }
-                            } 
-                            return CROSS_TYPE_et.NONE;
-                        case 3:  /* ys <y, ye = y */
-                            if (rightx < pt.x)
-                            {
-                                return CROSS_TYPE_et.END_DN;
                             }
-                            if (leftx < pt.x)
+                            else
                             {
-                                if (eP.x < pt.x)
+                                if (node.Value.arc.ccw == true)
                                 {
-                                    if (node.Value.arc.ccw == true)
-                                    {
-                                        return CROSS_TYPE_et.END_UP;
-                                    }
-                                    else
-                                    {
-                                        return CROSS_TYPE_et.END_DN;
-                                    }
+                                    return CROSS_TYPE_et.NORMAL;
+                                }
+                            }
+                        }
+                        return CROSS_TYPE_et.NONE;
+                    case 7:  /* ys =y, ye > y */
+                        if (rightx < pt.x)
+                        {
+                            return CROSS_TYPE_et.END_UP;
+                        }
+                        if (leftx < pt.x)
+                        {
+                            if (sP.x < pt.x)
+                            {
+                                if (node.Value.arc.ccw == true)
+                                {
+                                    return CROSS_TYPE_et.END_DN;
                                 }
                                 else
                                 {
-                                    if (node.Value.arc.ccw == false)
-                                    {
-                                        return CROSS_TYPE_et.NORMAL;
-                                    }
+                                    return CROSS_TYPE_et.END_UP;
                                 }
                             }
-                            return CROSS_TYPE_et.NONE;
-                        case 5:  /* ys >y, ye = y */
-                            if (rightx < pt.x)
+                            else
                             {
-                                return CROSS_TYPE_et.END_UP;
-                            }
-                            if (leftx < pt.x)
-                            {
-                                if (eP.x < pt.x)
+                                if (node.Value.arc.ccw == false)
                                 {
-                                    if (node.Value.arc.ccw == true)
-                                    {
-                                        return CROSS_TYPE_et.END_UP;
-                                    }
-                                    else
-                                    {
-                                        return CROSS_TYPE_et.END_DN;
-                                    }
-                                }
-                                else
-                                {
-                                    if (node.Value.arc.ccw == true)
-                                    {
-                                        return CROSS_TYPE_et.NORMAL;
-                                    }
+                                    return CROSS_TYPE_et.NORMAL;
                                 }
                             }
-                            return CROSS_TYPE_et.NONE;
-                        case 7:  /* ys =y, ye > y */
-                            if (rightx < pt.x)
-                            {
-                                return CROSS_TYPE_et.END_UP;
-                            }
-                            if (leftx < pt.x)
-                            {
-                                if (sP.x < pt.x)
-                                {
-                                    if (node.Value.arc.ccw == true)
-                                    {
-                                        return CROSS_TYPE_et.END_DN;
-                                    }
-                                    else
-                                    {
-                                        return CROSS_TYPE_et.END_UP;
-                                    }
-                                }
-                                else
-                                {
-                                    if (node.Value.arc.ccw == false)
-                                    {
-                                        return CROSS_TYPE_et.NORMAL;
-                                    }
-                                }
-                            }
-                            return CROSS_TYPE_et.NONE;
-                        default:
-                            return CROSS_TYPE_et.NONE;
-                    }
-
-
-
+                        }
+                        return CROSS_TYPE_et.NONE;
+                    default:
+                        return CROSS_TYPE_et.NONE;
                 }
+
+
+
+                
 
             }
         }
