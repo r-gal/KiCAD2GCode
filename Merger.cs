@@ -1200,10 +1200,14 @@ namespace KiCad2Gcode
                     }
                 }
             }
-            if(newFigure != null)
+
+            if (newFigure != null)
             {
+                newFigure.containBoard  = f1.containBoard | f2.containBoard;
+                /*
                 newFigure.name = f1.name + " || " + f2.name;
                 newFigure.net = f1.net;
+                */
             }
 
 

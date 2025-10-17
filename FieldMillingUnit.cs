@@ -52,9 +52,13 @@ namespace KiCad2Gcode
             int millsCnt = 0;
             foreach (Figure f in increasedFigures)
             {
-                if (f.name == null || f.name.Contains("board") == false)
+                if ( f.containBoard == false)
                 {
                     unit.millFieldsPath.Add(f.shape);
+                    millsCnt++;
+                }
+                else
+                {
                     millsCnt++;
                 }
 
@@ -78,7 +82,7 @@ namespace KiCad2Gcode
             {
                 f.net = 0;
 
-                if (f.name == null || f.name.Contains("board") == false)
+                if (f.containBoard == false)
                 {
                     unit.AddFigure(f);
                 }
@@ -206,7 +210,7 @@ namespace KiCad2Gcode
 
 
 
-        internal void CreateFields(Figure board, Net[] netList, double diameter)
+        internal void CreateFields(Figure board, Net[] netList, double firstOffset, double step)
         {
             increasedFigures.Clear();
             invertedFigures.Clear();
@@ -220,7 +224,7 @@ namespace KiCad2Gcode
                 { 
                     Figure newFigure = new Figure();
 
-                    List<Polygon> newPolygons = IncreasePolygon(figure.shape, diameter,true);
+                    List<Polygon> newPolygons = IncreasePolygon(figure.shape, firstOffset, true);
 
                     if (newPolygons == null || newPolygons.Count < 1) { return; }
 
@@ -245,7 +249,7 @@ namespace KiCad2Gcode
 
                     foreach (Polygon h in figure.holes)
                     {
-                        newPolygons = IncreasePolygon(h, diameter,false);
+                        newPolygons = IncreasePolygon(h, firstOffset, false);
                         foreach(Polygon p in newPolygons)
                         {
                             newFigure.holes.Add(p);
@@ -263,7 +267,7 @@ namespace KiCad2Gcode
                 {
                     Figure newFigure = new Figure();
 
-                    List<Polygon> newPolygons = IncreasePolygon(figure.shape, diameter, true);
+                    List<Polygon> newPolygons = IncreasePolygon(figure.shape, firstOffset, true);
                     if (newPolygons == null ||newPolygons.Count < 1) { return; }
 
                     int cwCnt = 0;
@@ -291,7 +295,7 @@ namespace KiCad2Gcode
 
                     foreach (Polygon h in figure.holes)
                     {
-                        newPolygons = IncreasePolygon(h, diameter, false);
+                        newPolygons = IncreasePolygon(h, firstOffset, false);
                         foreach (Polygon p in newPolygons)
                         {
                             newFigure.holes.Add(p);
@@ -309,11 +313,12 @@ namespace KiCad2Gcode
             /* create top figure */
 
             Figure topFigure = new Figure();
-            List<Polygon> polygons = IncreasePolygon(board.shape, 5*diameter, true);
+            List<Polygon> polygons = IncreasePolygon(board.shape, 2* firstOffset, true);
             topFigure.shape = polygons[0];
             topFigure.holes.Add(board.shape);
             topFigure.net = 0;
             topFigure.name = "board";
+            topFigure.containBoard = true;
 
             topFigure.shape.SetOrientation(Graph2D.ORIENTATION_et.CW);
             topFigure.holes[0].SetOrientation(Graph2D.ORIENTATION_et.CCW);
@@ -380,7 +385,7 @@ namespace KiCad2Gcode
             int cnt = 0;
             do
             {
-                MainUnit.PrintText("Start try " + cnt.ToString() + "\n ");
+                //MainUnit.PrintText("Start try " + cnt.ToString() + "\n ");
                 List<Figure> tmpList = new List<Figure>();
                 addedMills = 0;
                 /*phase 1 - increase all shapes and holes*/
@@ -391,8 +396,9 @@ namespace KiCad2Gcode
                     Figure newFigure = new Figure();
                     newFigure.net = figure.net;
                     newFigure.name = figure.name;
+                    newFigure.containBoard = figure.containBoard;
 
-                    List<Polygon> newPolygons = IncreasePolygon(figure.shape, diameter, true);
+                    List<Polygon> newPolygons = IncreasePolygon(figure.shape, step, true);
                     if (newPolygons.Count < 1) { return; }
 
                     int cwCnt = 0;
@@ -415,7 +421,7 @@ namespace KiCad2Gcode
 
                     foreach (Polygon h in figure.holes)
                     {
-                        newPolygons = IncreasePolygon(h, diameter, false);
+                        newPolygons = IncreasePolygon(h, step, false);
                         if(newPolygons.Count > 1)
                         {
                             MainUnit.PrintText("More holes\n ");
@@ -476,7 +482,7 @@ namespace KiCad2Gcode
 
                 cnt++;
                 //addedMills = 0;
-                MainUnit.PrintText("Added " + addedMills.ToString() + " mills\n ");
+                //MainUnit.PrintText("Added " + addedMills.ToString() + " mills\n ");
 
             } while (addedMills > 0 && cnt < 50);
 

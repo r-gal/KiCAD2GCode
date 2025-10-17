@@ -23,6 +23,7 @@ namespace KiCad2Gcode
             TRACE_MILLING_GENERATED,
             BOARD_MILLING_GENERATED,
             HOLES_PREPARED,
+            FIELDS_PREPARED,
             GCODE_GENERATED
         }
 
@@ -227,10 +228,11 @@ namespace KiCad2Gcode
                     MergePolygons();
                     MergePolygonsToZones();
                     MergeZones();
-                    /*ProceedTracesMilling();
+                    ProceedTracesMilling();
                     ProceedBoardMilling();
                     ProceedHoles();
-                    GenerateGCode();*/
+                    ProceedFields();
+                    GenerateGCode();
                     break;
                 case 1:/*MERGE POLYGONS*/
                     MergePolygons();
@@ -250,12 +252,15 @@ namespace KiCad2Gcode
                 case 6: /*PROCEED HOLES*/
                     ProceedHoles();
                     break;
-                case 7: /*GENERATE G - CODE*/
+                case 7: /*PROCEED FIELDS */
+                    ProceedFields();
+                    break;
+                case 8: /*GENERATE G - CODE*/
                     GenerateGCode();
                     break;
 
                 case 10:
-                    fieldMillingUnit.CreateFields(board, netList,0.5);
+                    ProceedFields();
                     //RedrawAll();
                     break;
 
@@ -268,7 +273,9 @@ namespace KiCad2Gcode
         {
             Step(0);
             RedrawAll();
-    }
+        }
+
+
 
         private void MergePolygons()
         {
@@ -570,9 +577,47 @@ namespace KiCad2Gcode
             
         }
 
-        private void GenerateGCode()
+        private void ProceedFields()
         {
             if (state != STATE_et.HOLES_PREPARED)
+            {
+                PrintText("File not loaded or invalid state\n");
+                return;
+            }
+            else
+            {
+                PrintText("Run proceed fields\n");
+            }
+
+            millFieldsPath.Clear();
+
+            if(config.fieldActive)
+            {
+                double firstOffset = 0;
+                double step = 0;
+                if (config.fieldUseTraceMill)
+                {
+                    firstOffset = 1.5 * config.traceMillDiameter;
+                    step = config.traceMillDiameter;
+                }
+                else
+                {
+                    firstOffset = config.fieldMillDiameter + 0.5 * config.traceMillDiameter;
+                    step = config.fieldMillDiameter;
+                }
+                firstOffset *= 0.8;
+                step *= 0.8;
+
+                fieldMillingUnit.CreateFields(board, netList,firstOffset, step);
+            }            
+
+            PrintText("Done\n");
+            SetState(STATE_et.FIELDS_PREPARED);
+        }
+
+        private void GenerateGCode()
+        {
+            if (state != STATE_et.FIELDS_PREPARED)
             {
                 PrintText("File not loaded or invalid state\n");
                 return;

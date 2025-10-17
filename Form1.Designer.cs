@@ -159,6 +159,7 @@
             "TRACE PATH MILLING",
             "TRACE BOARD MILLING",
             "PROCEED HOLES",
+            "PROCEED FIELDS",
             "GENERATE G-CODE"});
             this.comboBox1.Location = new System.Drawing.Point(12, 82);
             this.comboBox1.Name = "comboBox1";
@@ -770,6 +771,7 @@
             this.button7.TabIndex = 37;
             this.button7.Text = "field1";
             this.button7.UseVisualStyleBackColor = true;
+            this.button7.Visible = false;
             this.button7.Click += new System.EventHandler(this.button7_Click_1);
             // 
             // button9
@@ -780,6 +782,7 @@
             this.button9.TabIndex = 38;
             this.button9.Text = "field1";
             this.button9.UseVisualStyleBackColor = true;
+            this.button9.Visible = false;
             this.button9.Click += new System.EventHandler(this.button9_Click);
             // 
             // Form1

@@ -78,7 +78,12 @@ namespace KiCad2Gcode
 
         public bool IsSameAs(Point2D pt)
         {
-            return (Math.Abs(pt.x - x) < 0.00001 && Math.Abs(pt.y - y) < 0.00001);
+            //return (Math.Abs(pt.x - x) < 0.00001 && Math.Abs(pt.y - y) < 0.00001);
+
+            double xt = pt.x - x;
+            double yt = pt.y - y;
+            double l2 = xt * xt + yt * yt;
+            return l2 < 0.000000001;
         }
 
         public static Point2D operator +(Point2D a, Vector b)
@@ -1088,6 +1093,8 @@ namespace KiCad2Gcode
         public int net = -1;
 
         public int idx = 0;
+
+        public bool containBoard = false;
 
         public void Rotate(double angle)
         {

@@ -54,7 +54,17 @@ namespace KiCad2Gcode
         public double drillLevel = -1.6;
         public bool drillAcive = true;
 
-        
+        /* field milling */
+
+        public int fieldMillToolNumber = 1;
+        public double fieldMillDiameter = 0.2;
+        public double fieldMillSpindleSpeed = 18000;
+        public double fieldMillHFeedRate = 800;
+        public double fieldMillVFeedRate = 800;
+        public double fieldMillLevel = -0.05;
+        public bool fieldActive = false;
+        public bool fieldUseTraceMill = true;
+
 
 
         internal void AddDrill(DrillData drill)
@@ -343,6 +353,62 @@ namespace KiCad2Gcode
                 }
                 catch { ok = false; }
 
+                try
+                {
+                    node = config.SelectSingleNode("ROOT/FIELD/active");
+                    fieldActive = Boolean.Parse(node.InnerText);
+                }
+                catch { ok = false; }
+
+                try
+                {
+                    node = config.SelectSingleNode("ROOT/FIELD/useTraceMill");
+                    fieldUseTraceMill = Boolean.Parse(node.InnerText);
+                }
+                catch { ok = false; }
+
+                try
+                {
+                    node = config.SelectSingleNode("ROOT/FIELD/toolNumber");
+                    fieldMillToolNumber = int.Parse(node.InnerText);
+                }
+                catch { ok = false; }
+
+                try
+                {
+                    node = config.SelectSingleNode("ROOT/FIELD/diameter");
+                    fieldMillDiameter = double.Parse(node.InnerText);
+                }
+                catch { ok = false; }
+
+                try
+                {
+                    node = config.SelectSingleNode("ROOT/FIELD/level");
+                    fieldMillLevel = double.Parse(node.InnerText);
+                }
+                catch { ok = false; }
+
+                try
+                {
+                    node = config.SelectSingleNode("ROOT/FIELD/HFeedRate");
+                    fieldMillHFeedRate = double.Parse(node.InnerText);
+                }
+                catch { ok = false; }
+
+                try
+                {
+                    node = config.SelectSingleNode("ROOT/FIELD/VFeedRate");
+                    fieldMillVFeedRate = double.Parse(node.InnerText);
+                }
+                catch { ok = false; }
+
+                try
+                {
+                    node = config.SelectSingleNode("ROOT/FIELD/SpindleSpeed");
+                    fieldMillSpindleSpeed = double.Parse(node.InnerText);
+                }
+                catch { ok = false; }
+
             }
 
             if(ok)
@@ -402,6 +468,17 @@ namespace KiCad2Gcode
                 drillConfig.AppendChild(config.CreateElement("FeedRate")).InnerText = drillList[i].feedRate.ToString();
                 drillConfig.AppendChild(config.CreateElement("SpindleSpeed")).InnerText = drillList[i].spindleSpeed.ToString();
             }
+
+            XmlElement fieldConfig = (XmlElement)rootElement.AppendChild(config.CreateElement("FIELD"));
+
+            fieldConfig.AppendChild(config.CreateElement("active")).InnerText = fieldActive.ToString();
+            fieldConfig.AppendChild(config.CreateElement("useTraceMill")).InnerText = fieldUseTraceMill.ToString();
+            fieldConfig.AppendChild(config.CreateElement("toolNumber")).InnerText = fieldMillToolNumber.ToString();
+            fieldConfig.AppendChild(config.CreateElement("diameter")).InnerText = fieldMillDiameter.ToString();
+            fieldConfig.AppendChild(config.CreateElement("level")).InnerText = fieldMillLevel.ToString();
+            fieldConfig.AppendChild(config.CreateElement("HFeedRate")).InnerText = fieldMillHFeedRate.ToString();
+            fieldConfig.AppendChild(config.CreateElement("VFeedRate")).InnerText = fieldMillVFeedRate.ToString();
+            fieldConfig.AppendChild(config.CreateElement("SpindleSpeed")).InnerText = fieldMillSpindleSpeed.ToString();
 
             config.Save(fileName);
         }

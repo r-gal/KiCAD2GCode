@@ -815,7 +815,7 @@ namespace KiCad2Gcode
                         }
                         if (pathList.Count == 0)
                         {
-                            MainUnit.PrintText("Start point not found\n ");
+                            //MainUnit.PrintText("Start point not found\n ");
                             /*if (mainShape)
                             {
                                 MainUnit.PrintText("Main shape fault\n ");
@@ -853,8 +853,7 @@ namespace KiCad2Gcode
 
                 
                 
-            }
-            MainUnit.PrintText("End of create path \n");
+            }            
             return pathList;
 
 
