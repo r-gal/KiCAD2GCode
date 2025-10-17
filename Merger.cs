@@ -645,7 +645,7 @@ namespace KiCad2Gcode
                     {
 
                         MainUnit.PrintText("Error, point reused\n");
-
+                        /*
                         MainUnit.PrintText("Start point at idx " + startNode.Value.idx.ToString() + " pt = " + startNode.Value.pt.x.ToString() + " " + startNode.Value.pt.y.ToString());
 
                         MainUnit.PrintText(" pol1: \n");
@@ -680,7 +680,7 @@ namespace KiCad2Gcode
                         mainUnit.AddFigure(ft3);
 
                         mainUnit.RedrawAll();
-
+                        */
 
 
                         return null;
@@ -1170,7 +1170,7 @@ namespace KiCad2Gcode
                                     else
                                     {
                                         newFigure.holes.Add(newPol);
-
+                                        /*
                                         foreach (Node n in newPol.points)
                                         {
                                             if (n.pt.type != Point2D.PointType_et.NORMAL && n.oppNode == null)
@@ -1178,7 +1178,7 @@ namespace KiCad2Gcode
                                                 MainUnit.PrintText("Error\n");
                                             }
                                             n.pt.storedType = n.pt.type;
-                                        }
+                                        }*/
                                     }
                                 }
                             } while (actNode != null);

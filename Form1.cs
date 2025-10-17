@@ -205,6 +205,21 @@ namespace KiCad2Gcode
             }
         }
 
+
+        private void SetFieldGuiEnable(bool ena)
+        {
+            fieldToolNumberTextBox.ReadOnly = ena;
+            fieldDiameterTextBox.ReadOnly = ena;
+            fieldSpindleSpeedTextBox.ReadOnly = ena;
+            fieldHFeedRateTextBox.ReadOnly = ena;
+            fieldVFeedRateTextBox.ReadOnly = ena;
+            fieldMillLevelTextBox.ReadOnly = ena;
+
+
+
+
+        }
+
         private void Config2Gui()
         {
             /* general */
@@ -221,6 +236,16 @@ namespace KiCad2Gcode
             tracesMillLevelTextBox.Text = config.traceMillLevel.ToString();
             millTracesCheckBox.Checked = config.traceActive;
 
+            /* field milling */
+            fieldToolNumberTextBox.Text = config.fieldMillToolNumber.ToString();
+            fieldDiameterTextBox.Text = config.fieldMillDiameter.ToString();
+            fieldSpindleSpeedTextBox.Text = config.fieldMillSpindleSpeed.ToString();
+            fieldHFeedRateTextBox.Text = config.fieldMillHFeedRate.ToString();
+            fieldVFeedRateTextBox.Text = config.fieldMillVFeedRate.ToString();
+            fieldMillLevelTextBox.Text = config.fieldMillLevel.ToString();
+            millFieldsCheckBox.Checked = config.fieldActive;
+            fieldUseTracesToolcheckBox.Checked = config.fieldUseTraceMill;
+            SetFieldGuiEnable(config.fieldUseTraceMill);
 
             /* board milling */
             boardToolNumberTextBox.Text =  config.boardMillToolNumber.ToString();
@@ -324,7 +349,7 @@ namespace KiCad2Gcode
             try
             {
                 int toolNumber = int.Parse(tracesToolNumberTextBox.Text);
-                if (toolNumber > 0 && config.boardMillToolNumber != toolNumber && config.CheckIfToolNumberIsNotUsedByDrills(toolNumber))
+                if (toolNumber > 0 && config.boardMillToolNumber != toolNumber && config.fieldMillToolNumber != toolNumber && config.CheckIfToolNumberIsNotUsedByDrills(toolNumber))
                 {
                     config.traceMillToolNumber = toolNumber;
                     ok = true;
@@ -457,6 +482,155 @@ namespace KiCad2Gcode
             }
         }
 
+        private void millFieldsCheckBox_CheckedChanged(object sender, EventArgs e)
+        {
+            config.fieldActive = millFieldsCheckBox.Checked;
+        }
+
+        private void fieldUseTracesToolcheckBox_CheckedChanged(object sender, EventArgs e)
+        {
+            config.fieldUseTraceMill = fieldUseTracesToolcheckBox.Checked;
+            SetFieldGuiEnable(config.fieldUseTraceMill);
+        }
+
+        private void fieldToolNumberTextBox_TextChanged(object sender, EventArgs e)
+        {
+            bool ok = false;
+            try
+            {
+                int toolNumber = int.Parse(fieldToolNumberTextBox.Text);
+                if (toolNumber > 0 && config.boardMillToolNumber != toolNumber && config.traceMillToolNumber != toolNumber && config.CheckIfToolNumberIsNotUsedByDrills(toolNumber))
+                {
+                    config.fieldMillToolNumber = toolNumber;
+                    ok = true;
+                }
+            }
+            catch
+            {
+
+            }
+
+            if (ok == false)
+            {
+                fieldToolNumberTextBox.Text = config.fieldMillToolNumber.ToString();
+            }
+        }
+
+        private void fieldMillLevelTextBox_TextChanged(object sender, EventArgs e)
+        {
+            bool ok = false;
+            try
+            {
+                double millLevel = double.Parse(fieldMillLevelTextBox.Text);
+                if (millLevel < config.safeLevel)
+                {
+                    config.fieldMillLevel = millLevel;
+                    ok = true;
+                }
+            }
+            catch
+            {
+
+            }
+
+            if (ok == false)
+            {
+                fieldMillLevelTextBox.Text = config.fieldMillLevel.ToString();
+            }
+        }
+
+        private void fieldDiameterTextBox_TextChanged(object sender, EventArgs e)
+        {
+            bool ok = false;
+            try
+            {
+                double diameter = double.Parse(fieldDiameterTextBox.Text);
+                if (diameter > 0)
+                {
+                    config.fieldMillDiameter = diameter;
+                    ok = true;
+                }
+            }
+            catch
+            {
+
+            }
+
+            if (ok == false)
+            {
+                fieldDiameterTextBox.Text = config.fieldMillDiameter.ToString();
+            }
+        }
+
+        private void fieldHFeedRateTextBox_TextChanged(object sender, EventArgs e)
+        {
+            bool ok = false;
+            try
+            {
+                double feedRate = double.Parse(fieldHFeedRateTextBox.Text);
+                if (feedRate > 0)
+                {
+                    config.fieldMillHFeedRate = feedRate;
+                    ok = true;
+                }
+            }
+            catch
+            {
+
+            }
+
+            if (ok == false)
+            {
+                fieldHFeedRateTextBox.Text = config.fieldMillHFeedRate.ToString();
+            }
+        }
+
+        private void fieldSpindleSpeedTextBox_TextChanged(object sender, EventArgs e)
+        {
+            bool ok = false;
+            try
+            {
+                double spindleSpeed = double.Parse(fieldSpindleSpeedTextBox.Text);
+                if (spindleSpeed > 0)
+                {
+                    config.fieldMillSpindleSpeed = spindleSpeed;
+                    ok = true;
+                }
+            }
+            catch
+            {
+
+            }
+
+            if (ok == false)
+            {
+                fieldSpindleSpeedTextBox.Text = config.fieldMillSpindleSpeed.ToString();
+            }
+        }
+
+        private void fieldVFeedRateTextBox_TextChanged(object sender, EventArgs e)
+        {
+            bool ok = false;
+            try
+            {
+                double feedRate = double.Parse(fieldVFeedRateTextBox.Text);
+                if (feedRate > 0)
+                {
+                    config.fieldMillVFeedRate = feedRate;
+                    ok = true;
+                }
+            }
+            catch
+            {
+
+            }
+
+            if (ok == false)
+            {
+                fieldVFeedRateTextBox.Text = config.fieldMillVFeedRate.ToString();
+            }
+        }
+
         private void boardBorderCheckBox_CheckedChanged(object sender, EventArgs e)
         {
             config.boardBorderActive = boardBorderCheckBox.Checked;
@@ -477,7 +651,7 @@ namespace KiCad2Gcode
             try
             {
                 int toolNumber = int.Parse(boardToolNumberTextBox.Text);
-                if (toolNumber > 0 && config.traceMillToolNumber != toolNumber && config.CheckIfToolNumberIsNotUsedByDrills(toolNumber))
+                if (toolNumber > 0 && config.traceMillToolNumber != toolNumber && config.fieldMillToolNumber != toolNumber && config.CheckIfToolNumberIsNotUsedByDrills(toolNumber))
                 {
                     config.boardMillToolNumber = toolNumber;
                     ok = true;
@@ -676,5 +850,7 @@ namespace KiCad2Gcode
             TestForm testForm = new TestForm();
             testForm.ShowDialog();
         }
+
+        
     }
 }

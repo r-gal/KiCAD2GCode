@@ -93,6 +93,21 @@
             this.label18 = new System.Windows.Forms.Label();
             this.button7 = new System.Windows.Forms.Button();
             this.button9 = new System.Windows.Forms.Button();
+            this.groupBox5 = new System.Windows.Forms.GroupBox();
+            this.label20 = new System.Windows.Forms.Label();
+            this.fieldToolNumberTextBox = new System.Windows.Forms.TextBox();
+            this.label21 = new System.Windows.Forms.Label();
+            this.fieldMillLevelTextBox = new System.Windows.Forms.TextBox();
+            this.millFieldsCheckBox = new System.Windows.Forms.CheckBox();
+            this.fieldVFeedRateTextBox = new System.Windows.Forms.TextBox();
+            this.label22 = new System.Windows.Forms.Label();
+            this.fieldDiameterTextBox = new System.Windows.Forms.TextBox();
+            this.label23 = new System.Windows.Forms.Label();
+            this.label24 = new System.Windows.Forms.Label();
+            this.fieldHFeedRateTextBox = new System.Windows.Forms.TextBox();
+            this.label25 = new System.Windows.Forms.Label();
+            this.fieldSpindleSpeedTextBox = new System.Windows.Forms.TextBox();
+            this.fieldUseTracesToolcheckBox = new System.Windows.Forms.CheckBox();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.panel1.SuspendLayout();
             this.groupBox1.SuspendLayout();
@@ -100,6 +115,7 @@
             this.groupBox3.SuspendLayout();
             this.groupBox4.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridView1)).BeginInit();
+            this.groupBox5.SuspendLayout();
             this.SuspendLayout();
             // 
             // button1
@@ -115,9 +131,9 @@
             // richTextBox1
             // 
             this.richTextBox1.HideSelection = false;
-            this.richTextBox1.Location = new System.Drawing.Point(12, 948);
+            this.richTextBox1.Location = new System.Drawing.Point(12, 1109);
             this.richTextBox1.Name = "richTextBox1";
-            this.richTextBox1.Size = new System.Drawing.Size(640, 252);
+            this.richTextBox1.Size = new System.Drawing.Size(640, 224);
             this.richTextBox1.TabIndex = 2;
             this.richTextBox1.Text = "";
             // 
@@ -184,7 +200,7 @@
             this.groupBox1.Controls.Add(this.label12);
             this.groupBox1.Controls.Add(this.label7);
             this.groupBox1.Controls.Add(this.clearLevelTextBox);
-            this.groupBox1.Location = new System.Drawing.Point(12, 145);
+            this.groupBox1.Location = new System.Drawing.Point(12, 132);
             this.groupBox1.Name = "groupBox1";
             this.groupBox1.Size = new System.Drawing.Size(640, 119);
             this.groupBox1.TabIndex = 26;
@@ -260,7 +276,7 @@
             this.groupBox2.Controls.Add(this.tracesHFeedRateTextBox);
             this.groupBox2.Controls.Add(this.label10);
             this.groupBox2.Controls.Add(this.tracesSpindleSpeedTextBox);
-            this.groupBox2.Location = new System.Drawing.Point(12, 270);
+            this.groupBox2.Location = new System.Drawing.Point(12, 257);
             this.groupBox2.Name = "groupBox2";
             this.groupBox2.Size = new System.Drawing.Size(640, 168);
             this.groupBox2.TabIndex = 27;
@@ -407,7 +423,7 @@
             this.groupBox3.Controls.Add(this.boardDrillsCheckBox);
             this.groupBox3.Controls.Add(this.boardHolesCheckBox);
             this.groupBox3.Controls.Add(this.boardBorderCheckBox);
-            this.groupBox3.Location = new System.Drawing.Point(12, 444);
+            this.groupBox3.Location = new System.Drawing.Point(12, 605);
             this.groupBox3.Name = "groupBox3";
             this.groupBox3.Size = new System.Drawing.Size(640, 212);
             this.groupBox3.TabIndex = 28;
@@ -581,7 +597,7 @@
             this.groupBox4.Controls.Add(this.button4);
             this.groupBox4.Controls.Add(this.button3);
             this.groupBox4.Controls.Add(this.dataGridView1);
-            this.groupBox4.Location = new System.Drawing.Point(12, 662);
+            this.groupBox4.Location = new System.Drawing.Point(12, 823);
             this.groupBox4.Name = "groupBox4";
             this.groupBox4.Size = new System.Drawing.Size(640, 280);
             this.groupBox4.TabIndex = 29;
@@ -785,11 +801,173 @@
             this.button9.Visible = false;
             this.button9.Click += new System.EventHandler(this.button9_Click);
             // 
+            // groupBox5
+            // 
+            this.groupBox5.Controls.Add(this.fieldUseTracesToolcheckBox);
+            this.groupBox5.Controls.Add(this.label20);
+            this.groupBox5.Controls.Add(this.fieldToolNumberTextBox);
+            this.groupBox5.Controls.Add(this.label21);
+            this.groupBox5.Controls.Add(this.fieldMillLevelTextBox);
+            this.groupBox5.Controls.Add(this.millFieldsCheckBox);
+            this.groupBox5.Controls.Add(this.fieldVFeedRateTextBox);
+            this.groupBox5.Controls.Add(this.label22);
+            this.groupBox5.Controls.Add(this.fieldDiameterTextBox);
+            this.groupBox5.Controls.Add(this.label23);
+            this.groupBox5.Controls.Add(this.label24);
+            this.groupBox5.Controls.Add(this.fieldHFeedRateTextBox);
+            this.groupBox5.Controls.Add(this.label25);
+            this.groupBox5.Controls.Add(this.fieldSpindleSpeedTextBox);
+            this.groupBox5.Location = new System.Drawing.Point(12, 431);
+            this.groupBox5.Name = "groupBox5";
+            this.groupBox5.Size = new System.Drawing.Size(640, 168);
+            this.groupBox5.TabIndex = 39;
+            this.groupBox5.TabStop = false;
+            this.groupBox5.Text = "Fields milling";
+            // 
+            // label20
+            // 
+            this.label20.AutoSize = true;
+            this.label20.Location = new System.Drawing.Point(14, 68);
+            this.label20.Name = "label20";
+            this.label20.Size = new System.Drawing.Size(97, 20);
+            this.label20.TabIndex = 38;
+            this.label20.Text = "Tool number";
+            // 
+            // fieldToolNumberTextBox
+            // 
+            this.fieldToolNumberTextBox.Location = new System.Drawing.Point(136, 65);
+            this.fieldToolNumberTextBox.Name = "fieldToolNumberTextBox";
+            this.fieldToolNumberTextBox.ReadOnly = true;
+            this.fieldToolNumberTextBox.Size = new System.Drawing.Size(100, 26);
+            this.fieldToolNumberTextBox.TabIndex = 35;
+            this.fieldToolNumberTextBox.Text = "3";
+            this.fieldToolNumberTextBox.TextChanged += new System.EventHandler(this.fieldToolNumberTextBox_TextChanged);
+            // 
+            // label21
+            // 
+            this.label21.AutoSize = true;
+            this.label21.Location = new System.Drawing.Point(320, 68);
+            this.label21.Name = "label21";
+            this.label21.Size = new System.Drawing.Size(66, 20);
+            this.label21.TabIndex = 34;
+            this.label21.Text = "Mill level";
+            // 
+            // fieldMillLevelTextBox
+            // 
+            this.fieldMillLevelTextBox.Location = new System.Drawing.Point(440, 65);
+            this.fieldMillLevelTextBox.Name = "fieldMillLevelTextBox";
+            this.fieldMillLevelTextBox.ReadOnly = true;
+            this.fieldMillLevelTextBox.Size = new System.Drawing.Size(100, 26);
+            this.fieldMillLevelTextBox.TabIndex = 34;
+            this.fieldMillLevelTextBox.Text = "-0,05";
+            this.fieldMillLevelTextBox.TextChanged += new System.EventHandler(this.fieldMillLevelTextBox_TextChanged);
+            // 
+            // millFieldsCheckBox
+            // 
+            this.millFieldsCheckBox.AutoSize = true;
+            this.millFieldsCheckBox.Location = new System.Drawing.Point(6, 25);
+            this.millFieldsCheckBox.Name = "millFieldsCheckBox";
+            this.millFieldsCheckBox.Size = new System.Drawing.Size(98, 24);
+            this.millFieldsCheckBox.TabIndex = 17;
+            this.millFieldsCheckBox.Text = "Mill fields";
+            this.millFieldsCheckBox.UseVisualStyleBackColor = true;
+            this.millFieldsCheckBox.CheckedChanged += new System.EventHandler(this.millFieldsCheckBox_CheckedChanged);
+            // 
+            // fieldVFeedRateTextBox
+            // 
+            this.fieldVFeedRateTextBox.Location = new System.Drawing.Point(440, 126);
+            this.fieldVFeedRateTextBox.Name = "fieldVFeedRateTextBox";
+            this.fieldVFeedRateTextBox.ReadOnly = true;
+            this.fieldVFeedRateTextBox.Size = new System.Drawing.Size(100, 26);
+            this.fieldVFeedRateTextBox.TabIndex = 27;
+            this.fieldVFeedRateTextBox.Text = "800";
+            this.fieldVFeedRateTextBox.TextChanged += new System.EventHandler(this.fieldVFeedRateTextBox_TextChanged);
+            // 
+            // label22
+            // 
+            this.label22.AutoSize = true;
+            this.label22.Location = new System.Drawing.Point(318, 129);
+            this.label22.Name = "label22";
+            this.label22.Size = new System.Drawing.Size(96, 20);
+            this.label22.TabIndex = 26;
+            this.label22.Text = "V FeedRate";
+            // 
+            // fieldDiameterTextBox
+            // 
+            this.fieldDiameterTextBox.Location = new System.Drawing.Point(136, 97);
+            this.fieldDiameterTextBox.Name = "fieldDiameterTextBox";
+            this.fieldDiameterTextBox.ReadOnly = true;
+            this.fieldDiameterTextBox.Size = new System.Drawing.Size(100, 26);
+            this.fieldDiameterTextBox.TabIndex = 20;
+            this.fieldDiameterTextBox.Text = "0,2";
+            this.fieldDiameterTextBox.TextChanged += new System.EventHandler(this.fieldDiameterTextBox_TextChanged);
+            // 
+            // label23
+            // 
+            this.label23.AutoSize = true;
+            this.label23.Location = new System.Drawing.Point(318, 100);
+            this.label23.Name = "label23";
+            this.label23.Size = new System.Drawing.Size(97, 20);
+            this.label23.TabIndex = 25;
+            this.label23.Text = "H FeedRate";
+            // 
+            // label24
+            // 
+            this.label24.AutoSize = true;
+            this.label24.Location = new System.Drawing.Point(14, 100);
+            this.label24.Name = "label24";
+            this.label24.Size = new System.Drawing.Size(74, 20);
+            this.label24.TabIndex = 21;
+            this.label24.Text = "Diameter";
+            // 
+            // fieldHFeedRateTextBox
+            // 
+            this.fieldHFeedRateTextBox.Location = new System.Drawing.Point(440, 97);
+            this.fieldHFeedRateTextBox.Name = "fieldHFeedRateTextBox";
+            this.fieldHFeedRateTextBox.ReadOnly = true;
+            this.fieldHFeedRateTextBox.Size = new System.Drawing.Size(100, 26);
+            this.fieldHFeedRateTextBox.TabIndex = 24;
+            this.fieldHFeedRateTextBox.Text = "800";
+            this.fieldHFeedRateTextBox.TextChanged += new System.EventHandler(this.fieldHFeedRateTextBox_TextChanged);
+            // 
+            // label25
+            // 
+            this.label25.AutoSize = true;
+            this.label25.Location = new System.Drawing.Point(14, 132);
+            this.label25.Name = "label25";
+            this.label25.Size = new System.Drawing.Size(110, 20);
+            this.label25.TabIndex = 22;
+            this.label25.Text = "Spindle speed";
+            // 
+            // fieldSpindleSpeedTextBox
+            // 
+            this.fieldSpindleSpeedTextBox.Location = new System.Drawing.Point(136, 126);
+            this.fieldSpindleSpeedTextBox.Name = "fieldSpindleSpeedTextBox";
+            this.fieldSpindleSpeedTextBox.ReadOnly = true;
+            this.fieldSpindleSpeedTextBox.Size = new System.Drawing.Size(100, 26);
+            this.fieldSpindleSpeedTextBox.TabIndex = 23;
+            this.fieldSpindleSpeedTextBox.Text = "18000";
+            this.fieldSpindleSpeedTextBox.TextChanged += new System.EventHandler(this.fieldSpindleSpeedTextBox_TextChanged);
+            // 
+            // fieldUseTracesToolcheckBox
+            // 
+            this.fieldUseTracesToolcheckBox.AutoSize = true;
+            this.fieldUseTracesToolcheckBox.Checked = true;
+            this.fieldUseTracesToolcheckBox.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.fieldUseTracesToolcheckBox.Location = new System.Drawing.Point(136, 25);
+            this.fieldUseTracesToolcheckBox.Name = "fieldUseTracesToolcheckBox";
+            this.fieldUseTracesToolcheckBox.Size = new System.Drawing.Size(189, 24);
+            this.fieldUseTracesToolcheckBox.TabIndex = 39;
+            this.fieldUseTracesToolcheckBox.Text = "Use traces milling tool";
+            this.fieldUseTracesToolcheckBox.UseVisualStyleBackColor = true;
+            this.fieldUseTracesToolcheckBox.CheckedChanged += new System.EventHandler(this.fieldUseTracesToolcheckBox_CheckedChanged);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(2781, 1345);
+            this.Controls.Add(this.groupBox5);
             this.Controls.Add(this.button9);
             this.Controls.Add(this.button7);
             this.Controls.Add(this.comboBox3);
@@ -821,6 +999,8 @@
             this.groupBox4.ResumeLayout(false);
             this.groupBox4.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridView1)).EndInit();
+            this.groupBox5.ResumeLayout(false);
+            this.groupBox5.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -893,6 +1073,21 @@
         private System.Windows.Forms.TextBox m3DwelTextBox;
         private System.Windows.Forms.Button button7;
         private System.Windows.Forms.Button button9;
+        private System.Windows.Forms.GroupBox groupBox5;
+        private System.Windows.Forms.CheckBox fieldUseTracesToolcheckBox;
+        private System.Windows.Forms.Label label20;
+        private System.Windows.Forms.TextBox fieldToolNumberTextBox;
+        private System.Windows.Forms.Label label21;
+        private System.Windows.Forms.TextBox fieldMillLevelTextBox;
+        private System.Windows.Forms.CheckBox millFieldsCheckBox;
+        private System.Windows.Forms.TextBox fieldVFeedRateTextBox;
+        private System.Windows.Forms.Label label22;
+        private System.Windows.Forms.TextBox fieldDiameterTextBox;
+        private System.Windows.Forms.Label label23;
+        private System.Windows.Forms.Label label24;
+        private System.Windows.Forms.TextBox fieldHFeedRateTextBox;
+        private System.Windows.Forms.Label label25;
+        private System.Windows.Forms.TextBox fieldSpindleSpeedTextBox;
     }
 }
 

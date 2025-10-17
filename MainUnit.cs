@@ -50,7 +50,7 @@ namespace KiCad2Gcode
         List<Polygon> boardHolesMillPath = new List<Polygon>();
         List<DrillList> sortedDrills = new List<DrillList>();
         Polygon boardMillPath;
-        public  List<Polygon> millFieldsPath = new List<Polygon>();
+         List<Polygon> millFieldsPath = new List<Polygon>();
 
         Net[] netList;
 
@@ -178,7 +178,8 @@ namespace KiCad2Gcode
                     {
                         d.pos += moveVector;
                     }
-                }      
+                }               
+
 
                 RedrawAll();
 
@@ -390,7 +391,7 @@ namespace KiCad2Gcode
                 n.Renumerate();
                 foreach (Figure f in n.figures)
                 {
-                    List<Polygon> pathPolygons = path.CreatePatch(f.shape, millDiameter, true);
+                    List<Polygon> pathPolygons = path.CreatePatch(f.shape, millDiameter/2, true);
 
                     foreach (Polygon p in pathPolygons)
                     {
@@ -399,7 +400,7 @@ namespace KiCad2Gcode
 
                     foreach (Polygon h in f.holes)
                     {
-                        pathPolygons = path.CreatePatch(h, millDiameter, false);
+                        pathPolygons = path.CreatePatch(h, millDiameter/2, false);
 
                         if (pathPolygons.Count == 0)
                         {
@@ -418,7 +419,7 @@ namespace KiCad2Gcode
                 {
                     /*if (f.idx == 23)
                     { */
-                    List<Polygon> pathPolygons = path.CreatePatch(f.shape, millDiameter, true);
+                    List<Polygon> pathPolygons = path.CreatePatch(f.shape, millDiameter/2, true);
 
                     if (pathPolygons.Count == 0)
                     {
@@ -432,7 +433,7 @@ namespace KiCad2Gcode
 
                     foreach (Polygon h in f.holes)
                     {
-                        pathPolygons = path.CreatePatch(h, millDiameter, false);
+                        pathPolygons = path.CreatePatch(h, millDiameter/2, false);
 
                         if (pathPolygons.Count == 0)
                         {
@@ -444,14 +445,14 @@ namespace KiCad2Gcode
                             millPath.Add(p);
                         }
 
-                    }
-                    // }
+                    }                   
 
                 }
             }
 
             SetState(STATE_et.TRACE_MILLING_GENERATED);
-            RedrawAll();
+            //RedrawAll();
+            drawer.DrawMillPath(millPath);
             PrintText("Done\n");
         }
 
@@ -476,7 +477,7 @@ namespace KiCad2Gcode
             if (board.shape.points.Count> 0)
             {
                 List<Polygon> pathPolygons;
-                pathPolygons = path.CreatePatch(board.shape, millDiameter, true);
+                pathPolygons = path.CreatePatch(board.shape, millDiameter/2, true);
                 if(pathPolygons != null && pathPolygons.Count > 0)
                 {
                     boardMillPath = pathPolygons[0];
@@ -486,13 +487,15 @@ namespace KiCad2Gcode
             foreach(Polygon h in board.holes)
             {
                 List<Polygon> pathPolygons;
-                pathPolygons = path.CreatePatch(h, millDiameter, false);
+                pathPolygons = path.CreatePatch(h, millDiameter/2, false);
                 foreach (Polygon p in pathPolygons)
                 {
                     boardHolesMillPath.Add(p);
                 }
             }  
-            RedrawAll();
+            //RedrawAll();
+            drawer.DrawBoardMillPath(boardMillPath);
+            drawer.DrawBoardHolesMillPath(boardHolesMillPath);
             SetState(STATE_et.BOARD_MILLING_GENERATED);
             PrintText("Done\n");
         }
@@ -571,7 +574,8 @@ namespace KiCad2Gcode
                 }
             }
 
-            RedrawAll();
+            //RedrawAll();
+            drawer.DrawDrills(drills);
             PrintText("Done\n");
             SetState(STATE_et.HOLES_PREPARED);
             
@@ -605,8 +609,8 @@ namespace KiCad2Gcode
                     firstOffset = config.fieldMillDiameter + 0.5 * config.traceMillDiameter;
                     step = config.fieldMillDiameter;
                 }
-                firstOffset *= 0.8;
-                step *= 0.8;
+                firstOffset *= 0.9;
+                step *= 0.9;
 
                 fieldMillingUnit.CreateFields(board, netList,firstOffset, step);
             }            
@@ -667,6 +671,13 @@ namespace KiCad2Gcode
         public void AddDrill(Drill drill)
         {
             drills.Add(drill);
+        }
+
+        public void AddFieldMillPath(Polygon p)
+        {
+            millFieldsPath.Add(p);
+
+            drawer.DrawFieldMillPath(p);
         }
 
         public void InitNetList(int netCnt)

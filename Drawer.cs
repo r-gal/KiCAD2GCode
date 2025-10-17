@@ -577,53 +577,54 @@ namespace KiCad2Gcode
             pBox.Refresh();
         }
 
-        public void DrawFieldMillPath(List<Polygon> fieldsMillPath)
+        public void DrawFieldMillPath(Polygon p)
         {
-            foreach (Polygon p in fieldsMillPath)
+            LinkedListNode<Node> n = p.points.First;
+            bool first = true;
+            while (n != null)
             {
+                LinkedListNode<Node> nPrev = n.Previous ?? p.points.Last;
+                DrawChunk(nPrev.Value.pt, n.Value.pt, n.Value.arc, bmp, Color.LightGreen);
 
-                LinkedListNode<Node> n = p.points.First;
-                bool first = true;
-                while (n != null)
+
+                if (drawDots)
                 {
-                    LinkedListNode<Node> nPrev = n.Previous ?? p.points.Last;
-                    DrawChunk(nPrev.Value.pt, n.Value.pt, n.Value.arc, bmp, Color.LightBlue);
-
-
-                    if (drawDots)
+                    if (first)
                     {
-                        if (first)
-                        {
-                            first = false;
-                            DrawCircleInt(n.Value.pt, 3, bmp, Color.DarkViolet);
-                        }
-
-                        if (n.Value.pt.type == Point2D.PointType_et.CROSS_X)
-                        {
-                            DrawDotInt(n.Value.pt, 2, bmp, Color.LightBlue);
-                        }
-                        else if (n.Value.pt.state == Point2D.STATE_et.BAD)
-                        {
-                            DrawDotInt(n.Value.pt, 2, bmp, Color.OrangeRed);
-                        }
-                        else
-                        {
-                            DrawDotInt(n.Value.pt, 2, bmp, Color.Black);
-                        }
+                        first = false;
+                        DrawCircleInt(n.Value.pt, 3, bmp, Color.DarkViolet);
                     }
 
-                    n = n.Next;
+                    if (n.Value.pt.type == Point2D.PointType_et.CROSS_X)
+                    {
+                        DrawDotInt(n.Value.pt, 2, bmp, Color.LightBlue);
+                    }
+                    else if (n.Value.pt.state == Point2D.STATE_et.BAD)
+                    {
+                        DrawDotInt(n.Value.pt, 2, bmp, Color.OrangeRed);
+                    }
+                    else
+                    {
+                        DrawDotInt(n.Value.pt, 2, bmp, Color.Black);
+                    }
                 }
 
-
+                n = n.Next;
             }
             pBox.Refresh();
         }
 
-        public void Redraw(Net[] netList, Figure cuts, List<Drill> drills, List<Polygon> millPath, Polygon boardMillPath, List<Polygon> boardHolesMillPath, List<Polygon> fieldsMillPath)
+        public void DrawFieldMillPathList(List<Polygon> fieldsMillPath)
         {
+            foreach (Polygon p in fieldsMillPath)
+            {
+                DrawFieldMillPath(p);
+            }
+            
+        }
 
-
+        public void InitDrawer(Net[] netList, Figure cuts)
+        {
             /* fetch border size */
 
             double minX = 0, maxX = 0, minY = 0, maxY = 0;
@@ -698,6 +699,13 @@ namespace KiCad2Gcode
             H = sizeY;
 
             pBox.Image = bmp;
+        }
+
+        public void Redraw(Net[] netList, Figure cuts, List<Drill> drills, List<Polygon> millPath, Polygon boardMillPath, List<Polygon> boardHolesMillPath, List<Polygon> fieldsMillPath)
+        {
+            InitDrawer(netList, cuts);
+
+            
 
             DrawNetlist(netList);
 
@@ -709,7 +717,7 @@ namespace KiCad2Gcode
 
             DrawMillPath(millPath);
 
-            DrawFieldMillPath(fieldsMillPath);
+            DrawFieldMillPathList(fieldsMillPath);
 
             DrawBoardMillPath(boardMillPath); 
 

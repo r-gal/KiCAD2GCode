@@ -56,7 +56,7 @@ namespace KiCad2Gcode
 
         /* field milling */
 
-        public int fieldMillToolNumber = 1;
+        public int fieldMillToolNumber = 3;
         public double fieldMillDiameter = 0.2;
         public double fieldMillSpindleSpeed = 18000;
         public double fieldMillHFeedRate = 800;
@@ -91,6 +91,7 @@ namespace KiCad2Gcode
         {
             if (traceMillToolNumber == toolNumber) { return false; }
             if (boardMillToolNumber == toolNumber) { return false; }
+            if (fieldMillToolNumber == toolNumber) { return false; }
 
             return CheckIfToolNumberIsNotUsedByDrills(toolNumber);
         }

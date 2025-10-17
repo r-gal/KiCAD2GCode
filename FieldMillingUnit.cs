@@ -54,7 +54,7 @@ namespace KiCad2Gcode
             {
                 if ( f.containBoard == false)
                 {
-                    unit.millFieldsPath.Add(f.shape);
+                    unit.AddFieldMillPath(f.shape);
                     millsCnt++;
                 }
                 else
@@ -64,12 +64,14 @@ namespace KiCad2Gcode
 
                 foreach (Polygon p in f.holes)
                 {
-                    unit.millFieldsPath.Add(p);
+                    unit.AddFieldMillPath(p);
                     millsCnt++;
                 }
 
             }
-            unit.RedrawAll();
+            //unit.RedrawAll();
+
+
             return millsCnt;
         }
 
@@ -100,7 +102,7 @@ namespace KiCad2Gcode
                 millsCnt++;
 
             }
-            unit.RedrawAll();
+            //unit.RedrawAll();
             return millsCnt;
         }
 
@@ -424,7 +426,7 @@ namespace KiCad2Gcode
                         newPolygons = IncreasePolygon(h, step, false);
                         if(newPolygons.Count > 1)
                         {
-                            MainUnit.PrintText("More holes\n ");
+                            //MainUnit.PrintText("More holes\n ");
                         }
                         foreach (Polygon p in newPolygons)
                         {

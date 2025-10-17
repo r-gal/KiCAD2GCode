@@ -268,13 +268,10 @@ namespace KiCad2Gcode
             }
         }
 
-        public List<Polygon> CreatePatch(Polygon polygon, double toolDiameter_, bool mainShape)
+        public List<Polygon> CreatePatch(Polygon polygon, double toolRadius, bool mainShape)
         {
             
 
-
-
-            double toolRadius = toolDiameter_ / 2;
             List<Polygon> pathList = new List<Polygon>();
 
             Polygon path = new Polygon();
