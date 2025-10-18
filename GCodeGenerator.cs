@@ -77,7 +77,30 @@ namespace KiCad2Gcode
             }
         }
 
-        public void Generate(string fileName, List<DrillList> drills, List<Polygon> traces, List<Polygon> cuts, Polygon outerCut)
+        private Polygon FindNearestPolygon(List<Polygon> list, Point2D pt)
+        {
+            Polygon pRet = null;
+            double actLen = 0;
+
+            foreach( Polygon p in list)
+            {
+                if(p.selected == 0 && p.points.Count > 0)
+                {
+                    Point2D s = p.points.First.Value.pt;
+                    double len = (pt.x - s.x) * (pt.x - s.x) + (pt.y - s.y) * (pt.y - s.y);
+
+                    if(pRet == null || len < actLen)
+                    {
+                        actLen = len;
+                        pRet = p;
+                    }
+                }
+            }    
+
+            return pRet;
+        }
+
+        public void Generate(string fileName, List<DrillList> drills, List<Polygon> traces, List<Polygon> fields, List<Polygon> cuts, Polygon outerCut)
         {
             /*create file */
             StreamWriter file = File.CreateText(fileName);
@@ -94,51 +117,150 @@ namespace KiCad2Gcode
             file.WriteLine("G21");
             file.WriteLine("G0 Z" + config.clearLevel.ToString(F,I)) ;
 
+
+
+
+            /*generate traces*/
+
+            bool toolIsRunning = false;
+
+            if(traces != null && traces.Count > 0 && config.traceActive)
+            {
+
+                AddToolChange(file, config.traceMillToolNumber, config.traceMillSpindleSpeed, "mill tool");
+                file.WriteLine("(start traces milling)");
+
+                foreach (Polygon p in traces)
+                {
+                    p.selected = 0;
+                }
+
+                Point2D startPoint = new Point2D(0, 0);
+
+                bool cont = true;
+                while (cont)
+                {
+                    Polygon polygon = FindNearestPolygon(traces, startPoint);
+                    if (polygon == null)
+                    {
+                        cont = false;
+                    }
+                    else
+                    {
+                        startPoint = polygon.points.First.Value.pt;
+                        polygon.selected = 1;
+
+
+                        /* add selected to mill */
+                        file.WriteLine("G0 X" + polygon.points.Last.Value.pt.x.ToString(F, I) + " Y" + polygon.points.Last.Value.pt.y.ToString(F, I));
+                        file.WriteLine("G0 Z" + config.safeLevel.ToString(F, I));
+                        file.WriteLine("G1 Z" + config.traceMillLevel.ToString(F, I) + " F" + config.traceMillVFeedRate.ToString(F, I));
+
+                        GeneratePath(file, polygon, config.traceMillHFeedRate);
+
+                        file.WriteLine("G0 Z" + config.clearLevel.ToString(F, I));
+
+                    }
+                }
+
+                if (fields != null && fields.Count > 0 && config.fieldActive && config.fieldUseTraceMill)
+                {
+                    /* left running for fields milling */
+                    toolIsRunning = true;
+                }
+                else
+                {
+                    AddStopTool(file);
+                }
+
+                file.WriteLine("(stop traces milling)");
+
+                
+                
+            }
+
+            /* generate fields */
+
+            if (fields != null && fields.Count > 0 && config.fieldActive)
+            {
+
+                file.WriteLine("(start fields milling)");
+
+                if(toolIsRunning == false)
+                {
+                    if(config.fieldUseTraceMill)
+                    {
+                        AddToolChange(file, config.traceMillToolNumber, config.traceMillSpindleSpeed, "field mill tool");
+                    }
+                    else
+                    {
+                        AddToolChange(file, config.fieldMillToolNumber, config.fieldMillSpindleSpeed, "field mill tool");
+                    }                    
+                }
+
+                foreach (Polygon p in fields)
+                {
+                    p.selected = 0;
+                }
+
+                Point2D startPoint = new Point2D(0, 0);
+
+                bool cont = true;
+                while(cont)
+                {
+                    Polygon polygon = FindNearestPolygon(fields, startPoint);
+                    if (polygon == null)
+                    {
+                        cont = false;
+                    }
+                    else
+                    {
+                        startPoint = polygon.points.First.Value.pt;
+                        polygon.selected = 1;
+
+
+                        double vFeedRate = config.fieldUseTraceMill ? config.traceMillVFeedRate : config.fieldMillVFeedRate;
+                        double hFeedRate = config.fieldUseTraceMill ? config.traceMillHFeedRate : config.fieldMillHFeedRate;
+                        double millLevel = config.fieldUseTraceMill ? config.traceMillLevel : config.fieldMillLevel;
+
+                            /* add selected to mill */
+                        file.WriteLine("G0 X" + polygon.points.Last.Value.pt.x.ToString(F, I) + " Y" + polygon.points.Last.Value.pt.y.ToString(F, I));
+                        file.WriteLine("G0 Z" + config.safeLevel.ToString(F, I));
+                        file.WriteLine("G1 Z" + millLevel.ToString(F, I) + " F" + vFeedRate.ToString(F, I));
+
+                        GeneratePath(file, polygon, hFeedRate);
+
+                        file.WriteLine("G0 Z" + config.clearLevel.ToString(F, I));
+
+                    }
+                }
+
+                file.WriteLine("(stop field milling)");
+                AddStopTool(file);
+            }
+
             /*generate drills */
             if (config.drillAcive)
             {
                 foreach (DrillList drill in drills)
                 {
-                    AddToolChange(file, drill.drillData.toolNumber, drill.drillData.spindleSpeed, "drill " + drill.drillData.diameter.ToString(F,I) + "[mm]");
+                    AddToolChange(file, drill.drillData.toolNumber, drill.drillData.spindleSpeed, "drill " + drill.drillData.diameter.ToString(F, I) + "[mm]");
                     file.WriteLine("(start drilling)");
                     foreach (Point2D p in drill.pts)
                     {
-                        file.WriteLine("G0 X" + p.x.ToString(F,I) + " Y" + p.y.ToString(F,I));
-                        file.WriteLine("G0 Z" + config.safeLevel.ToString(F,I));
-                        file.WriteLine("G81 X" + p.x.ToString(F,I) + " Y" + p.y.ToString(F,I) + " Z" + config.drillLevel.ToString(F,I) + " R" + config.safeLevel.ToString(F,I) + " F" + drill.drillData.feedRate.ToString(F,I));
+                        file.WriteLine("G0 X" + p.x.ToString(F, I) + " Y" + p.y.ToString(F, I));
+                        file.WriteLine("G0 Z" + config.safeLevel.ToString(F, I));
+                        file.WriteLine("G81 X" + p.x.ToString(F, I) + " Y" + p.y.ToString(F, I) + " Z" + config.drillLevel.ToString(F, I) + " R" + config.safeLevel.ToString(F, I) + " F" + drill.drillData.feedRate.ToString(F, I));
                     }
                     file.WriteLine("(stop drilling)");
                     file.WriteLine("G80");
-                    file.WriteLine("G0 Z" + config.clearLevel.ToString(F,I));
+                    file.WriteLine("G0 Z" + config.clearLevel.ToString(F, I));
                     AddStopTool(file);
                 }
             }
 
-
-            /*generate traces*/
-
-            if(traces != null && traces.Count > 0 && config.traceActive)
-            {
-                AddToolChange(file, config.traceMillToolNumber, config.traceMillSpindleSpeed, "mill tool");
-                file.WriteLine("(start traces milling)");
-
-                foreach(Polygon polygon in traces)
-                {
-                    file.WriteLine("G0 X" + polygon.points.Last.Value.pt.x.ToString(F,I) + " Y" + polygon.points.Last.Value.pt.y.ToString(F,I));
-                    file.WriteLine("G0 Z" + config.safeLevel.ToString(F,I));
-                    file.WriteLine("G1 Z" + config.traceMillLevel.ToString(F,I) + " F" + config.traceMillVFeedRate.ToString(F,I));
-
-                    GeneratePath(file, polygon, config.traceMillHFeedRate);
-
-                    file.WriteLine("G0 Z" + config.clearLevel.ToString(F,I));
-                }
-                
-
-                file.WriteLine("(stop traces milling)");
-                AddStopTool(file);
-            }
             /*generate board holes */
-            if(cuts != null && cuts.Count> 0 && config.boardHolesActive)
+            if (cuts != null && cuts.Count> 0 && config.boardHolesActive)
             {
                 AddToolChange(file, config.traceMillToolNumber, config.traceMillSpindleSpeed, "mill tool");
                 file.WriteLine("(start holes milling)");

@@ -640,7 +640,7 @@ namespace KiCad2Gcode
             if (saveFileDialog.ShowDialog() == DialogResult.OK)
             {
                 GCodeGenerator generator = new GCodeGenerator(config);
-                generator.Generate(saveFileDialog.FileName, sortedDrills, millPath, boardHolesMillPath, boardMillPath);
+                generator.Generate(saveFileDialog.FileName, sortedDrills, millPath, millFieldsPath, boardHolesMillPath, boardMillPath);
             }
 
             PrintText("Done\n");
