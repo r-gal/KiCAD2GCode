@@ -100,6 +100,28 @@ namespace KiCad2Gcode
             return pRet;
         }
 
+        private Point2D FindNearestPoint(List<Point2D> list, Point2D pt)
+        {
+            Point2D pRet = null;
+            double actLen = 0;
+
+            foreach (Point2D p in list)
+            {
+                if (p.state == Point2D.STATE_et.FREE )
+                {
+                    double len = (pt.x - p.x) * (pt.x - p.x) + (pt.y - p.y) * (pt.y - p.y);
+
+                    if (pRet == null || len < actLen)
+                    {
+                        actLen = len;
+                        pRet = p;
+                    }
+                }
+            }
+
+            return pRet;
+        }
+
         public void Generate(string fileName, List<DrillList> drills, List<Polygon> traces, List<Polygon> fields, List<Polygon> cuts, Polygon outerCut)
         {
             /*create file */
@@ -244,14 +266,38 @@ namespace KiCad2Gcode
             {
                 foreach (DrillList drill in drills)
                 {
-                    AddToolChange(file, drill.drillData.toolNumber, drill.drillData.spindleSpeed, "drill " + drill.drillData.diameter.ToString(F, I) + "[mm]");
-                    file.WriteLine("(start drilling)");
+                    Point2D startPoint = new Point2D(0, 0);
+
+
                     foreach (Point2D p in drill.pts)
                     {
-                        file.WriteLine("G0 X" + p.x.ToString(F, I) + " Y" + p.y.ToString(F, I));
-                        file.WriteLine("G0 Z" + config.safeLevel.ToString(F, I));
-                        file.WriteLine("G81 X" + p.x.ToString(F, I) + " Y" + p.y.ToString(F, I) + " Z" + config.drillLevel.ToString(F, I) + " R" + config.safeLevel.ToString(F, I) + " F" + drill.drillData.feedRate.ToString(F, I));
+                        p.state = Point2D.STATE_et.FREE;
                     }
+
+
+                    AddToolChange(file, drill.drillData.toolNumber, drill.drillData.spindleSpeed, "drill " + drill.drillData.diameter.ToString(F, I) + "[mm]");
+                    file.WriteLine("(start drilling)");
+
+                    bool cont = true;
+
+                    while(cont)
+                    {
+                        Point2D p = FindNearestPoint(drill.pts, startPoint);
+
+                        if(p == null)
+                        {
+                            cont = false;
+                        }
+                        else
+                        {
+                            file.WriteLine("G0 X" + p.x.ToString(F, I) + " Y" + p.y.ToString(F, I));
+                            file.WriteLine("G0 Z" + config.safeLevel.ToString(F, I));
+                            file.WriteLine("G81 X" + p.x.ToString(F, I) + " Y" + p.y.ToString(F, I) + " Z" + config.drillLevel.ToString(F, I) + " R" + config.safeLevel.ToString(F, I) + " F" + drill.drillData.feedRate.ToString(F, I));
+                            p.state = Point2D.STATE_et.USED;
+                        }
+
+                    }
+
                     file.WriteLine("(stop drilling)");
                     file.WriteLine("G80");
                     file.WriteLine("G0 Z" + config.clearLevel.ToString(F, I));
