@@ -789,36 +789,10 @@ namespace KiCad2Gcode
                             Vector vNewCp = aNew * vNew + hNew * vNewOrt;
                             Point2D newCentre = sP + vNewCp;
 
-
                             actNode.Value.arc.radius = vNewCp.Length; 
                             actNode.Value.arc.centre = newCentre;
                             actNode.Value.arc.startAngle = Math.Atan2(sP.y - newCentre.y, sP.x - newCentre.x);
                             actNode.Value.arc.endAngle = Math.Atan2(eP.y - newCentre.y, eP.x - newCentre.x );
-
-                            /*consistency check */
-
-                            double cx = actNode.Value.arc.centre.x - startPt.x;
-                            double cy = actNode.Value.arc.centre.y - startPt.y;
-
-
-                            double cxe = actNode.Value.arc.centre.x - actNode.Value.pt.x;
-                            double cye = actNode.Value.arc.centre.y - actNode.Value.pt.y;
-
-                            double r1 = cx * cx + cy * cy;
-                            double r2 = cxe * cxe + cye * cye;
-
-                            r1 = Math.Sqrt(r1);
-                            r2 = Math.Sqrt(r2);
-
-                            if (Math.Abs(actNode.Value.arc.radius - r1) > 0.001)
-                            {
-                                int trap = 0;
-                            }
-                            if (Math.Abs(actNode.Value.arc.radius - r2) > 0.001)
-                            {
-                                int trap = 0;
-                            }
-
 
                         }
 

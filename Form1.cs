@@ -22,7 +22,7 @@ namespace KiCad2Gcode
 
         String filePath = "";
 
-        internal String versionName = "KiCAD2Gcode v1.5 ";
+        internal String versionName = "KiCAD2Gcode v1.6 ";
 
         public Form1()
         {
