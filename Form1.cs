@@ -22,7 +22,7 @@ namespace KiCad2Gcode
 
         String filePath = "";
 
-        String MainText = "KiCAD2Gcode v1.4 ";
+        internal String versionName = "KiCAD2Gcode v1.5 ";
 
         public Form1()
         {
@@ -41,7 +41,7 @@ namespace KiCad2Gcode
 
             Config2Gui();
 
-            this.Text = MainText;
+            this.Text = versionName;
 
         }
 
@@ -148,7 +148,7 @@ namespace KiCad2Gcode
 
                 if (loadResult == true)
                 {
-                    this.Text = MainText + filePath;
+                    this.Text = versionName + filePath;
                 }
             }
 
