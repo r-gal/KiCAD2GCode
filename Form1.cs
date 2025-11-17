@@ -226,6 +226,7 @@ namespace KiCad2Gcode
 
             clearLevelTextBox.Text = config.clearLevel.ToString();
             safeLevelTextBox.Text = config.safeLevel.ToString();
+            m3DwelTextBox.Text = config.m3dwel.ToString();
 
             /* traces milling */
             tracesToolNumberTextBox.Text = config.traceMillToolNumber.ToString();

@@ -395,6 +395,7 @@ namespace KiCad2Gcode
 
                     foreach (Polygon p in pathPolygons)
                     {
+                        p.FilterShortSegments();
                         millPath.Add(p);
                     }
 
@@ -409,6 +410,7 @@ namespace KiCad2Gcode
 
                         foreach (Polygon p in pathPolygons)
                         {
+                            p.FilterShortSegments();
                             millPath.Add(p);
                         }
 
@@ -428,6 +430,7 @@ namespace KiCad2Gcode
 
                     foreach (Polygon p in pathPolygons)
                     {
+                        p.FilterShortSegments();
                         millPath.Add(p);
                     }
 
@@ -442,6 +445,7 @@ namespace KiCad2Gcode
 
                         foreach (Polygon p in pathPolygons)
                         {
+                            p.FilterShortSegments();
                             millPath.Add(p);
                         }
 
@@ -481,6 +485,7 @@ namespace KiCad2Gcode
                 if(pathPolygons != null && pathPolygons.Count > 0)
                 {
                     boardMillPath = pathPolygons[0];
+                    boardMillPath.FilterShortSegments();
                 }
             }
 
@@ -490,6 +495,7 @@ namespace KiCad2Gcode
                 pathPolygons = path.CreatePatch(h, millDiameter/2, false);
                 foreach (Polygon p in pathPolygons)
                 {
+                    p.FilterShortSegments();
                     boardHolesMillPath.Add(p);
                 }
             }  
@@ -665,6 +671,7 @@ namespace KiCad2Gcode
 
         public void AddCutsPolygon(Polygon p)
         {
+            p.FilterShortSegments();
             cutPolygons.Add(p);
         }
 
@@ -675,6 +682,7 @@ namespace KiCad2Gcode
 
         public void AddFieldMillPath(Polygon p)
         {
+            p.FilterShortSegments();
             millFieldsPath.Add(p);
 
             drawer.DrawFieldMillPath(p);

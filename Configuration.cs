@@ -451,7 +451,7 @@ namespace KiCad2Gcode
             boardConfig.AppendChild(config.CreateElement("HFeedRate")).InnerText = boardMillHFeedRate.ToString();
             boardConfig.AppendChild(config.CreateElement("VFeedRate")).InnerText = boardMillVFeedRate.ToString();
             boardConfig.AppendChild(config.CreateElement("SpindleSpeed")).InnerText = boardMillSpindleSpeed.ToString();
-            boardConfig.AppendChild(config.CreateElement("VStep")).InnerText = boardMillSpindleSpeed.ToString();
+            boardConfig.AppendChild(config.CreateElement("VStep")).InnerText = boardVStep.ToString();
 
             XmlElement drillsConfig = (XmlElement)rootElement.AppendChild(config.CreateElement("DRILLS"));
 
