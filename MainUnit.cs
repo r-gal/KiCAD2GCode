@@ -543,7 +543,11 @@ namespace KiCad2Gcode
                     n.pt.x -= arc.radius;
                     n.arc = arc;
                     p.points.AddLast(n);
-                    board.holes.Add(p);
+
+                    p.FilterShortSegments();
+                    boardHolesMillPath.Add(p);
+
+                    //board.holes.Add(p);
 
                 }
                 else

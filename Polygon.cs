@@ -755,7 +755,7 @@ namespace KiCad2Gcode
                 {
                     Vector v = actNode.Value.pt - startPt;
 
-                    if (v.Length < 0.01) /* really small segment */
+                    if (v.Length < 0.02) /* really small segment */
                     {
                         LinkedListNode<Node> remNode = actNode;
 

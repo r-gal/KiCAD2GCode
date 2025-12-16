@@ -340,10 +340,12 @@ namespace KiCad2Gcode
                 }
             }
 
+            toolIsRunning = false;
+
             /*generate board holes */
             if (cuts != null && cuts.Count> 0 && config.boardHolesActive)
             {
-                AddToolChange(file, config.traceMillToolNumber, config.traceMillSpindleSpeed, "mill tool");
+                AddToolChange(file, config.boardMillToolNumber, config.boardMillSpindleSpeed, "mill tool");
                 file.WriteLine("(start holes milling)");
 
                 double actLevel = config.safeLevel;                
@@ -372,7 +374,16 @@ namespace KiCad2Gcode
                 } while (actLevel > config.boardMillLevel);
 
                 file.WriteLine("(stop holes milling)");
-                AddStopTool(file);
+
+                if (outerCut != null && config.boardBorderActive)
+                {
+                    AddStopTool(file);
+                }
+                else
+                {
+                    toolIsRunning = true;
+                }
+                    
 
 
             }
@@ -382,7 +393,11 @@ namespace KiCad2Gcode
             /*generate board shape */
             if(outerCut != null && config.boardBorderActive)
             {
-                AddToolChange(file, config.traceMillToolNumber, config.traceMillSpindleSpeed, "mill tool");
+                if(toolIsRunning == false)
+                {
+                    AddToolChange(file, config.boardMillToolNumber, config.boardMillSpindleSpeed, "mill tool");
+                }
+                
                 file.WriteLine("(start board milling)");
 
                 Polygon polygon = outerCut;
